@@ -1,7 +1,7 @@
 // Package commands provides functionality for managing fyne packages and the build process
 package commands
 
-import "fyne.io/fyne/v2/cmd/fyne/internal/commands"
+import "fyne.io/tools/cmd/fyne/internal/commands"
 
 // Command defines the required functionality to provide a subcommand to the "fyne" tool.
 //

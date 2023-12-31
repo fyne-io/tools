@@ -16,7 +16,7 @@ import (
 	"runtime"
 	"strings"
 
-	"fyne.io/fyne/v2/cmd/fyne/internal/util"
+	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"golang.org/x/sys/execabs"
 	"golang.org/x/tools/go/packages"
