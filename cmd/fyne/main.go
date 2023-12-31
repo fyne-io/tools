@@ -25,9 +25,6 @@ func main() {
 			commands.Version(),
 			commands.Serve(),
 			commands.Build(),
-
-			// Deprecated: Use "go mod vendor" instead.
-			commands.Vendor(),
 		},
 	}
 
