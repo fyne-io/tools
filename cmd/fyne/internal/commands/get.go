@@ -5,11 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/urfave/cli/v2"
-	"golang.org/x/sys/execabs"
 )
 
 // Get returns the command which downloads and installs fyne applications.
@@ -57,7 +57,7 @@ func NewGetter() *Getter {
 
 // Get automates the download and install of a named GUI app package.
 func (g *Getter) Get(pkg string) error {
-	cmd := execabs.Command("go", "get", "-u", "-d", pkg)
+	cmd := exec.Command("go", "get", "-u", "-d", pkg)
 	cmd.Env = append(os.Environ(), "GO111MODULE=off") // cache the downloaded code
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 
@@ -123,7 +123,7 @@ func (g *Getter) Run(args []string) {
 }
 
 func goPath() string {
-	cmd := execabs.Command("go", "env", "GOPATH")
+	cmd := exec.Command("go", "env", "GOPATH")
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {

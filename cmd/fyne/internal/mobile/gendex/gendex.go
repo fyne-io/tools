@@ -26,9 +26,8 @@ import (
 	"go/format"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
-
-	"golang.org/x/sys/execabs"
 )
 
 var outfile = flag.String("o", "dex.go", "result will be written file")
@@ -70,7 +69,7 @@ func gendex() error {
 	if err != nil {
 		return err
 	}
-	cmd := execabs.Command(
+	cmd := exec.Command(
 		"javac",
 		"-source", "1.8",
 		"-target", "1.8",
@@ -87,7 +86,7 @@ func gendex() error {
 	if err != nil {
 		return err
 	}
-	cmd = execabs.Command(
+	cmd = exec.Command(
 		buildTools+"/dx",
 		"--dex",
 		"--output="+tmpdir+"/classes.dex",

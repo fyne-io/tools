@@ -16,13 +16,13 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"fyne.io/tools/cmd/fyne/internal/util"
-	"golang.org/x/sys/execabs"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -150,7 +150,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		}
 	}
 	if release {
-		_, err := execabs.LookPath("bundletool")
+		_, err := exec.LookPath("bundletool")
 		if err != nil {
 			_, _ = fmt.Fprint(os.Stderr, "Required command 'bundletool' not found when building Android for release.\n")
 			_, _ = fmt.Fprint(os.Stderr, "For more information see https://developer.android.com/tools/bundletool.\n")
@@ -388,7 +388,7 @@ func convertAPKToAAB(aabPath string) error {
 	defer removeAll(tmpPath)
 
 	aapt2 := filepath.Join(util.AndroidBuildToolsPath(), "aapt2")
-	cmd := execabs.Command(aapt2, "convert", "--output-format", "proto", "-o", apkProtoPath, apkPath)
+	cmd := exec.Command(aapt2, "convert", "--output-format", "proto", "-o", apkProtoPath, apkPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
@@ -397,7 +397,7 @@ func convertAPKToAAB(aabPath string) error {
 	}
 	_ = os.Remove(apkPath)
 
-	cmd = execabs.Command("unzip", apkProtoPath, "-x", "META-INF/*", "-d", tmpPath)
+	cmd = exec.Command("unzip", apkProtoPath, "-x", "META-INF/*", "-d", tmpPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
@@ -411,7 +411,7 @@ func convertAPKToAAB(aabPath string) error {
 	_ = os.Rename(filepath.Join(tmpPath, "AndroidManifest.xml"), filepath.Join(tmpPath, "manifest", "AndroidManifest.xml"))
 	_ = os.Rename(filepath.Join(tmpPath, "classes.dex"), filepath.Join(tmpPath, "dex", "classes.dex"))
 
-	cmd = execabs.Command("zip", "../base.zip", "-r", ".")
+	cmd = exec.Command("zip", "../base.zip", "-r", ".")
 	cmd.Dir = tmpPath
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
@@ -421,7 +421,7 @@ func convertAPKToAAB(aabPath string) error {
 	}
 	defer os.Remove(filepath.Join(filepath.Dir(aabPath), "base.zip"))
 
-	cmd = execabs.Command("bundletool", "build-bundle", "--output", aabPath, "--modules", "base.zip")
+	cmd = exec.Command("bundletool", "build-bundle", "--output", aabPath, "--modules", "base.zip")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	return cmd.Run()

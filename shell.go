@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-
-	"golang.org/x/sys/execabs"
 )
 
 // CommandInShell sets up a new command with the environment set up by users environment.
@@ -17,19 +15,19 @@ func CommandInShell(cmd string, args ...string) *exec.Cmd {
 	switch runtime.GOOS {
 	case "darwin": // darwin apps don't run in the user shell environment
 		args = quoteArgs(args...)
-		data, err := execabs.Command(getDarwinShell(), "-i", "-c", "env").Output()
+		data, err := exec.Command(getDarwinShell(), "-i", "-c", "env").Output()
 		if err == nil {
 			env = strings.Split(string(data), "\n")
 		}
 	case "linux", "freebsd", "netbsd", "openbsd", "dragonflybsd": // unix environment may be set up in shell
 		args = quoteArgs(args...)
-		data, err := execabs.Command(getUnixShell(), "-i", "-c", "env").Output()
+		data, err := exec.Command(getUnixShell(), "-i", "-c", "env").Output()
 		if err == nil {
 			env = strings.Split(string(data), "\n")
 		}
 	}
 
-	run := execabs.Command(cmd, args...)
+	run := exec.Command(cmd, args...)
 	run.Env = append(run.Env, env...)
 	return run
 }
@@ -56,7 +54,7 @@ func getDarwinShell() string {
 	if err != nil {
 		return "zsh"
 	}
-	out, err := execabs.Command("dscl", ".", "-read", home, "UserShell").Output()
+	out, err := exec.Command("dscl", ".", "-read", home, "UserShell").Output()
 	if err != nil {
 		return "zsh"
 	}

@@ -1,8 +1,6 @@
 package commands
 
-import (
-	"golang.org/x/sys/execabs"
-)
+import "os/exec"
 
 type runner interface {
 	runOutput(arg ...string) ([]byte, error)
@@ -25,7 +23,7 @@ func (c *command) setEnv(env []string) {
 }
 
 func (c *command) runOutput(arg ...string) ([]byte, error) {
-	cmd := execabs.Command(c.exe, arg...)
+	cmd := exec.Command(c.exe, arg...)
 	cmd.Dir = c.dir
 	if c.env != nil {
 		cmd.Env = c.env
