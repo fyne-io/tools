@@ -8,11 +8,10 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"golang.org/x/sys/execabs"
 )
 
 var (
@@ -77,14 +76,14 @@ func goEnv(name string) string {
 	if val := os.Getenv(name); val != "" {
 		return val
 	}
-	val, err := execabs.Command("go", "env", name).Output()
+	val, err := exec.Command("go", "env", name).Output()
 	if err != nil {
 		panic(err) // the Go tool was tested to work earlier
 	}
 	return strings.TrimSpace(string(val))
 }
 
-func runCmd(cmd *execabs.Cmd) error {
+func runCmd(cmd *exec.Cmd) error {
 	if buildX || buildN {
 		dir := ""
 		if cmd.Dir != "" {

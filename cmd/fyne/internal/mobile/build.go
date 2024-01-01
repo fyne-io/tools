@@ -12,13 +12,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"regexp"
 	"runtime"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/util"
 
-	"golang.org/x/sys/execabs"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -198,7 +198,7 @@ func extractPkgs(nm string, path string) (map[string]bool, error) {
 		return map[string]bool{"fyne.io/fyne/v2/internal/driver/mobile/app": true}, nil
 	}
 	r, w := io.Pipe()
-	cmd := execabs.Command(nm, path)
+	cmd := exec.Command(nm, path)
 	cmd.Stdout = w
 	cmd.Stderr = os.Stderr
 
@@ -232,7 +232,7 @@ func extractPkgs(nm string, path string) (map[string]bool, error) {
 
 var xout io.Writer = os.Stderr
 
-func printcmd(format string, args ...interface{}) {
+func printcmd(format string, args ...any) {
 	cmd := fmt.Sprintf(format+"\n", args...)
 	if tmpdir != "" {
 		cmd = strings.Replace(cmd, tmpdir, "$WORK", -1)
@@ -332,7 +332,7 @@ func goCmd(subcmd string, srcs []string, env []string, args ...string) error {
 }
 
 func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...string) error {
-	cmd := execabs.Command("go", subcmd)
+	cmd := exec.Command("go", subcmd)
 	tags := buildTags
 	targetOS, _, err := parseBuildTarget(buildTarget)
 	if err != nil {

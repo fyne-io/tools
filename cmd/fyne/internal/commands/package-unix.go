@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
-
-	"golang.org/x/sys/execabs"
 )
 
 type unixData struct {
@@ -89,7 +88,7 @@ func (p *Packager) packageUNIX() error {
 		}
 
 		var buf bytes.Buffer
-		tarCmd := execabs.Command("tar", "-Jcf", filepath.Join(p.dir, p.Name+".tar.xz"), "-C", filepath.Join(p.dir, tempDir), "usr", "Makefile")
+		tarCmd := exec.Command("tar", "-Jcf", filepath.Join(p.dir, p.Name+".tar.xz"), "-C", filepath.Join(p.dir, tempDir), "usr", "Makefile")
 		tarCmd.Stderr = &buf
 		if err = tarCmd.Run(); err != nil {
 			return fmt.Errorf("failed to create archive with tar: %s - %w", buf.String(), err)

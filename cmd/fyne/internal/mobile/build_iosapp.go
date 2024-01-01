@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
 
-	"golang.org/x/sys/execabs"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -51,7 +51,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	infoplist := new(bytes.Buffer)
 	if err := infoplistTmpl.Execute(infoplist, infoplistTmplData{
 		BundleID: bundleID,
-		Name:     strings.Title(appName),
+		Name:     strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
 		Version:  version,
 		Build:    build,
 		Legacy:   len(allArchs["ios"]) > 2,
@@ -83,7 +83,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	}
 
 	// We are using lipo tool to build multiarchitecture binaries.
-	cmd := execabs.Command(
+	cmd := exec.Command(
 		"xcrun", "lipo",
 		"-o", filepath.Join(tmpdir, "main/main"),
 		"-create",
@@ -123,7 +123,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 		"DEVELOPMENT_TEAM=" + teamID,
 	}
 
-	cmd = execabs.Command("xcrun", cmdStrings...)
+	cmd = exec.Command("xcrun", cmdStrings...)
 	if err := runCmd(cmd); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	// Use codesign to remove the codesign certificate for the built application
 	// so that it can run in iOS simulator.
 	if buildTarget == "iossimulator" {
-		if out, err := execabs.Command("codesign", "--force", "--sign", "-", buildO).CombinedOutput(); err != nil {
+		if out, err := exec.Command("codesign", "--force", "--sign", "-", buildO).CombinedOutput(); err != nil {
 			printcmd("codesign --force --sign --keychain %s\n%s", buildO, out)
 			return nil, err
 		}
@@ -263,7 +263,7 @@ func lookupCert(optName string) ([]byte, error) {
 }
 
 func lookupCertNamed(name string) ([]byte, error) {
-	cmd := execabs.Command(
+	cmd := exec.Command(
 		"security", "find-certificate",
 		"-c", name, "-p",
 	)

@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-cmd/fyne
+cmd/fyne/fyne
 
 # Test binary, built with `go test -c`
 *.test

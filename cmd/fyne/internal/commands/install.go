@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -12,7 +13,6 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 
 	"github.com/urfave/cli/v2"
-	"golang.org/x/sys/execabs"
 )
 
 // Install returns the cli command for installing fyne applications
@@ -216,12 +216,12 @@ func (i *Installer) installIOS() error {
 }
 
 func (i *Installer) runMobileInstall(tool, target string, args ...string) error {
-	_, err := execabs.LookPath(tool)
+	_, err := exec.LookPath(tool)
 	if err != nil {
 		return err
 	}
 
-	cmd := execabs.Command(tool, append(args, target)...)
+	cmd := exec.Command(tool, append(args, target)...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
@@ -240,7 +240,7 @@ func (i *Installer) validate() error {
 }
 
 func (i *Installer) installToIOSSimulator(target string) error {
-	cmd := execabs.Command(
+	cmd := exec.Command(
 		"xcrun", "simctl", "install",
 		"booted", // Install to the booted simulator.
 		target)
@@ -253,7 +253,7 @@ func (i *Installer) installToIOSSimulator(target string) error {
 }
 
 func (i *Installer) runInIOSSimulator() error {
-	cmd := execabs.Command("xcrun", "simctl", "launch", "booted", i.Packager.AppID)
+	cmd := exec.Command("xcrun", "simctl", "launch", "booted", i.Packager.AppID)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		os.Stderr.Write(out)
