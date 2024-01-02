@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/mcuadros/go-version"
@@ -164,51 +163,6 @@ func Test_BuildWasmReleaseVersion(t *testing.T) {
 	err := b.build()
 	assert.Nil(t, err)
 	wasmBuildTest.verifyExpectation()
-}
-
-func Test_BuildGopherJSReleaseVersion(t *testing.T) {
-	expected := []mockRunner{}
-
-	if runtime.GOOS != "windows" {
-		expected = []mockRunner{
-			{
-				expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
-				mockReturn: mockReturn{
-					ret: []byte("{ \"Module\": { \"Path\": \"fyne.io/fyne/v2\"} }"),
-				},
-			},
-			{
-				expectedValue: expectedValue{
-					args:  []string{"version"},
-					osEnv: true,
-				},
-				mockReturn: mockReturn{
-					ret: []byte(""),
-					err: nil,
-				},
-			},
-			{
-				expectedValue: expectedValue{
-					args:  []string{"build", "--tags", "release"},
-					osEnv: true,
-					dir:   "myTest",
-				},
-				mockReturn: mockReturn{
-					ret: []byte(""),
-				},
-			},
-		}
-	}
-
-	gopherJSBuildTest := &testCommandRuns{runs: expected, t: t}
-	b := &Builder{appData: &appData{}, os: "js", srcdir: "myTest", release: true, runner: gopherJSBuildTest}
-	err := b.build()
-	if runtime.GOOS == "windows" {
-		assert.NotNil(t, err)
-	} else {
-		assert.Nil(t, err)
-	}
-	gopherJSBuildTest.verifyExpectation()
 }
 
 func Test_BuildWasmOldVersion(t *testing.T) {

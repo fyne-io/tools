@@ -2,7 +2,6 @@ package commands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -202,10 +201,6 @@ func (b *Builder) build() error {
 		goos = targetOS()
 	}
 
-	if goos == "js" && runtime.GOOS == "windows" {
-		return errors.New("gopherjs doesn't support Windows. Only wasm target is supported for the web output. You can also use fyne-cross to solve this")
-	}
-
 	fyneGoModRunner := b.updateAndGetGoExecutable(goos)
 
 	srcdir, err := b.computeSrcDir(fyneGoModRunner)
@@ -267,12 +262,7 @@ func (b *Builder) build() error {
 		tags = append(tags, "release")
 	}
 	if len(tags) > 0 {
-		if goos == "js" {
-			args = append(args, "--tags")
-		} else {
-			args = append(args, "-tags")
-		}
-		args = append(args, strings.Join(tags, ","))
+		args = append(args, "-tags", strings.Join(tags, ","))
 	}
 
 	if b.goPackage != "" {
@@ -285,12 +275,6 @@ func (b *Builder) build() error {
 		versionConstraint = version.NewConstrainGroupFromString(">=1.17")
 		env = append(env, "GOARCH=wasm")
 		env = append(env, "GOOS=js")
-	} else if goos == "js" {
-		_, err := b.runner.runOutput("version")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Can not execute `gopherjs version`. Please do `go install github.com/gopherjs/gopherjs@latest`.\n")
-			return err
-		}
 	}
 
 	if err := checkGoVersion(b.runner, versionConstraint); err != nil {
@@ -364,11 +348,7 @@ func (b *Builder) updateAndGetGoExecutable(goos string) runner {
 			fyneGoModRunner = newCommand(goBin)
 			b.runner = fyneGoModRunner
 		} else {
-			if goos != "js" {
-				b.runner = newCommand("go")
-			} else {
-				b.runner = newCommand("gopherjs")
-			}
+			b.runner = newCommand("go")
 		}
 	}
 	return fyneGoModRunner
