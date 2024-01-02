@@ -41,7 +41,6 @@
 		{{if not .IsReleased}}
 			<script src="webgl-debug.js"></script>
 		{{end}}
-		{{if .HasWasm}}
 			<script>
 				function getChromeVersion() {
 					var raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
@@ -56,14 +55,7 @@
 					}
 				}
 			</script>
-		{{else}}
-			<script>var wasmBuild = false;</script>
-		{{end}}
-		{{if .HasGopherJS}}
-			<script>var gopherJSBuild = true;</script>
-		{{else}}
 			<script>var gopherJSBuild = false;</script>
-		{{end}}
 		<script>
 			function async_load(file, cb) {
 				var d = document, t = 'script',
