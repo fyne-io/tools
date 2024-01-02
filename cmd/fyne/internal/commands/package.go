@@ -211,25 +211,10 @@ func (p *Packager) packageWithoutValidate() error {
 }
 
 func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) {
-	if p.os != "wasm" {
-		b := &Builder{
-			os:      p.os,
-			srcdir:  p.srcDir,
-			target:  p.exe,
-			release: p.release,
-			tags:    tags,
-			runner:  runner,
-
-			appData: p.appData,
-		}
-
-		return []string{p.exe}, b.build()
-	}
-
-	bWasm := &Builder{
-		os:      "wasm",
+	b := &Builder{
+		os:      p.os,
 		srcdir:  p.srcDir,
-		target:  p.exe + ".wasm",
+		target:  p.exe,
 		release: p.release,
 		tags:    tags,
 		runner:  runner,
@@ -237,12 +222,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		appData: p.appData,
 	}
 
-	err := bWasm.build()
-	if err != nil {
-		return nil, err
-	}
-
-	return []string{bWasm.target}, nil
+	return []string{p.exe}, b.build()
 }
 
 func (p *Packager) combinedVersion() string {
