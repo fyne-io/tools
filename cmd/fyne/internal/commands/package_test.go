@@ -165,12 +165,6 @@ func Test_buildPackageWasm(t *testing.T) {
 			},
 		},
 		{
-			expectedValue: expectedValue{args: []string{"version"}},
-			mockReturn: mockReturn{
-				ret: []byte("go version go1.17.6 windows/amd64"),
-			},
-		},
-		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-tags", "release"},
 				env:   []string{"GOARCH=wasm", "GOOS=js"},
@@ -202,12 +196,6 @@ func Test_PackageWasm(t *testing.T) {
 			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
 			mockReturn: mockReturn{
 				ret: []byte("{ \"Module\": { \"Path\": \"fyne.io/fyne/v2\"} }"),
-			},
-		},
-		{
-			expectedValue: expectedValue{args: []string{"version"}},
-			mockReturn: mockReturn{
-				ret: []byte("go version go1.17.6 windows/amd64"),
 			},
 		},
 		{
