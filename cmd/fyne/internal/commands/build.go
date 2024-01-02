@@ -235,8 +235,8 @@ func (b *Builder) build() error {
 	env := os.Environ()
 
 	if goos == "darwin" {
-		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.11")
-		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.11")
+		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.13")
+		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.13")
 	}
 
 	ldFlags := extractLdflagsFromGoFlags()
