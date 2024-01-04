@@ -7,13 +7,15 @@ import (
 	"strings"
 )
 
-type staticString string
+// stringLiteral is a type of string that cannot be passed as a variable.
+// This helps to avoid code injection by enforcing executable names to be hard coded.
+type stringLiteral string
 
 // CommandInShell sets up a new command with the environment set up by user's environment.
 // In darwin or other Unix systems the shell will be loaded by running the terminal and accessing env command.
 // The command is run directly so stdout and stderr can be read directly from the returned `exec.Cmd`.
 // The cmd parameter must be a string constant to avoid possible code injection attacks.
-func CommandInShell(cmd staticString, args ...string) *exec.Cmd {
+func CommandInShell(cmd stringLiteral, args ...string) *exec.Cmd {
 	// lookup command path in target env
 	path := string(cmd)
 	if runtime.GOOS == "darwin" {
