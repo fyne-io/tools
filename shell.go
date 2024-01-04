@@ -11,6 +11,29 @@ import (
 // In darwin or other Unix systems the shell will be loaded by running the terminal and accessing env command.
 // The command is run directly so stdout and stderr can be read directly from the returnd `exec.Cmd`.
 func CommandInShell(cmd string, args ...string) *exec.Cmd {
+	// lookup command path in target env
+	path := cmd
+	if runtime.GOOS == "darwin" {
+		data, err := runInShell("which", cmd).Output()
+
+		if err == nil {
+			// parse lines as shell can output header
+			lines := strings.Split(string(data), "\n")
+			if len(lines) > 0 {
+				path = lines[len(lines)-1]
+
+				// possibly trailing empty line
+				if path == "" && len(lines) > 1 {
+					path = lines[len(lines)-2]
+				}
+			}
+		}
+	}
+
+	return runInShell(path, args...)
+}
+
+func runInShell(cmd string, args ...string) *exec.Cmd {
 	var env []string
 	switch runtime.GOOS {
 	case "darwin": // darwin apps don't run in the user shell environment
