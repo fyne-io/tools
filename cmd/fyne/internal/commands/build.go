@@ -126,7 +126,7 @@ func (b *Builder) Build() error {
 }
 
 func isWeb(goos string) bool {
-	return goos == "js" || goos == "wasm"
+	return goos == "js" || goos == "wasm" || goos == "web"
 }
 
 type goModEdit struct {
@@ -240,7 +240,7 @@ func (b *Builder) build() error {
 
 	if goos != "ios" && goos != "android" && !isWeb(goos) {
 		env = append(env, "GOOS="+goos)
-	} else if goos == "wasm" {
+	} else if goos == "web" || goos == "wasm" {
 		env = append(env, "GOARCH=wasm")
 		env = append(env, "GOOS=js")
 	}

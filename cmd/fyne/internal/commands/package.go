@@ -284,7 +284,7 @@ func (p *Packager) doPackage(runner runner) error {
 		return p.packageAndroid(p.os, tags)
 	case "ios", "iossimulator":
 		return p.packageIOS(p.os, tags)
-	case "wasm":
+	case "web", "wasm":
 		return p.packageWasm()
 	default:
 		return fmt.Errorf("unsupported target operating system \"%s\"", p.os)
