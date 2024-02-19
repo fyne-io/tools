@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -212,25 +211,10 @@ func (p *Packager) packageWithoutValidate() error {
 }
 
 func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) {
-	if p.os != "web" {
-		b := &Builder{
-			os:      p.os,
-			srcdir:  p.srcDir,
-			target:  p.exe,
-			release: p.release,
-			tags:    tags,
-			runner:  runner,
-
-			appData: p.appData,
-		}
-
-		return []string{p.exe}, b.build()
-	}
-
-	bWasm := &Builder{
-		os:      "wasm",
+	b := &Builder{
+		os:      p.os,
 		srcdir:  p.srcDir,
-		target:  p.exe + ".wasm",
+		target:  p.exe,
 		release: p.release,
 		tags:    tags,
 		runner:  runner,
@@ -238,32 +222,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		appData: p.appData,
 	}
 
-	err := bWasm.build()
-	if err != nil {
-		return nil, err
-	}
-
-	if runtime.GOOS == "windows" {
-		return []string{bWasm.target}, nil
-	}
-
-	bGopherJS := &Builder{
-		os:      "js",
-		srcdir:  p.srcDir,
-		target:  p.exe + ".js",
-		release: p.release,
-		tags:    tags,
-		runner:  runner,
-
-		appData: p.appData,
-	}
-
-	err = bGopherJS.build()
-	if err != nil {
-		return nil, err
-	}
-
-	return []string{bWasm.target, bGopherJS.target}, nil
+	return []string{p.exe}, b.build()
 }
 
 func (p *Packager) combinedVersion() string {
@@ -325,12 +284,8 @@ func (p *Packager) doPackage(runner runner) error {
 		return p.packageAndroid(p.os, tags)
 	case "ios", "iossimulator":
 		return p.packageIOS(p.os, tags)
-	case "wasm":
+	case "web", "wasm":
 		return p.packageWasm()
-	case "js":
-		return p.packageGopherJS()
-	case "web":
-		return p.packageWeb()
 	default:
 		return fmt.Errorf("unsupported target operating system \"%s\"", p.os)
 	}
