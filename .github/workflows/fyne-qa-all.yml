@@ -16,7 +16,7 @@ jobs:
       branch: develop
       tags: ${{ inputs.tags }}
 
-  qa-master:
+  qa-latest:
     uses: fyne-io/tools/.github/workflows/fyne-qa.yml@main
     with:
       branch: master
