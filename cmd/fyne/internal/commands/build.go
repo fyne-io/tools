@@ -443,5 +443,9 @@ func normaliseVersion(str string) string {
 	if pos := strings.Index(str, "-0.20"); pos != -1 {
 		str = str[:pos] + "-dev"
 	}
+	
+	if pos := strings.Index(str, "-rc"); pos != -1 {
+		str = str[:pos] + "-dev"
+	}
 	return version.Normalize(str)
 }
