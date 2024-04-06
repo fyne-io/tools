@@ -22,7 +22,7 @@ jobs:
       branch: master
       tags: ${{ inputs.tags }}
         
-  qa-v24:
+  qa-v2_4:
     uses: fyne-io/tools/.github/workflows/fyne-qa.yml@main
     with:
       branch: "release/v2.4.x"
