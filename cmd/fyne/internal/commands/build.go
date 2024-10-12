@@ -12,8 +12,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/tools/cmd/fyne/internal/templates"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
+	"fyne.io/tools/cmd/fyne/internal/templates"
 )
 
 // Builder generate the executables.
