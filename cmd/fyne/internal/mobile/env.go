@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"golang.org/x/mod/semver"
+	"golang.org/x/sys/execabs"
 )
 
 // General mobile build environment. Initialized by envInit.
@@ -95,7 +95,7 @@ func envInit() (err error) {
 	// This is because go-list tries to analyze the module at the current directory if no packages are given,
 	// and if the module doesn't have any Go file, go-list fails. See golang/go#36668.
 
-	ver, err := exec.Command("go", "version").Output()
+	ver, err := execabs.Command("go", "version").Output()
 	if err == nil && string(ver) != "" {
 		fields := strings.Split(string(ver), " ")
 		if len(fields) >= 3 {
@@ -257,14 +257,14 @@ func envClang(sdkName string) (clang, cflags string, err error) {
 	if buildN {
 		return sdkName + "-clang", "-isysroot=" + sdkName, nil
 	}
-	cmd := exec.Command("xcrun", "--sdk", sdkName, "--find", "clang")
+	cmd := execabs.Command("xcrun", "--sdk", sdkName, "--find", "clang")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", "", fmt.Errorf("xcrun --find: %v\n%s", err, out)
 	}
 	clang = strings.TrimSpace(string(out))
 
-	cmd = exec.Command("xcrun", "--sdk", sdkName, "--show-sdk-path")
+	cmd = execabs.Command("xcrun", "--sdk", sdkName, "--show-sdk-path")
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		return "", "", fmt.Errorf("xcrun --show-sdk-path: %v\n%s", err, out)
@@ -435,6 +435,6 @@ var ndk = ndkConfig{
 }
 
 func xcodeAvailable() bool {
-	err := exec.Command("xcrun", "xcodebuild", "-version").Run()
+	err := execabs.Command("xcrun", "xcodebuild", "-version").Run()
 	return err == nil
 }

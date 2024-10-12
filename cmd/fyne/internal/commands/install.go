@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -13,6 +12,7 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 
 	"github.com/urfave/cli/v2"
+	"golang.org/x/sys/execabs"
 )
 
 // Install returns the cli command for installing fyne applications
@@ -22,13 +22,13 @@ func Install() *cli.Command {
 	return &cli.Command{
 		Name:  "install",
 		Usage: "Packages an application and installs an application.",
-		Description: `The install command packages an application for the current platform and copies it
-		into the system location for applications. This can be overridden with installDir`,
+		Description: `The install command packages an application for the current platform or one of the mobile targets.
+It will copy the package to the system location for applications or a location specified by installDir.`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "target",
 				Aliases:     []string{"os"},
-				Usage:       "The mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios, iossimulator).",
+				Usage:       "Instead of the current system, target a mobile platform (android, android/arm, android/arm64, android/amd64, android/386, ios, iossimulator).",
 				Destination: &i.os,
 			},
 			&cli.StringFlag{
@@ -148,7 +148,7 @@ func (i *Installer) install() error {
 			return i.installAndroid()
 		}
 
-		return errors.New("Unsupported target operating system \"" + i.os + "\"")
+		return errors.New("Unsupported target operating system \"" + i.os + "\".\nTo install on the current platform simply omit the target/os parameter.")
 	}
 
 	if i.installDir == "" {
@@ -216,12 +216,12 @@ func (i *Installer) installIOS() error {
 }
 
 func (i *Installer) runMobileInstall(tool, target string, args ...string) error {
-	_, err := exec.LookPath(tool)
+	_, err := execabs.LookPath(tool)
 	if err != nil {
 		return err
 	}
 
-	cmd := exec.Command(tool, append(args, target)...)
+	cmd := execabs.Command(tool, append(args, target)...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
@@ -240,7 +240,7 @@ func (i *Installer) validate() error {
 }
 
 func (i *Installer) installToIOSSimulator(target string) error {
-	cmd := exec.Command(
+	cmd := execabs.Command(
 		"xcrun", "simctl", "install",
 		"booted", // Install to the booted simulator.
 		target)
@@ -253,7 +253,7 @@ func (i *Installer) installToIOSSimulator(target string) error {
 }
 
 func (i *Installer) runInIOSSimulator() error {
-	cmd := exec.Command("xcrun", "simctl", "launch", "booted", i.Packager.AppID)
+	cmd := execabs.Command("xcrun", "simctl", "launch", "booted", i.Packager.AppID)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		os.Stderr.Write(out)

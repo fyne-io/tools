@@ -9,8 +9,6 @@
 //
 // Requires ANDROID_HOME be set to the path of the Android SDK and the
 // current sdk platform installed that matches MinSDK.
-//
-// Requires that the main "fyne" repository is placed in the same directory as this repository.
 package main
 
 import (

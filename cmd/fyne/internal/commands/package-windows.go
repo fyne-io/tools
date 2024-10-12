@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"github.com/fyne-io/image/ico"
 	"github.com/josephspurrier/goversioninfo"
+	"golang.org/x/sys/execabs"
 )
 
 type windowsData struct {
@@ -153,7 +153,7 @@ func escapePowerShellArguments(args ...string) string {
 func runAsAdminWindows(args ...string) error {
 	cmd := escapePowerShellArguments(args...)
 
-	return exec.Command("powershell.exe", "Start-Process", "cmd.exe", "-Verb", "runAs", "-ArgumentList", cmd).Run()
+	return execabs.Command("powershell.exe", "Start-Process", "cmd.exe", "-Verb", "runAs", "-ArgumentList", cmd).Run()
 }
 
 func fixedVersionInfo(ver string) (ret goversioninfo.FileVersion) {

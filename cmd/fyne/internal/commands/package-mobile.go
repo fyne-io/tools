@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+
+	"golang.org/x/sys/execabs"
 )
 
 func (p *Packager) packageAndroid(arch string, tags []string) error {
@@ -37,7 +38,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 
 	iconDir := util.EnsureSubDir(assetDir, "AppIcon.appiconset")
 	contentFile, _ := os.Create(filepath.Join(iconDir, "Contents.json"))
-
+	defer contentFile.Close()
 	err = templates.XCAssetsDarwin.Execute(contentFile, nil)
 	if err != nil {
 		return fmt.Errorf("failed to write xcassets content template: %w", err)
@@ -77,7 +78,7 @@ func runCmdCaptureOutput(name string, args ...string) error {
 		outbuf = &bytes.Buffer{}
 		errbuf = &bytes.Buffer{}
 	)
-	cmd := exec.Command(name, args...)
+	cmd := execabs.Command(name, args...)
 	cmd.Stdout = outbuf
 	cmd.Stderr = errbuf
 	err := cmd.Run()

@@ -12,13 +12,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"regexp"
 	"runtime"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/util"
 
+	"golang.org/x/sys/execabs"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -150,7 +150,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 			return pkg, nil
 		}
-		target := 33
+		target := 35
 		if !buildRelease {
 			target = 29 // TODO once we have gomobile debug signing working for v2 android signs
 		}
@@ -184,21 +184,21 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 		}
 	}
 
-	if !nmpkgs["fyne.io/fyne/v2/internal/driver/mobile/app"] {
-		return nil, fmt.Errorf(`%s does not import "fyne.io/fyne/v2/internal/driver/mobile/app"`, pkg.PkgPath)
+	if !nmpkgs["fyne.io/tools/cmd/fyne/internal/driver/mobile/app"] {
+		return nil, fmt.Errorf(`%s does not import "fyne.io/tools/cmd/fyne/internal/driver/mobile/app"`, pkg.PkgPath)
 	}
 
 	return pkg, nil
 }
 
-var nmRE = regexp.MustCompile(`[0-9a-f]{8} t _?(?:.*/vendor/)?(fyne.io/fyne/v2/internal/driver/mobile.*/[^.]*)`)
+var nmRE = regexp.MustCompile(`[0-9a-f]{8} t _?(?:.*/vendor/)?(fyne.io/tools/cmd/fyne/internal/driver/mobile.*/[^.]*)`)
 
 func extractPkgs(nm string, path string) (map[string]bool, error) {
 	if buildN {
-		return map[string]bool{"fyne.io/fyne/v2/internal/driver/mobile/app": true}, nil
+		return map[string]bool{"fyne.io/tools/cmd/fyne/internal/driver/mobile/app": true}, nil
 	}
 	r, w := io.Pipe()
-	cmd := exec.Command(nm, path)
+	cmd := execabs.Command(nm, path)
 	cmd.Stdout = w
 	cmd.Stderr = os.Stderr
 
@@ -332,7 +332,7 @@ func goCmd(subcmd string, srcs []string, env []string, args ...string) error {
 }
 
 func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...string) error {
-	cmd := exec.Command("go", subcmd)
+	cmd := execabs.Command("go", subcmd)
 	tags := buildTags
 	targetOS, _, err := parseBuildTarget(buildTarget)
 	if err != nil {

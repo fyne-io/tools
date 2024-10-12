@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/metadata"
+
+	"golang.org/x/sys/execabs"
 )
 
 type unixData struct {
@@ -57,7 +58,6 @@ func (p *Packager) packageUNIX() error {
 	appsDir := util.EnsureSubDir(shareDir, "applications")
 	desktop := filepath.Join(appsDir, p.Name+".desktop")
 	deskFile, _ := os.Create(desktop)
-	defer deskFile.Close()
 
 	linuxBSD := metadata.LinuxAndBSD{}
 	if p.linuxAndBSDMetadata != nil {
@@ -89,7 +89,7 @@ func (p *Packager) packageUNIX() error {
 		}
 
 		var buf bytes.Buffer
-		tarCmd := exec.Command("tar", "-Jcf", filepath.Join(p.dir, p.Name+".tar.xz"), "-C", filepath.Join(p.dir, tempDir), "usr", "Makefile")
+		tarCmd := execabs.Command("tar", "-Jcf", filepath.Join(p.dir, p.Name+".tar.xz"), "-C", filepath.Join(p.dir, tempDir), "usr", "Makefile")
 		tarCmd.Stderr = &buf
 		if err = tarCmd.Run(); err != nil {
 			return fmt.Errorf("failed to create archive with tar: %s - %w", buf.String(), err)

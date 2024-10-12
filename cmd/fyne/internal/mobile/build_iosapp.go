@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"golang.org/x/sys/execabs"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -51,7 +51,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	infoplist := new(bytes.Buffer)
 	if err := infoplistTmpl.Execute(infoplist, infoplistTmplData{
 		BundleID: bundleID,
-		Name:     strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+		Name:     strings.Title(appName), //lint:ignore SA1019 This is fine for our use case.
 		Version:  version,
 		Build:    build,
 		Legacy:   len(allArchs["ios"]) > 2,
@@ -83,7 +83,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	}
 
 	// We are using lipo tool to build multiarchitecture binaries.
-	cmd := exec.Command(
+	cmd := execabs.Command(
 		"xcrun", "lipo",
 		"-o", filepath.Join(tmpdir, "main/main"),
 		"-create",
@@ -123,7 +123,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 		"DEVELOPMENT_TEAM=" + teamID,
 	}
 
-	cmd = exec.Command("xcrun", cmdStrings...)
+	cmd = execabs.Command("xcrun", cmdStrings...)
 	if err := runCmd(cmd); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	// Use codesign to remove the codesign certificate for the built application
 	// so that it can run in iOS simulator.
 	if buildTarget == "iossimulator" {
-		if out, err := exec.Command("codesign", "--force", "--sign", "-", buildO).CombinedOutput(); err != nil {
+		if out, err := execabs.Command("codesign", "--force", "--sign", "-", buildO).CombinedOutput(); err != nil {
 			printcmd("codesign --force --sign --keychain %s\n%s", buildO, out)
 			return nil, err
 		}
@@ -263,7 +263,7 @@ func lookupCert(optName string) ([]byte, error) {
 }
 
 func lookupCertNamed(name string) ([]byte, error) {
-	cmd := exec.Command(
+	cmd := execabs.Command(
 		"security", "find-certificate",
 		"-c", name, "-p",
 	)
@@ -523,11 +523,13 @@ var projPbxprojTmpl = template.Must(template.New("projPbxproj").Parse(`// !$*UTF
         GCC_WARN_UNUSED_FUNCTION = YES;
         GCC_WARN_UNUSED_VARIABLE = YES;
         IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+        OS_ACTIVITY_MODE = "disabled";
         MTL_ENABLE_DEBUG_INFO = {{if .Debug}}YES{{else}}NO{{end}};
         PRODUCT_BUNDLE_IDENTIFIER = {{.BundleID}};
         PROVISIONING_PROFILE_SPECIFIER = "{{.Profile}}";
         SDKROOT = iphoneos;
         TARGETED_DEVICE_FAMILY = "1,2";
+        OS_ACTIVITY_MODE = "disable";
         VALIDATE_PRODUCT = YES;
         {{if not .BitcodeEnabled}}ENABLE_BITCODE = NO;{{end}}
       };

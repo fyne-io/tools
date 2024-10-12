@@ -12,8 +12,8 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 )
 
 // Builder generate the executables.
@@ -199,8 +199,8 @@ func (b *Builder) build() error {
 	env := os.Environ()
 
 	if goos == "darwin" {
-		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.13")
-		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.13")
+		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.11")
+		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.11")
 	}
 
 	ldFlags := extractLdflagsFromGoFlags()
@@ -441,10 +441,6 @@ func normaliseVersion(str string) string {
 	}
 
 	if pos := strings.Index(str, "-0.20"); pos != -1 {
-		str = str[:pos] + "-dev"
-	}
-
-	if pos := strings.Index(str, "-rc"); pos != -1 {
 		str = str[:pos] + "-dev"
 	}
 	return version.Normalize(str)

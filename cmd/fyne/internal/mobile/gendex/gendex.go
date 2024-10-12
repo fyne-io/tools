@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 //go:build gendex
-// +build gendex
 
 // Gendex generates a dex file used by Go apps created with gomobile.
 //
@@ -26,8 +25,9 @@ import (
 	"go/format"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
+
+	"golang.org/x/sys/execabs"
 )
 
 var outfile = flag.String("o", "dex.go", "result will be written file")
@@ -58,7 +58,7 @@ func gendex() error {
 	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", 0775); err != nil {
 		return err
 	}
-	javaFiles, err := filepath.Glob("../../../../../../fyne/internal/driver/mobile/app/*.java")
+	javaFiles, err := filepath.Glob("../../../../internal/driver/mobile/app/*.java")
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func gendex() error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(
+	cmd := execabs.Command(
 		"javac",
 		"-source", "1.8",
 		"-target", "1.8",
@@ -86,7 +86,7 @@ func gendex() error {
 	if err != nil {
 		return err
 	}
-	cmd = exec.Command(
+	cmd = execabs.Command(
 		buildTools+"/dx",
 		"--dex",
 		"--output="+tmpdir+"/classes.dex",

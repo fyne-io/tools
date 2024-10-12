@@ -211,10 +211,12 @@ func (p *Packager) packageWithoutValidate() error {
 }
 
 func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) {
+	target := p.exe
+
 	b := &Builder{
 		os:      p.os,
 		srcdir:  p.srcDir,
-		target:  p.exe,
+		target:  target,
 		release: p.release,
 		tags:    tags,
 		runner:  runner,
@@ -222,7 +224,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		appData: p.appData,
 	}
 
-	return []string{p.exe}, b.build()
+	return []string{target}, b.build()
 }
 
 func (p *Packager) combinedVersion() string {
