@@ -43,13 +43,13 @@ func runInShell(cmd string, args ...string) *exec.Cmd {
 	switch runtime.GOOS {
 	case "darwin": // darwin apps don't run in the user shell environment
 		args = quoteArgs(args...)
-		data, err := exec.Command(getDarwinShell(), "-i", "-c", "env").Output()
+		data, err := exec.Command(getDarwinShell(), "-c", "env").Output()
 		if err == nil {
 			env = strings.Split(string(data), "\n")
 		}
 	case "linux", "freebsd", "netbsd", "openbsd", "dragonflybsd": // unix environment may be set up in shell
 		args = quoteArgs(args...)
-		data, err := exec.Command(getUnixShell(), "-i", "-c", "env").Output()
+		data, err := exec.Command(getUnixShell(), "-c", "env").Output()
 		if err == nil {
 			env = strings.Split(string(data), "\n")
 		}
