@@ -170,9 +170,9 @@ func (b *Builder) build() error {
 		goos = targetOS()
 	}
 
-	fyneGoModRunner := b.updateAndGetGoExecutable(goos)
+	fyneGoModRunner := b.updateAndGetGoExecutable()
 
-	srcdir, err := b.computeSrcDir(fyneGoModRunner)
+	srcdir, err := b.computeSrcDir()
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (b *Builder) build() error {
 	b.updateToDefaultIconIfNotSet(srcdir)
 
 	if b.pprof {
-		close, err := injectPprofFile(fyneGoModRunner, srcdir, b.pprofPort)
+		close, err := injectPprofFile(srcdir, b.pprofPort)
 		if err != nil {
 			fyne.LogError("Failed to inject pprof file, omitting pprof", err)
 		} else if close != nil {
@@ -254,7 +254,7 @@ func (b *Builder) build() error {
 	return err
 }
 
-func (b *Builder) computeSrcDir(fyneGoModRunner runner) (string, error) {
+func (b *Builder) computeSrcDir() (string, error) {
 	if b.goPackage == "" || b.goPackage == "." {
 		return b.srcdir, nil
 	}
@@ -280,7 +280,7 @@ func (b *Builder) updateToDefaultIconIfNotSet(srcdir string) {
 	}
 }
 
-func injectPprofFile(runner runner, srcdir string, port int) (func(), error) {
+func injectPprofFile(srcdir string, port int) (func(), error) {
 	pprofInitFilePath := filepath.Join(srcdir, "fyne_pprof.go")
 	pprofInitFile, err := os.Create(pprofInitFilePath)
 	if err != nil {
@@ -303,7 +303,7 @@ func injectPprofFile(runner runner, srcdir string, port int) (func(), error) {
 	return func() { os.Remove(pprofInitFilePath) }, nil
 }
 
-func (b *Builder) updateAndGetGoExecutable(goos string) runner {
+func (b *Builder) updateAndGetGoExecutable() runner {
 	fyneGoModRunner := b.runner
 	if b.runner == nil {
 		fyneGoModRunner = newCommand("go")
