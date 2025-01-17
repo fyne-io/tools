@@ -2,6 +2,6 @@
 
 package commands
 
-func postInstall(i *Installer) error {
+func postInstall(_ *Installer) error {
 	return nil
 }

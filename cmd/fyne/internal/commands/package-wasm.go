@@ -18,7 +18,7 @@ func (p *Packager) packageWasm() error {
 		IsReleased: p.release,
 	}
 
-	return tpl.packageWebInternal(appDir, p.exe, "", p.icon, p.release)
+	return tpl.packageWebInternal(appDir, p.exe, p.icon, p.release)
 }
 
 type webData struct {
@@ -28,7 +28,7 @@ type webData struct {
 	IsReleased bool
 }
 
-func (w webData) packageWebInternal(appDir string, exeWasmSrc string, exeJSSrc string, icon string, release bool) error {
+func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon string, release bool) error {
 	var tpl bytes.Buffer
 	err := templates.IndexHTML.Execute(&tpl, w)
 	if err != nil {
