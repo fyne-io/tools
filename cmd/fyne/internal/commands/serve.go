@@ -76,7 +76,7 @@ func (s *Server) serve() error {
 
 	http.Handle("/", fileServer)
 
-	fmt.Printf("Serving %s on HTTP port: %v\n", webDir, s.port)
+	fmt.Printf("Serving %s at: http://localhost:%v\n", s.appData.AppID, s.port)
 	err = http.ListenAndServe(":"+strconv.Itoa(s.port), nil)
 
 	return err
