@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"fyne.io/fyne/v2"
+
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
@@ -229,6 +230,9 @@ func (b *Builder) build() error {
 	tags := b.tags
 	if b.release {
 		tags = append(tags, "release")
+	}
+	if ok, set := b.appData.Migrations["fyneDo"]; ok && set {
+		tags = append(tags, "migrated_fynedo")
 	}
 	if len(tags) > 0 {
 		args = append(args, "-tags", strings.Join(tags, ","))
