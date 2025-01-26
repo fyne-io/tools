@@ -42,6 +42,11 @@ func Serve() *cli.Command {
 				Value:       8080,
 				Destination: &s.port,
 			},
+			&cli.BoolFlag{
+				Name:        "release",
+				Usage:       "Build the served webassembly in release mode.",
+				Destination: &s.Release,
+			},
 		},
 		Action: s.Server,
 	}
@@ -49,9 +54,8 @@ func Serve() *cli.Command {
 
 func (s *Server) requestPackage() error {
 	p := &Packager{
-		os:     "wasm",
-		srcDir: s.srcDir,
-
+		os:      "wasm",
+		srcDir:  s.srcDir,
 		appData: s.appData,
 	}
 
