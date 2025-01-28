@@ -13,6 +13,9 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 
 	"github.com/urfave/cli/v2"
+
+	//lint:ignore SA1019 The recommended replacement does not solve the use-case
+	"golang.org/x/tools/go/vcs"
 )
 
 // Install returns the cli command for installing fyne applications
@@ -122,9 +125,13 @@ func (i *Installer) Run(args []string) {
 
 func (i *Installer) bundleAction(ctx *cli.Context) error {
 	if ctx.Args().Len() != 0 {
-		return errors.New("unexpected parameter after flags")
+		return i.installRemote(ctx)
 	}
 
+	return i.installLocal(ctx)
+}
+
+func (i *Installer) installLocal(ctx *cli.Context) error {
 	err := i.validate()
 	if err != nil {
 		return err
@@ -136,6 +143,68 @@ func (i *Installer) bundleAction(ctx *cli.Context) error {
 	}
 
 	return nil
+}
+
+func (i *Installer) installRemote(ctx *cli.Context) error {
+	pkg := ctx.Args().Slice()[0]
+	branch := ""
+
+	if parts := strings.SplitN(pkg, "@", 2); len(parts) == 2 {
+		pkg = parts[0]
+		branch = parts[1]
+	}
+
+	wd, _ := os.Getwd()
+	defer func() {
+		if wd != "" {
+			os.Chdir(wd)
+		}
+	}()
+
+	name := filepath.Base(pkg)
+	path, err := os.MkdirTemp("", fmt.Sprintf("fyne-get-%s-*", name))
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(path)
+
+	repo, err := vcs.RepoRootForImportPath(pkg, false)
+	if err != nil {
+		return fmt.Errorf("failed to look up source control for package: %w", err)
+	}
+	if repo.VCS.Name != "Git" {
+		return errors.New("unsupported VCS: " + repo.VCS.Name)
+	}
+
+	args := []string{"clone", repo.Repo, "--depth=1"}
+	if branch != "" {
+		args = append(args, "--branch", branch)
+	}
+	args = append(args, path)
+
+	cmd := exec.Command("git", args...)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to run command: %v", err)
+	}
+
+	if !util.Exists(path) { // the error above may be ignorable, unless the path was not found
+		return fmt.Errorf("path doesn't exist: %v", err)
+	}
+
+	if repo.Root != pkg {
+		dir := strings.Replace(pkg, repo.Root, "", 1)
+		path = filepath.Join(path, dir)
+	}
+
+	install := &Installer{appData: i.appData, installDir: i.installDir, srcDir: path, release: true}
+	if err := install.validate(); err != nil {
+		return fmt.Errorf("failed to set up installer: %w", err)
+	}
+
+	return install.install()
 }
 
 func (i *Installer) install() error {
