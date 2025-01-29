@@ -52,7 +52,7 @@ func getAppID(modpath string) string {
 	}
 
 	d := strings.Split(p[0], ".")
-	r := make([]string, len(p) + len(d) - 1)
+	r := make([]string, len(p)+len(d)-1)
 	for n, e := range d {
 		r[len(d)-n-1] = e
 	}
