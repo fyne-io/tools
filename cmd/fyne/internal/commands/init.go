@@ -42,7 +42,7 @@ func Init() *cli.Command {
 		UsageText: "fyne init module-path [app-id [app-name]]",
 		Action:    initAction,
 		Description: "Initializes a new Fyne project in the current directory,\n" +
-			"including a go.mod, main.go, and FyneApp.toml file.",
+			"including a go.mod, main.go, and FyneApp.toml file (unless existing).",
 	}
 }
 
