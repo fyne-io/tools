@@ -25,7 +25,7 @@ func Install() *cli.Command {
 	return &cli.Command{
 		Name:      "install",
 		Usage:     "Packages and installs an application.",
-		UsageText: "fyne install [options] [remote[@branch]]",
+		UsageText: "fyne install [options] [remote[@tag]]",
 		Description: "The install command packages an application for the current platform and copies it\n" +
 			"into the system location for applications. This can be overridden with installDir",
 		Flags: []cli.Flag{
