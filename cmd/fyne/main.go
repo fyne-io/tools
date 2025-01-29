@@ -26,6 +26,7 @@ func main() {
 			commands.Serve(),
 			commands.Translate(),
 			commands.Build(),
+			commands.Init(),
 		},
 	}
 
