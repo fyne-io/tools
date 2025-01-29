@@ -200,12 +200,13 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		path = filepath.Join(path, dir)
 	}
 
-	install := &Installer{appData: i.appData, installDir: i.installDir, srcDir: path, release: true}
-	if err := install.validate(); err != nil {
+	i.srcDir = path
+	i.release = true
+	if err := i.validate(); err != nil {
 		return fmt.Errorf("failed to set up installer: %w", err)
 	}
 
-	return install.install()
+	return i.install()
 }
 
 func (i *Installer) install() error {
