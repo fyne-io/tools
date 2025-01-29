@@ -18,6 +18,7 @@ func TestAppID(t *testing.T) {
 		{"fyne-example", "fyne-example"},
 		{"fyne.example", "example.fyne"},
 		{"fyne.example/app", "example.fyne.app"},
+		{"sub.example.com", "com.example.sub"},
 	} {
 		assert.Equal(t, test.appid, getAppID(test.modpath))
 	}
@@ -33,6 +34,7 @@ func TestAppName(t *testing.T) {
 		{"fyne-example", "fyne-example"},
 		{"example.fyne", "example"},
 		{"fyne.example/app", "app"},
+		{"sub.domain.fyne.example", "sub"},
 	} {
 		assert.Equal(t, test.appname, getAppName(test.modpath))
 	}
