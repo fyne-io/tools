@@ -174,7 +174,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		return fmt.Errorf("failed to look up source control for package: %w", err)
 	}
 	if repo.VCS.Name != "Git" {
-		return errors.New("unsupported VCS: " + repo.VCS.Name)
+		return errors.New("failed to find git repository: " + repo.VCS.Name)
 	}
 
 	args := []string{"clone", repo.Repo, "--depth=1"}
