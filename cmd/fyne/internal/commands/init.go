@@ -38,10 +38,10 @@ Build = 1
 func Init() *cli.Command {
 	return &cli.Command{
 		Name:      "init",
-		Args:      true,
-		Usage:     "Initializes a new Fyne project in the current directory, including a go.mod file and a FyneApp.toml",
 		UsageText: "fyne init module-path [app-id [app-name]]",
 		Action:    initAction,
+		Usage: "Initializes a new Fyne project in the current directory,\n" +
+			"including a go.mod, main.go, and FyneApp.toml file.",
 	}
 }
 
