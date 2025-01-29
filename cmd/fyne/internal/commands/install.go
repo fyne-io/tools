@@ -163,7 +163,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	}()
 
 	name := filepath.Base(pkg)
-	path, err := os.MkdirTemp("", fmt.Sprintf("fyne-get-%s-*", name))
+	path, err := os.MkdirTemp("", fmt.Sprintf("fyne-install-%s-*", name))
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %v", err)
 	}
