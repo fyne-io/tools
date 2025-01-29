@@ -23,10 +23,10 @@ func Install() *cli.Command {
 	i := NewInstaller()
 
 	return &cli.Command{
-		Name:  "install",
-		Usage: "Packages an application and installs an application.",
-		Description: `The install command packages an application for the current platform and copies it
-		into the system location for applications. This can be overridden with installDir`,
+		Name:      "install",
+		Usage:     "Packages and installs an application.",
+		Description: "The install command packages an application for the current platform and copies it\n" +
+			"into the system location for applications. This can be overridden with installDir",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "target",
