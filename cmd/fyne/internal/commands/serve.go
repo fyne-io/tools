@@ -27,18 +27,19 @@ func Serve() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "sourceDir",
-				Usage:       "The directory to package, if executable is not set",
+				Usage:       "set directory to package, if executable is not set",
 				Value:       "",
 				Destination: &s.srcDir,
 			},
 			&cli.StringFlag{
 				Name:        "icon",
-				Usage:       "The name of the application icon file.",
+				Usage:       "set name of the application icon file",
 				Destination: &s.icon,
 			},
 			&cli.IntFlag{
 				Name:        "port",
-				Usage:       "The port to have the http server listen on (default: 8080).",
+				Usage:       "set listening port of http server listen on",
+				DefaultText: "8080",
 				Value:       8080,
 				Destination: &s.port,
 			},

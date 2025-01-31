@@ -33,17 +33,17 @@ func Translate() *cli.Command {
 			&cli.BoolFlag{
 				Name:    "imports",
 				Aliases: []string{"i"},
-				Usage:   "Additionally scan all imports (slow).",
+				Usage:   "enable scanning of all imports (slow)",
 			},
 			&cli.BoolFlag{
 				Name:    "update",
 				Aliases: []string{"u"},
-				Usage:   "Update existing translations (use with care).",
+				Usage:   "update existing translations (use with care)",
 			},
 			&cli.BoolFlag{
 				Name:    "verbose",
 				Aliases: []string{"v"},
-				Usage:   "Show files that are being scanned etc.",
+				Usage:   "show files that are being scanned etc",
 			},
 		},
 		Action: func(ctx *cli.Context) error {

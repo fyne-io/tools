@@ -25,20 +25,20 @@ func Get() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "icon",
-				Usage:       "The name of the application icon file.",
+				Usage:       "specify name of the application icon file",
 				Value:       "",
 				Destination: &g.icon,
 			},
 			&cli.StringFlag{
 				Name:        "appID",
 				Aliases:     []string{"id"},
-				Usage:       "For darwin and Windows targets an appID in the form of a reversed domain name is required, for ios this must match a valid provisioning profile",
+				Usage:       "set appID in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
 				Destination: &g.AppID,
 			},
 			&cli.StringFlag{
 				Name:        "installDir",
 				Aliases:     []string{"o"},
-				Usage:       "A specific location to install to, rather than the OS default.",
+				Usage:       "specify location to install to, rather than the OS default.",
 				Destination: &g.installDir,
 			},
 		},
