@@ -41,20 +41,20 @@ func Bundle() *cli.Command {
 			&cli.StringFlag{
 				Name:        "package",
 				Aliases:     []string{"pkg"},
-				Usage:       "set package to output in headers (if not appending)",
+				Usage:       "set package to output in headers when not appending",
 				Value:       "main",
 				Destination: &b.pkg,
 			},
 			&cli.StringFlag{
 				Name:        "prefix",
-				Usage:       "specify prefix for variables (ignored if name is set)",
+				Usage:       "specify prefix for variables, ignored if name is set",
 				Value:       "resource",
 				Destination: &b.prefix,
 			},
 			&cli.BoolFlag{
 				Name:        "append",
 				Aliases:     []string{"a"},
-				Usage:       "append an existing go file (don't output headers)",
+				Usage:       "append an existing go file, and don't output headers",
 				Destination: &b.noheader,
 			},
 		},

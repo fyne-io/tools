@@ -27,7 +27,7 @@ func Translate() *cli.Command {
 		Name:      "translate",
 		Usage:     "Scans for new translation strings.",
 		ArgsUsage: "translationsFile [source ...]",
-		Description: "Recursively scans the current or given directories/files for \n" +
+		Description: "Recursively scans the current or given directories/files for\n" +
 			"translation strings, and creates or updates the translations file.",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
