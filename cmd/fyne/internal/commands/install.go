@@ -25,7 +25,7 @@ func Install() *cli.Command {
 	return &cli.Command{
 		Name:      "install",
 		Usage:     "Packages and installs an application.",
-		UsageText: "fyne install [options] [remote[@tag]]",
+		UsageText: "fyne install [options] [remote[@branch]]",
 		Description: "The install command packages an application for the current platform and copies it\n" +
 			"into the system location for applications by default.",
 		Flags: []cli.Flag{
@@ -146,14 +146,15 @@ func (i *Installer) installLocal(ctx *cli.Context) error {
 	return nil
 }
 
-func (i *Installer) installRemote(ctx *cli.Context) error {
-	pkg := ctx.Args().Slice()[0]
-	branch := ""
-
+func getPackageAndBranch(pkg string) (string, string) {
 	if parts := strings.SplitN(pkg, "@", 2); len(parts) == 2 {
-		pkg = parts[0]
-		branch = parts[1]
+		return parts[0], parts[1]
 	}
+	return pkg, ""
+}
+
+func (i *Installer) installRemote(ctx *cli.Context) error {
+	pkg, branch := getPackageAndBranch(ctx.Args().Get(0))
 
 	wd, _ := os.Getwd()
 	defer func() {
@@ -186,8 +187,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	cmd := exec.Command("git", args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 
-	err = cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to run command: %v", err)
 	}
 
