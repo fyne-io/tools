@@ -18,7 +18,6 @@ func main() {
 		Commands: []*cli.Command{
 			commands.Bundle(),
 			commands.Env(),
-			commands.Get(),
 			commands.Install(),
 			commands.Package(),
 			commands.Release(),
