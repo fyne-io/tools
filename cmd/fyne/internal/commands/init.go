@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/natefinch/atomic"
@@ -39,10 +40,22 @@ func Init() *cli.Command {
 	return &cli.Command{
 		Name:      "init",
 		Usage:     "Initializes a new Fyne project.",
-		UsageText: "fyne init module-path [app-id [app-name]]",
+		ArgsUsage: "[module-path]",
 		Action:    initAction,
-		Description: "Initializes a new Fyne project in the current directory,\n" +
-			"including a go.mod, main.go, and FyneApp.toml file (unless existing).",
+		Description: "Initializes a new Fyne project in the current directory, including\n" +
+			"a go.mod, main.go, and FyneApp.toml file (unless existing).",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "appID",
+				Aliases: []string{"id"},
+				Usage:   "set appID in reversed domain notation for Android, darwin and Windows targets, or a valid provisioning profile on iOS",
+			},
+			&cli.StringFlag{
+				Name:        "name",
+				Usage:       "set name the application",
+				DefaultText: "executable file name",
+			},
+		},
 	}
 }
 
@@ -106,11 +119,20 @@ func checkFileOrCreate(file, content string) error {
 
 func initAction(ctx *cli.Context) error {
 	modpath := ctx.Args().Get(0)
-	appID := ctx.Args().Get(1)
-	appName := ctx.Args().Get(2)
+	appID := ctx.String("appID")
+	appName := ctx.String("name")
 
 	if modpath == "" {
-		return cli.ShowSubcommandHelp(ctx)
+		modpath = "example"
+
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		if wd != "" && wd != "." {
+			modpath = filepath.Base(wd)
+		}
 	}
 
 	if appID == "" {
