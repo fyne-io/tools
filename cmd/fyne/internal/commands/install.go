@@ -161,6 +161,31 @@ func getPackageAndBranch(s string) (string, string) {
 	return s, ""
 }
 
+func getLatestTag(repo string) (string, error) {
+	cmd := exec.Command("git", "ls-remote", "-q", repo)
+	b, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	tag := ""
+	for _, line := range strings.Split(string(b), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			continue
+		}
+
+		s, found := strings.CutPrefix(fields[1], "refs/tags/")
+		if !found || !strings.HasPrefix(s, "v") || strings.HasSuffix(s, "^{}") {
+			continue
+		}
+
+		tag = s
+	}
+
+	return tag, nil
+}
+
 func (i *Installer) installRemote(ctx *cli.Context) error {
 	pkg, branch := getPackageAndBranch(ctx.Args().Get(0))
 
@@ -186,8 +211,18 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		return errors.New("failed to find git repository: " + repo.VCS.Name)
 	}
 
+	if branch == "latest" {
+		branch, err = getLatestTag(repo.Repo)
+		if err != nil {
+			return fmt.Errorf("failed to get latest tag: %v", err)
+		}
+		if i.verbose {
+			fmt.Println("Latest tag:", branch)
+		}
+	}
+
 	args := []string{"clone", repo.Repo, "--depth=1"}
-	if branch != "" && branch != "latest" {
+	if branch != "" {
 		args = append(args, "--branch", branch)
 	}
 	args = append(args, path)
