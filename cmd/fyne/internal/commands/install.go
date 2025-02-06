@@ -147,11 +147,11 @@ func (i *Installer) installLocal(ctx *cli.Context) error {
 	return nil
 }
 
-func getPackageAndBranch(pkg string) (string, string) {
-	if parts := strings.SplitN(pkg, "@", 2); len(parts) == 2 {
-		return parts[0], parts[1]
+func getPackageAndBranch(s string) (string, string) {
+	if pkg, branch, found := strings.Cut(s, "@"); found {
+		return pkg, branch
 	}
-	return pkg, ""
+	return s, ""
 }
 
 func (i *Installer) installRemote(ctx *cli.Context) error {
