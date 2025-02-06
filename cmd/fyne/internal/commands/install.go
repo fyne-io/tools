@@ -134,14 +134,25 @@ func (i *Installer) Run(args []string) {
 }
 
 func (i *Installer) bundleAction(ctx *cli.Context) error {
-	if ctx.Args().Len() != 0 {
-		return i.installRemote(ctx)
+	arg := ctx.Args().Get(0)
+	if arg == "" || strings.HasPrefix(arg, ".") {
+		return i.installLocal(ctx)
 	}
 
-	return i.installLocal(ctx)
+	return i.installRemote(ctx)
 }
 
 func (i *Installer) installLocal(ctx *cli.Context) error {
+	path := ctx.Args().Get(0)
+	if path != "" {
+		meta, err := metadata.LoadStandard(path)
+		if err != nil {
+			return err
+		}
+		i.srcDir = path
+		i.icon = meta.Details.Icon
+	}
+
 	err := i.validate()
 	if err != nil {
 		return err
