@@ -130,7 +130,7 @@ func initAction(ctx *cli.Context) error {
 			return err
 		}
 
-		if wd != "" && wd != "." {
+		if wd != "" {
 			modpath = filepath.Base(wd)
 		}
 	}
