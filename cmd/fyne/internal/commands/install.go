@@ -65,6 +65,12 @@ func Install() *cli.Command {
 				Usage:       "Enable installation in release mode (disable debug, etc).",
 				Destination: &i.release,
 			},
+			&cli.BoolFlag{
+				Name:        "verbose",
+				Aliases:     []string{"v"},
+				Usage:       "Show details when running",
+				Destination: &i.verbose,
+			},
 		},
 		Action: i.bundleAction,
 	}
@@ -76,6 +82,7 @@ type Installer struct {
 	installDir, srcDir, os string
 	Packager               *Packager
 	release                bool
+	verbose                bool
 }
 
 // NewInstaller returns a command that can install a GUI apps built using Fyne from local source code.
@@ -186,7 +193,9 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	args = append(args, path)
 
 	cmd := exec.Command("git", args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if i.verbose {
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	}
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to run command: %v", err)
@@ -294,8 +303,10 @@ func (i *Installer) runMobileInstall(tool, target string, args ...string) error 
 	}
 
 	cmd := exec.Command(tool, append(args, target)...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	if i.verbose {
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+	}
 	return cmd.Run()
 }
 
