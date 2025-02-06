@@ -189,7 +189,7 @@ func getLatestTag(repo string) (string, error) {
 			continue
 		}
 
-		s, found := strings.CutPrefix(fields[1], "refs/tags/")
+		_, s, found := strings.Cut(fields[1], "refs/tags/")
 		if !found || !strings.HasPrefix(s, "v") || strings.HasSuffix(s, "^{}") {
 			continue
 		}
