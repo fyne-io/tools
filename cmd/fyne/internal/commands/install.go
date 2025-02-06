@@ -143,14 +143,16 @@ func (i *Installer) bundleAction(ctx *cli.Context) error {
 }
 
 func (i *Installer) installLocal(ctx *cli.Context) error {
-	path := ctx.Args().Get(0)
-	if path != "" {
-		meta, err := metadata.LoadStandard(path)
-		if err != nil {
-			return err
+	if i.icon == "" {
+		path := ctx.Args().Get(0)
+		if path != "" {
+			meta, err := metadata.LoadStandard(path)
+			if err != nil {
+				return err
+			}
+			i.srcDir = path
+			i.icon = meta.Details.Icon
 		}
-		i.srcDir = path
-		i.icon = meta.Details.Icon
 	}
 
 	err := i.validate()
@@ -252,11 +254,13 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		return fmt.Errorf("path doesn't exist: %v", err)
 	}
 
-	meta, err := metadata.LoadStandard(path)
-	if err != nil {
-		return fmt.Errorf("failed to load metadata: %w", err)
+	if i.icon == "" {
+		meta, err := metadata.LoadStandard(path)
+		if err != nil {
+			return fmt.Errorf("failed to load metadata: %w", err)
+		}
+		i.icon = filepath.Join(path, meta.Details.Icon)
 	}
-	i.icon = filepath.Join(path, meta.Details.Icon)
 	i.srcDir = path
 	i.release = true
 	if err := i.validate(); err != nil {
