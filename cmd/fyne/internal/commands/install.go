@@ -187,7 +187,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	}
 
 	args := []string{"clone", repo.Repo, "--depth=1"}
-	if branch != "" {
+	if branch != "" && branch != "latest" {
 		args = append(args, "--branch", branch)
 	}
 	args = append(args, path)
