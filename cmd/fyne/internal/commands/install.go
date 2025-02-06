@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 
 	"github.com/urfave/cli/v2"
@@ -240,11 +241,11 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		return fmt.Errorf("path doesn't exist: %v", err)
 	}
 
-	if repo.Root != pkg {
-		dir := strings.Replace(pkg, repo.Root, "", 1)
-		path = filepath.Join(path, dir)
+	meta, err := metadata.LoadStandard(path)
+	if err != nil {
+		return fmt.Errorf("failed to load metadata: %w", err)
 	}
-
+	i.icon = filepath.Join(path, meta.Details.Icon)
 	i.srcDir = path
 	i.release = true
 	if err := i.validate(); err != nil {
