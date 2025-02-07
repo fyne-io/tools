@@ -62,22 +62,6 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Destination: dst,
 		}
 	},
-	"password": func(dst *string) cli.Flag {
-		return &cli.StringFlag{
-			Name:        "password",
-			Aliases:     []string{"pass"},
-			Usage:       "windows: password for the certificate used to sign the build",
-			Destination: dst,
-		}
-	},
-	"name": func(dst *string) cli.Flag {
-		return &cli.StringFlag{
-			Name:        "name",
-			Usage:       "set name of the application",
-			DefaultText: "executable file name",
-			Destination: dst,
-		}
-	},
 	"certificate": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "certificate",
@@ -94,12 +78,13 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Destination: dst,
 		}
 	},
-	"profile": func(dst *string) cli.Flag {
+	"executable": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
-			Name:        "profile",
-			Usage:       "ios/macos: name of the provisioning profile for this release build",
+			Name:        "executable",
+			Aliases:     []string{"exe"},
+			Usage:       "set path to executable",
+			DefaultText: "current directory main binary",
 			Destination: dst,
-			Value:       "XCWildcard",
 		}
 	},
 	"icon": func(dst *string) cli.Flag {
@@ -114,30 +99,6 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Name:        "install-dir",
 			Aliases:     []string{"o"},
 			Usage:       "specify location to install to, rather than the OS default",
-			Destination: dst,
-		}
-	},
-	"executable": func(dst *string) cli.Flag {
-		return &cli.StringFlag{
-			Name:        "executable",
-			Aliases:     []string{"exe"},
-			Usage:       "set path to executable",
-			DefaultText: "current directory main binary",
-			Destination: dst,
-		}
-	},
-	"key-store": func(dst *string) cli.Flag {
-		return &cli.StringFlag{
-			Name:        "key-store",
-			Usage:       "android: location of .keystore file containing signing information",
-			Destination: dst,
-		}
-	},
-	"key-store-pass": func(dst *string) cli.Flag {
-		return &cli.StringFlag{
-			Name:        "key-store-pass",
-			Usage:       "android: password for the .keystore file",
-			DefaultText: "read from stdin",
 			Destination: dst,
 		}
 	},
@@ -156,12 +117,51 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Destination: dst,
 		}
 	},
+	"key-store": func(dst *string) cli.Flag {
+		return &cli.StringFlag{
+			Name:        "key-store",
+			Usage:       "android: location of .keystore file containing signing information",
+			Destination: dst,
+		}
+	},
+	"key-store-pass": func(dst *string) cli.Flag {
+		return &cli.StringFlag{
+			Name:        "key-store-pass",
+			Usage:       "android: password for the .keystore file",
+			DefaultText: "read from stdin",
+			Destination: dst,
+		}
+	},
+	"name": func(dst *string) cli.Flag {
+		return &cli.StringFlag{
+			Name:        "name",
+			Usage:       "set name of the application",
+			DefaultText: "executable file name",
+			Destination: dst,
+		}
+	},
 	"output": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "output",
 			Usage:       "specify name for the output file",
 			DefaultText: "based on current directory",
 			Destination: dst,
+		}
+	},
+	"password": func(dst *string) cli.Flag {
+		return &cli.StringFlag{
+			Name:        "password",
+			Aliases:     []string{"pass"},
+			Usage:       "windows: password for the certificate used to sign the build",
+			Destination: dst,
+		}
+	},
+	"profile": func(dst *string) cli.Flag {
+		return &cli.StringFlag{
+			Name:        "profile",
+			Usage:       "ios/macos: name of the provisioning profile for this release build",
+			Destination: dst,
+			Value:       "XCWildcard",
 		}
 	},
 	"source-dir": func(dst *string) cli.Flag {
