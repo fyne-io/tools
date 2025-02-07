@@ -25,41 +25,11 @@ func Install() *cli.Command {
 		Description: `The install command packages an application for the current platform and copies it
 		into the system location for applications. This can be overridden with installDir`,
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "target",
-				Aliases:     []string{"os"},
-				Usage:       "The mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios, iossimulator).",
-				Destination: &i.os,
-			},
-			&cli.StringFlag{
-				Name:        "install-dir",
-				Aliases:     []string{"o"},
-				Usage:       "A specific location to install to, rather than the OS default.",
-				Destination: &i.installDir,
-			},
-			&cli.StringFlag{
-				Name:        "icon",
-				Usage:       "The name of the application icon file.",
-				Value:       "",
-				Destination: &i.icon,
-			},
-			&cli.BoolFlag{
-				Name:        "use-raw-icon",
-				Usage:       "Skip any OS-specific icon pre-processing",
-				Value:       false,
-				Destination: &i.rawIcon,
-			},
-			&cli.StringFlag{
-				Name:        "app-id",
-				Aliases:     []string{"id"},
-				Usage:       "For Android, darwin, iOS and Windows targets an app-id in the form of a reversed domain name is required, for ios this must match a valid provisioning profile",
-				Destination: &i.AppID,
-			},
-			&cli.BoolFlag{
-				Name:        "release",
-				Usage:       "Enable installation in release mode (disable debug, etc).",
-				Destination: &i.release,
-			},
+			stringFlags["target"](&i.os),
+			stringFlags["install-dir"](&i.installDir),
+			boolFlags["use-raw-icon"](&i.rawIcon),
+			stringFlags["app-id"](&i.AppID),
+			boolFlags["release"](&i.release),
 		},
 		Action: i.bundleAction,
 	}

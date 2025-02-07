@@ -47,34 +47,11 @@ func Build() *cli.Command {
 		Usage:       "Build an application.",
 		Description: "You can specify --target to define the OS to build for. The executable file will default to an appropriate name but can be overridden using -o.",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "target",
-				Aliases:     []string{"os"},
-				Usage:       "set mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios, iossimulator)",
-				Destination: &b.os,
-			},
-			&cli.StringFlag{
-				Name:        "source-dir",
-				Aliases:     []string{"src"},
-				Usage:       "set directory to package, if executable is not set",
-				Destination: &b.srcdir,
-			},
-			&cli.StringFlag{
-				Name:        "tags",
-				Usage:       "provide comma-separated list of build tags",
-				Destination: &b.tagsToParse,
-			},
-			&cli.BoolFlag{
-				Name:        "release",
-				Usage:       "enable installation in release mode, disable debug, etc",
-				Destination: &b.release,
-			},
-			&cli.StringFlag{
-				Name:        "output",
-				Usage:       "specify name for the output file",
-				DefaultText:  "based on current directory",
-				Destination: &b.target,
-			},
+			stringFlags["target"](&b.os),
+			stringFlags["source-dir"](&b.srcdir),
+			stringFlags["tags"](&b.tagsToParse),
+			boolFlags["release"](&b.release),
+			stringFlags["output"](&b.target),
 			&cli.BoolFlag{
 				Name:        "pprof",
 				Usage:       "enable pprof profiling",
@@ -86,11 +63,7 @@ func Build() *cli.Command {
 				Value:       6060,
 				Destination: &b.pprofPort,
 			},
-			&cli.GenericFlag{
-				Name:  "metadata",
-				Usage: "specify custom metadata key value pair (key=value)",
-				Value: &b.customMetadata,
-			},
+			genericFlags["metadata"](&b.customMetadata),
 		},
 		Action: func(ctx *cli.Context) error {
 			argCount := ctx.Args().Len()

@@ -23,24 +23,9 @@ func Get() *cli.Command {
 		Usage:       "Downloads and installs a Fyne application",
 		Description: "A single parameter is required to specify the Go package, as with \"go get\".",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "icon",
-				Usage:       "specify name of the application icon file",
-				Value:       "",
-				Destination: &g.icon,
-			},
-			&cli.StringFlag{
-				Name:        "app-id",
-				Aliases:     []string{"id"},
-				Usage:       "set app-id in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
-				Destination: &g.AppID,
-			},
-			&cli.StringFlag{
-				Name:        "install-dir",
-				Aliases:     []string{"o"},
-				Usage:       "specify location to install to, rather than the OS default.",
-				Destination: &g.installDir,
-			},
+			stringFlags["icon"](&g.icon),
+			stringFlags["app-id"](&g.AppID),
+			stringFlags["install-dir"](&g.installDir),
 		},
 		Action: func(ctx *cli.Context) error {
 			if ctx.Args().Len() != 1 {
