@@ -4,7 +4,6 @@ import (
 	"image"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/josephspurrier/goversioninfo"
@@ -262,10 +261,13 @@ func Test_PackageWasm(t *testing.T) {
 		return expectedWriteFileRuns.verifyExpectation(t, target)
 	}
 
+	goroot, err := GOROOT()
+	assert.Nil(t, err)
+
 	expectedCopyFileRuns := mockCopyFileRuns{
 		expected: []mockCopyFile{
 			{source: "myTest.png", target: filepath.Join("myTestTarget", "wasm", "icon.png")},
-			{source: filepath.Join(runtime.GOROOT(), "misc", "wasm", "wasm_exec.js"), target: filepath.Join("myTestTarget", "wasm", "wasm_exec.js")},
+			{source: filepath.Join(goroot, "misc", "wasm", "wasm_exec.js"), target: filepath.Join("myTestTarget", "wasm", "wasm_exec.js")},
 			{source: "myTest.wasm", target: filepath.Join("myTestTarget", "wasm", "myTest.wasm")},
 		},
 	}
@@ -273,7 +275,7 @@ func Test_PackageWasm(t *testing.T) {
 		return expectedCopyFileRuns.verifyExpectation(t, false, source, target)
 	}
 
-	err := p.doPackage(wasmBuildTest)
+	err = p.doPackage(wasmBuildTest)
 	assert.Nil(t, err)
 	wasmBuildTest.verifyExpectation()
 	expectedTotalCount(t, len(expectedEnsureSubDirRuns.expected), expectedEnsureSubDirRuns.current)
