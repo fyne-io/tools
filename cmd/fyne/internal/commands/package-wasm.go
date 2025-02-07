@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
@@ -108,5 +109,5 @@ func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon strin
 // GOROOT returns the root of the go binary location.
 func GOROOT() (string, error) {
 	output, err := exec.Command("go", "env", "GOROOT").Output()
-	return string(output), err
+	return strings.TrimSuffix(string(output), "\n"), err
 }
