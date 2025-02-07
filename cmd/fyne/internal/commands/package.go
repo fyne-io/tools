@@ -62,17 +62,17 @@ func Package() *cli.Command {
 				Destination: &p.tags,
 			},
 			&cli.StringFlag{
-				Name:        "appVersion",
+				Name:        "app-version",
 				Usage:       "provide version number in the form x, x.y or x.y.z semantic version",
 				Destination: &p.AppVersion,
 			},
 			&cli.IntFlag{
-				Name:        "appBuild",
+				Name:        "app-build",
 				Usage:       "set build number (integer >0, increasing with each build)",
 				Destination: &p.AppBuild,
 			},
 			&cli.StringFlag{
-				Name:        "sourceDir",
+				Name:        "source-dir",
 				Aliases:     []string{"src"},
 				Usage:       "set directory to package, if executable is not set",
 				Destination: &p.srcDir,
@@ -90,9 +90,9 @@ func Package() *cli.Command {
 				Destination: &p.rawIcon,
 			},
 			&cli.StringFlag{
-				Name:        "appID",
+				Name:        "app-id",
 				Aliases:     []string{"id"},
-				Usage:       "set appID in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
+				Usage:       "set app-id in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
 				Destination: &p.AppID,
 			},
 			&cli.StringFlag{
@@ -154,12 +154,12 @@ func NewPackager() *Packager {
 func (p *Packager) AddFlags() {
 	flag.StringVar(&p.os, "os", "", "The operating system to target (android, android/arm, android/arm64, android/amd64, android/386, darwin, freebsd, ios, linux, netbsd, openbsd, windows, wasm)")
 	flag.StringVar(&p.exe, "executable", "", "Specify an existing binary instead of building before package")
-	flag.StringVar(&p.srcDir, "sourceDir", "", "The directory to package, if executable is not set")
+	flag.StringVar(&p.srcDir, "source-dir", "", "The directory to package, if executable is not set")
 	flag.StringVar(&p.Name, "name", "", "The name of the application, default is the executable file name")
 	flag.StringVar(&p.icon, "icon", "", "The name of the application icon file")
-	flag.StringVar(&p.AppID, "appID", "", "For ios or darwin targets an appID is required, for ios this must \nmatch a valid provisioning profile")
-	flag.StringVar(&p.AppVersion, "appVersion", "", "Version number in the form x, x.y or x.y.z semantic version")
-	flag.IntVar(&p.AppBuild, "appBuild", 0, "Build number, should be greater than 0 and incremented for each build")
+	flag.StringVar(&p.AppID, "app-id", "", "For ios or darwin targets an app-id is required, for ios this must \nmatch a valid provisioning profile")
+	flag.StringVar(&p.AppVersion, "app-version", "", "Version number in the form x, x.y or x.y.z semantic version")
+	flag.IntVar(&p.AppBuild, "app-build", 0, "Build number, should be greater than 0 and incremented for each build")
 	flag.BoolVar(&p.release, "release", false, "Should this package be prepared for release? (disable debug etc)")
 	flag.StringVar(&p.tags, "tags", "", "A comma-separated list of build tags")
 }
@@ -460,12 +460,12 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 	} else if os == "ios" || util.IsAndroid(os) || (os == "windows" && release) {
 		// all mobile, and for windows when releasing, needs a unique id - usually reverse DNS style
 		if appID == "" {
-			return "", errors.New("missing appID parameter for package")
+			return "", errors.New("missing app-id parameter for package")
 		} else if !strings.Contains(appID, ".") {
-			return "", errors.New("appID must be globally unique and contain at least 1 '.'")
+			return "", errors.New("app-id must be globally unique and contain at least 1 '.'")
 		} else if util.IsAndroid(os) {
 			if strings.Contains(appID, "-") {
-				return "", errors.New("appID can not contain '-'")
+				return "", errors.New("app-id can not contain '-'")
 			}
 
 			// appID package names can not start with '_' or a number
@@ -476,9 +476,9 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 				}
 
 				if name[0] == '_' {
-					return "", fmt.Errorf("appID package names can not start with '_' (%s)", name)
+					return "", fmt.Errorf("app-id package names can not start with '_' (%s)", name)
 				} else if name[0] >= '0' && name[0] <= '9' {
-					return "", fmt.Errorf("appID package names can not start with a number (%s)", name)
+					return "", fmt.Errorf("app-id package names can not start with a number (%s)", name)
 				}
 			}
 		}

@@ -32,7 +32,7 @@ func Install() *cli.Command {
 				Destination: &i.os,
 			},
 			&cli.StringFlag{
-				Name:        "installDir",
+				Name:        "install-dir",
 				Aliases:     []string{"o"},
 				Usage:       "A specific location to install to, rather than the OS default.",
 				Destination: &i.installDir,
@@ -50,9 +50,9 @@ func Install() *cli.Command {
 				Destination: &i.rawIcon,
 			},
 			&cli.StringFlag{
-				Name:        "appID",
+				Name:        "app-id",
 				Aliases:     []string{"id"},
-				Usage:       "For Android, darwin, iOS and Windows targets an appID in the form of a reversed domain name is required, for ios this must match a valid provisioning profile",
+				Usage:       "For Android, darwin, iOS and Windows targets an app-id in the form of a reversed domain name is required, for ios this must match a valid provisioning profile",
 				Destination: &i.AppID,
 			},
 			&cli.BoolFlag{
@@ -83,9 +83,9 @@ func NewInstaller() *Installer {
 // Deprecated: Access to the individual cli commands are being removed.
 func (i *Installer) AddFlags() {
 	flag.StringVar(&i.os, "os", "", "The mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios)")
-	flag.StringVar(&i.installDir, "installDir", "", "A specific location to install to, rather than the OS default")
+	flag.StringVar(&i.installDir, "install-dir", "", "A specific location to install to, rather than the OS default")
 	flag.StringVar(&i.icon, "icon", "Icon.png", "The name of the application icon file")
-	flag.StringVar(&i.AppID, "appID", "", "For ios or darwin targets an appID is required, for ios this must \nmatch a valid provisioning profile")
+	flag.StringVar(&i.AppID, "app-id", "", "For ios or darwin targets an app-id is required, for ios this must \nmatch a valid provisioning profile")
 	flag.BoolVar(&i.release, "release", false, "Should this package be installed in release mode? (disable debug etc)")
 }
 

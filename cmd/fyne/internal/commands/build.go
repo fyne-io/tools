@@ -54,7 +54,7 @@ func Build() *cli.Command {
 				Destination: &b.os,
 			},
 			&cli.StringFlag{
-				Name:        "sourceDir",
+				Name:        "source-dir",
 				Aliases:     []string{"src"},
 				Usage:       "set directory to package, if executable is not set",
 				Destination: &b.srcdir,
@@ -70,7 +70,7 @@ func Build() *cli.Command {
 				Destination: &b.release,
 			},
 			&cli.StringFlag{
-				Name:        "o",
+				Name:        "output",
 				Usage:       "specify name for the output file",
 				DefaultText:  "based on current directory",
 				Destination: &b.target,

@@ -30,13 +30,13 @@ func Get() *cli.Command {
 				Destination: &g.icon,
 			},
 			&cli.StringFlag{
-				Name:        "appID",
+				Name:        "app-id",
 				Aliases:     []string{"id"},
-				Usage:       "set appID in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
+				Usage:       "set app-id in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
 				Destination: &g.AppID,
 			},
 			&cli.StringFlag{
-				Name:        "installDir",
+				Name:        "install-dir",
 				Aliases:     []string{"o"},
 				Usage:       "specify location to install to, rather than the OS default.",
 				Destination: &g.installDir,
@@ -113,7 +113,7 @@ func (g *Getter) Get(pkg string) error {
 	return install.install()
 }
 
-// SetAppID Allows the Get operation to specify an appID for the application that is being downloaded.
+// SetAppID Allows the Get operation to specify an app-id for the application that is being downloaded.
 //
 // Since: 2.1
 func (g *Getter) SetAppID(id string) {

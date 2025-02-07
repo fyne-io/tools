@@ -41,24 +41,25 @@ func Release() *cli.Command {
 				Destination: &r.os,
 			},
 			&cli.StringFlag{
-				Name:        "keyStore",
+				Name:        "key-store",
 				Usage:       "android: location of .keystore file containing signing information",
 				Destination: &r.keyStore,
 			},
 			&cli.StringFlag{
-				Name:        "keyStorePass",
-				Usage:       "android: password for the .keystore file, default take the password from stdin",
+				Name:        "key-store-pass",
+				Usage:       "android: password for the .keystore file",
+				DefaultText: "read from stdin",
 				Destination: &r.keyStorePass,
 			},
 			&cli.StringFlag{
-				Name:        "keyName",
+				Name:        "key-name",
 				Usage:       "android: alias for the signer's private key, which is needed when reading a .keystore file",
 				Destination: &r.keyName,
 			},
 			&cli.StringFlag{
-				Name:        "keyPass",
-				Usage:       "android: password for the signer's private key, which is needed if the private key is password-protected. Default take the password from stdin",
-				DefaultText: "reads password from stdin",
+				Name:        "key-pass",
+				Usage:       "android: password for the signer's private key, which is needed if the private key is password-protected",
+				DefaultText: "read from stdin",
 				Destination: &r.keyStorePass,
 			},
 			&cli.StringFlag{
@@ -73,19 +74,19 @@ func Release() *cli.Command {
 				Destination: &r.tags,
 			},
 			&cli.StringFlag{
-				Name:        "appVersion",
+				Name:        "app-version",
 				Usage:       "set version number in the form x, x.y or x.y.z semantic version",
 				Destination: &r.AppVersion,
 			},
 			&cli.IntFlag{
-				Name:        "appBuild",
+				Name:        "app-build",
 				Usage:       "set build number (integer >0, increasing with each build)",
 				Destination: &r.AppBuild,
 			},
 			&cli.StringFlag{
-				Name:        "appID",
+				Name:        "app-id",
 				Aliases:     []string{"id"},
-				Usage:       "set appID in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
+				Usage:       "set app-id in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
 				Destination: &r.AppID,
 			},
 			&cli.StringFlag{
@@ -107,7 +108,7 @@ func Release() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:        "password",
-				Aliases:     []string{"passw"},
+				Aliases:     []string{"pass"},
 				Usage:       "windows: password for the certificate used to sign the build",
 				Destination: &r.password,
 			},
@@ -164,9 +165,9 @@ func (r *Releaser) AddFlags() {
 	flag.StringVar(&r.os, "os", "", "The operating system to target (android, android/arm, android/arm64, android/amd64, android/386, darwin, freebsd, ios, linux, netbsd, openbsd, windows)")
 	flag.StringVar(&r.Name, "name", "", "The name of the application, default is the executable file name")
 	flag.StringVar(&r.icon, "icon", "", "The name of the application icon file")
-	flag.StringVar(&r.AppID, "appID", "", "For ios or darwin targets an appID is required, for ios this must \nmatch a valid provisioning profile")
-	flag.StringVar(&r.AppVersion, "appVersion", "", "Version number in the form x, x.y or x.y.z semantic version")
-	flag.IntVar(&r.AppBuild, "appBuild", 0, "Build number, should be greater than 0 and incremented for each build")
+	flag.StringVar(&r.AppID, "app-id", "", "For ios or darwin targets an app-id is required, for ios this must \nmatch a valid provisioning profile")
+	flag.StringVar(&r.AppVersion, "app-version", "", "Version number in the form x, x.y or x.y.z semantic version")
+	flag.IntVar(&r.AppBuild, "app-build", 0, "Build number, should be greater than 0 and incremented for each build")
 	flag.StringVar(&r.keyStore, "keyStore", "", "Android: location of .keystore file containing signing information")
 	flag.StringVar(&r.keyStorePass, "keyStorePass", "", "Android: password for the .keystore file, default take the password from stdin")
 	flag.StringVar(&r.keyName, "keyName", "", "Android: alias for the signer's private key, which is needed when reading a .keystore file")
