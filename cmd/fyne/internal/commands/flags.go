@@ -97,7 +97,6 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"install-dir": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "install-dir",
-			Aliases:     []string{"o"},
 			Usage:       "specify location to install to, rather than the OS default",
 			Destination: dst,
 		}
@@ -143,6 +142,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"output": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "output",
+			Aliases:     []string{"o"},
 			Usage:       "specify name for the output file",
 			DefaultText: "based on current directory",
 			Destination: dst,
