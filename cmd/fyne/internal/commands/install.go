@@ -25,7 +25,7 @@ func Install() *cli.Command {
 
 	return &cli.Command{
 		Name:      "install",
-		Aliases:   []string{"get"},
+		Aliases:   []string{"get", "i"},
 		Usage:     "Packages and installs an application.",
 		ArgsUsage: "[remote[@version]]",
 		Description: "The install command packages an application for the current platform and copies it\n" +

@@ -44,6 +44,7 @@ func Build() *cli.Command {
 
 	return &cli.Command{
 		Name:        "build",
+		Aliases:     []string{"b"},
 		Usage:       "Build an application.",
 		Description: "You can specify --target to define the OS to build for. The executable file will default to an appropriate name but can be overridden using -o.",
 		Flags: []cli.Flag{

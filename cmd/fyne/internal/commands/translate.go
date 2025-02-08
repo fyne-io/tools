@@ -25,6 +25,7 @@ import (
 func Translate() *cli.Command {
 	return &cli.Command{
 		Name:      "translate",
+		Aliases:   []string{"t"},
 		Usage:     "Scans for new translation strings.",
 		ArgsUsage: "translationsFile [source ...]",
 		Description: "Recursively scans the current or given directories/files for\n" +
