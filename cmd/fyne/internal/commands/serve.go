@@ -25,7 +25,7 @@ func Serve() *cli.Command {
 		Usage:       "Package an application using WebAssembly and expose it via a web server.",
 		Description: `The serve command packages an application using WebAssembly and expose it via a web server which port can be overridden with port.`,
 		Flags: []cli.Flag{
-			stringFlags["source-dir"](&s.srcDir),
+			stringFlags["src"](&s.srcDir),
 			stringFlags["icon"](&s.icon),
 			&cli.IntFlag{
 				Name:        "port",

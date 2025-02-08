@@ -164,10 +164,9 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Value:       "XCWildcard",
 		}
 	},
-	"source-dir": func(dst *string) cli.Flag {
+	"src": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
-			Name:        "source-dir",
-			Aliases:     []string{"src"},
+			Name:        "src",
 			Usage:       "set directory to package, if executable is not set",
 			Destination: dst,
 		}
