@@ -204,6 +204,14 @@ var boolFlags = map[string]func(*bool) cli.Flag{
 			Destination: dst,
 		}
 	},
+	"verbose": func(dst *bool) cli.Flag {
+		return &cli.BoolFlag{
+			Name:        "verbose",
+			Aliases:     []string{"v"},
+			Usage:       "show details when running",
+			Destination: dst,
+		}
+	},
 }
 
 var intFlags = map[string]func(*int) cli.Flag{
