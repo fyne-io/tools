@@ -13,13 +13,16 @@ import (
 )
 
 type unixData struct {
-	Name, Exec, Icon string
-	Local            string
-	GenericName      string
-	Categories       string
-	Comment          string
-	Keywords         string
-	ExecParams       string
+	Name        string
+	AppID       string
+	Exec        string
+	Icon        string
+	Local       string
+	GenericName string
+	Categories  string
+	Comment     string
+	Keywords    string
+	ExecParams  string
 
 	SourceRepo, SourceDir string
 }
@@ -50,15 +53,20 @@ func (p *Packager) packageUNIX() error {
 	}
 
 	iconDir := util.EnsureSubDir(shareDir, "pixmaps")
-	iconPath := filepath.Join(iconDir, p.Name+filepath.Ext(p.icon))
+	iconName := p.AppID + filepath.Ext(p.icon)
+	iconPath := filepath.Join(iconDir, iconName)
 	err = util.CopyFile(p.icon, iconPath)
 	if err != nil {
 		return fmt.Errorf("failed to copy icon: %w", err)
 	}
 
 	appsDir := util.EnsureSubDir(shareDir, "applications")
-	desktop := filepath.Join(appsDir, p.Name+".desktop")
-	deskFile, _ := os.Create(desktop)
+	desktop := filepath.Join(appsDir, p.AppID+".desktop")
+	deskFile, err := os.Create(desktop)
+	if err != nil {
+		return fmt.Errorf("failed to create desktop file: %w", err)
+	}
+
 	defer deskFile.Close()
 
 	linuxBSD := metadata.LinuxAndBSD{}
@@ -67,8 +75,9 @@ func (p *Packager) packageUNIX() error {
 	}
 	tplData := unixData{
 		Name:        p.Name,
+		AppID:       p.AppID,
 		Exec:        filepath.Base(p.exe),
-		Icon:        p.Name + filepath.Ext(p.icon),
+		Icon:        iconName,
 		Local:       local,
 		GenericName: linuxBSD.GenericName,
 		Keywords:    formatDesktopFileList(linuxBSD.Keywords),
