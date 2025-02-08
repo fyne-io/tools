@@ -10,9 +10,13 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 
 	"github.com/urfave/cli/v2"
+
+	//lint:ignore SA1019 The recommended replacement does not solve the use-case
+	"golang.org/x/tools/go/vcs"
 )
 
 // Install returns the cli command for installing fyne applications
@@ -20,10 +24,12 @@ func Install() *cli.Command {
 	i := NewInstaller()
 
 	return &cli.Command{
-		Name:  "install",
-		Usage: "Packages an application and installs an application.",
-		Description: `The install command packages an application for the current platform and copies it
-		into the system location for applications. This can be overridden with installDir`,
+		Name:      "install",
+		Aliases:   []string{"get"},
+		Usage:     "Packages and installs an application.",
+		ArgsUsage: "[remote[@version]]",
+		Description: "The install command packages an application for the current platform and copies it\n" +
+			"into the system location for applications by default.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "target",
@@ -60,6 +66,12 @@ func Install() *cli.Command {
 				Usage:       "Enable installation in release mode (disable debug, etc).",
 				Destination: &i.release,
 			},
+			&cli.BoolFlag{
+				Name:        "verbose",
+				Aliases:     []string{"v"},
+				Usage:       "Show details when running",
+				Destination: &i.verbose,
+			},
 		},
 		Action: i.bundleAction,
 	}
@@ -71,6 +83,7 @@ type Installer struct {
 	installDir, srcDir, os string
 	Packager               *Packager
 	release                bool
+	verbose                bool
 }
 
 // NewInstaller returns a command that can install a GUI apps built using Fyne from local source code.
@@ -121,8 +134,25 @@ func (i *Installer) Run(args []string) {
 }
 
 func (i *Installer) bundleAction(ctx *cli.Context) error {
-	if ctx.Args().Len() != 0 {
-		return errors.New("unexpected parameter after flags")
+	arg := ctx.Args().Get(0)
+	if arg == "" || strings.HasPrefix(arg, ".") {
+		return i.installLocal(ctx)
+	}
+
+	return i.installRemote(ctx)
+}
+
+func (i *Installer) installLocal(ctx *cli.Context) error {
+	if i.icon == "" {
+		path := ctx.Args().Get(0)
+		if path != "" {
+			meta, err := metadata.LoadStandard(path)
+			if err != nil {
+				return err
+			}
+			i.srcDir = path
+			i.icon = meta.Details.Icon
+		}
 	}
 
 	err := i.validate()
@@ -136,6 +166,108 @@ func (i *Installer) bundleAction(ctx *cli.Context) error {
 	}
 
 	return nil
+}
+
+func getPackageAndBranch(s string) (string, string) {
+	if pkg, branch, found := strings.Cut(s, "@"); found {
+		return pkg, branch
+	}
+	return s, ""
+}
+
+func getLatestTag(repo string) (string, error) {
+	cmd := exec.Command("git", "ls-remote", "-q", repo)
+	b, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	tag := ""
+	for _, line := range strings.Split(string(b), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			continue
+		}
+
+		_, s, found := strings.Cut(fields[1], "refs/tags/")
+		if !found || !strings.HasPrefix(s, "v") || strings.HasSuffix(s, "^{}") {
+			continue
+		}
+
+		tag = s
+	}
+
+	return tag, nil
+}
+
+func (i *Installer) installRemote(ctx *cli.Context) error {
+	pkg, branch := getPackageAndBranch(ctx.Args().Get(0))
+
+	wd, _ := os.Getwd()
+	defer func() {
+		if wd != "" {
+			os.Chdir(wd)
+		}
+	}()
+
+	name := filepath.Base(pkg)
+	path, err := os.MkdirTemp("", fmt.Sprintf("fyne-install-%s-*", name))
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(path)
+
+	repo, err := vcs.RepoRootForImportPath(pkg, false)
+	if err != nil {
+		return fmt.Errorf("failed to look up source control for package: %w", err)
+	}
+	if repo.VCS.Name != "Git" {
+		return errors.New("failed to find git repository: " + repo.VCS.Name)
+	}
+
+	if branch == "latest" {
+		branch, err = getLatestTag(repo.Repo)
+		if err != nil {
+			return fmt.Errorf("failed to get latest tag: %v", err)
+		}
+		if i.verbose {
+			fmt.Println("Latest tag:", branch)
+		}
+	}
+
+	args := []string{"clone", repo.Repo, "--depth=1"}
+	if branch != "" {
+		args = append(args, "--branch", branch)
+	}
+	args = append(args, path)
+
+	cmd := exec.Command("git", args...)
+	if i.verbose {
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to run command: %v", err)
+	}
+
+	if !util.Exists(path) { // the error above may be ignorable, unless the path was not found
+		return fmt.Errorf("path doesn't exist: %v", err)
+	}
+
+	if i.icon == "" {
+		meta, err := metadata.LoadStandard(path)
+		if err != nil {
+			return fmt.Errorf("failed to load metadata: %w", err)
+		}
+		i.icon = filepath.Join(path, meta.Details.Icon)
+	}
+	i.srcDir = path
+	i.release = true
+	if err := i.validate(); err != nil {
+		return fmt.Errorf("failed to set up installer: %w", err)
+	}
+
+	return i.install()
 }
 
 func (i *Installer) install() error {
@@ -222,8 +354,10 @@ func (i *Installer) runMobileInstall(tool, target string, args ...string) error 
 	}
 
 	cmd := exec.Command(tool, append(args, target)...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	if i.verbose {
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+	}
 	return cmd.Run()
 }
 
