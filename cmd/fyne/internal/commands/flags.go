@@ -181,6 +181,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"target": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "target",
+			Aliases:     []string{"os"},
 			Usage:       "set operating system to target (android, android/arm, android/arm64, android/amd64, android/386, darwin, freebsd, ios, linux, netbsd, openbsd, windows)",
 			Destination: dst,
 		}
