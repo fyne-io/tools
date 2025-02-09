@@ -239,12 +239,12 @@ var intFlags = map[string]func(*int) cli.Flag{
 		}
 	},
 	"pprof-port": func(dst *int) cli.Flag {
-		&cli.IntFlag{
+		return &cli.IntFlag{
 			Name:        "pprof-port",
 			Usage:       "specify pprof profiling port",
 			Value:       6060,
 			Destination: dst,
-		},
+		}
 	},
 }
 
