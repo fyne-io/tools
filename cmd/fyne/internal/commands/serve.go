@@ -28,13 +28,7 @@ func Serve() *cli.Command {
 		Flags: []cli.Flag{
 			stringFlags["src"](&s.srcDir),
 			stringFlags["icon"](&s.icon),
-			&cli.IntFlag{
-				Name:        "port",
-				Usage:       "set listening port of http server listen on",
-				DefaultText: "8080",
-				Value:       8080,
-				Destination: &s.port,
-			},
+			intFlags["http-port"](&s.port),
 		},
 		Action: s.Server,
 	}

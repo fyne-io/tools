@@ -189,6 +189,13 @@ var stringFlags = map[string]func(*string) cli.Flag{
 }
 
 var boolFlags = map[string]func(*bool) cli.Flag{
+	"pprof": func(dst *bool) cli.Flag {
+		return &cli.BoolFlag{
+			Name:        "pprof",
+			Usage:       "enable pprof profiling",
+			Destination: dst,
+		}
+	},
 	"release": func(dst *bool) cli.Flag {
 		return &cli.BoolFlag{
 			Name:        "release",
@@ -221,6 +228,23 @@ var intFlags = map[string]func(*int) cli.Flag{
 			Usage:       "set build number (integer >0, increasing with each build)",
 			Destination: dst,
 		}
+	},
+	"http-port": func(dst *int) cli.Flag {
+		return &cli.IntFlag{
+			Name:        "http-port",
+			Usage:       "set listening port of http server listen on",
+			DefaultText: "8080",
+			Value:       8080,
+			Destination: dst,
+		}
+	},
+	"pprof-port": func(dst *int) cli.Flag {
+		&cli.IntFlag{
+			Name:        "pprof-port",
+			Usage:       "specify pprof profiling port",
+			Value:       6060,
+			Destination: dst,
+		},
 	},
 }
 

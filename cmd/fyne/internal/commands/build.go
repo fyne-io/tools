@@ -53,17 +53,8 @@ func Build() *cli.Command {
 			stringFlags["tags"](&b.tagsToParse),
 			boolFlags["release"](&b.release),
 			stringFlags["output"](&b.target),
-			&cli.BoolFlag{
-				Name:        "pprof",
-				Usage:       "enable pprof profiling",
-				Destination: &b.pprof,
-			},
-			&cli.IntFlag{
-				Name:        "pprof-port",
-				Usage:       "specify pprof profiling port",
-				Value:       6060,
-				Destination: &b.pprofPort,
-			},
+			boolFlags["pprof"](&b.release),
+			intFlags["pprof-port"](&b.pprofPort),
 			genericFlags["metadata"](&b.customMetadata),
 		},
 		Action: func(ctx *cli.Context) error {
