@@ -240,7 +240,7 @@ func Test_PackageWasm(t *testing.T) {
 	goroot, err := GOROOT()
 	assert.Nil(t, err)
 
-	// Handle lookup for wasm_exec.js from lub folder in Go 1.24 and newer:
+	// Handle lookup for wasm_exec.js from lib folder in Go 1.24 and newer:
 	wasmExecJSPath := filepath.Join(goroot, "lib", "wasm", "wasm_exec.js")
 	_, err = os.Stat(wasmExecJSPath)
 	execJSLibExists := err == nil || !os.IsNotExist(err)
