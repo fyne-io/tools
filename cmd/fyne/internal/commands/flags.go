@@ -94,10 +94,10 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Destination: dst,
 		}
 	},
-	"install-dir": func(dst *string) cli.Flag {
+	"dst": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
-			Name:        "install-dir",
-			Usage:       "specify location to install to, rather than the OS default",
+			Name:        "dst",
+			Usage:       "specify install destination, instead of the OS default",
 			Destination: dst,
 		}
 	},

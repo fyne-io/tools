@@ -32,7 +32,7 @@ func Install() *cli.Command {
 			"into the system location for applications by default.",
 		Flags: []cli.Flag{
 			stringFlags["target"](&i.os),
-			stringFlags["install-dir"](&i.installDir),
+			stringFlags["dst"](&i.installDir),
 			stringFlags["icon"](&i.icon),
 			boolFlags["use-raw-icon"](&i.rawIcon),
 			stringFlags["app-id"](&i.AppID),
@@ -62,7 +62,7 @@ func NewInstaller() *Installer {
 // Deprecated: Access to the individual cli commands are being removed.
 func (i *Installer) AddFlags() {
 	flag.StringVar(&i.os, "os", "", "The mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios)")
-	flag.StringVar(&i.installDir, "install-dir", "", "A specific location to install to, rather than the OS default")
+	flag.StringVar(&i.installDir, "dst", "", "A specific location to install to, rather than the OS default")
 	flag.StringVar(&i.icon, "icon", "Icon.png", "The name of the application icon file")
 	flag.StringVar(&i.AppID, "app-id", "", "For ios or darwin targets an app-id is required, for ios this must \nmatch a valid provisioning profile")
 	flag.BoolVar(&i.release, "release", false, "Should this package be installed in release mode? (disable debug etc)")
