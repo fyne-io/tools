@@ -8,25 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/natefinch/atomic"
 	"github.com/urfave/cli/v2"
+
+	"fyne.io/tools/cmd/fyne/internal/metadata"
+	"fyne.io/tools/cmd/fyne/internal/templates"
 )
-
-const codeFmt = `package main
-
-import (
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/widget"
-)
-
-func main() {
-	a := app.NewWithID(%q)
-	w := a.NewWindow("Hello World")
-
-	w.SetContent(widget.NewLabel("Hello World!"))
-	w.ShowAndRun()
-}
-`
 
 const tomlFmt = `[Details]
 Icon = "Icon.png"
@@ -108,15 +94,6 @@ func checkFileOrDo(file string, cb func() error) error {
 	return cb()
 }
 
-func checkFileOrCreate(file, content string) error {
-	return checkFileOrDo(file, func() error {
-		if err := atomic.WriteFile(file, strings.NewReader(content)); err != nil {
-			return err
-		}
-		return os.Chmod(file, 0644)
-	})
-}
-
 func initAction(ctx *cli.Context) error {
 	modpath := ctx.Args().Get(0)
 	appID := ctx.String("appID")
@@ -143,7 +120,18 @@ func initAction(ctx *cli.Context) error {
 		appName = getAppName(modpath)
 	}
 
-	if err := checkFileOrCreate("main.go", fmt.Sprintf(codeFmt, appID)); err != nil {
+	data := &metadata.FyneApp{}
+	data.Details.ID = appID
+	data.Details.Name = appName
+
+	if err := checkFileOrDo("main.go", func() error {
+		f, err := os.Create("main.go")
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		return templates.HelloWorld.Execute(f, &data)
+	}); err != nil {
 		return err
 	}
 
@@ -155,7 +143,9 @@ func initAction(ctx *cli.Context) error {
 		return err
 	}
 
-	if err := checkFileOrCreate("FyneApp.toml", fmt.Sprintf(tomlFmt, appName, appID)); err != nil {
+	if err := checkFileOrDo("FyneApp.toml", func() error {
+		return metadata.SaveStandard(data, ".")
+	}); err != nil {
 		return err
 	}
 

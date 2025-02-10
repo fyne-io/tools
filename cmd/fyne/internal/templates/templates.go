@@ -21,6 +21,9 @@ var (
 	// FynePprofInit is the file injected to support pprof
 	FynePprofInit = template.Must(template.New("fyne_pprof_init.got").Parse(fynePprof))
 
+	// HelloWorld is a simple hello word app used to initialize new projects
+	HelloWorld = template.Must(template.New("hello_world.go").Parse(helloWorld))
+
 	// ManifestAndroid is the default manifest for building an Android application
 	ManifestAndroid = template.Must(template.New("AndroidManifest").Parse(androidManifestXML))
 
