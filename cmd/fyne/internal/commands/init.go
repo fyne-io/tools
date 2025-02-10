@@ -149,7 +149,7 @@ func initAction(ctx *cli.Context) error {
 		return fmt.Errorf("failed to run command: %v", err)
 	}
 
-	fmt.Println("You new app is ready. Run it directly with: go run .")
+	fmt.Println("Your new app is ready. Run it directly with: go run .")
 
 	return nil
 }
