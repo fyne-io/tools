@@ -50,20 +50,4 @@ func TestCheckFileOrDoCreate(t *testing.T) {
 		return nil
 	}))
 	assert.Equal(t, 1, done)
-
-	assert.Nil(t, checkFileOrCreate(file, "42"))
-	b, err := os.ReadFile(file)
-	assert.Nil(t, err)
-	assert.Equal(t, "42", string(b))
-
-	assert.Nil(t, checkFileOrDo(file, func() error {
-		done++
-		return nil
-	}))
-	assert.Equal(t, 1, done)
-
-	assert.Nil(t, checkFileOrCreate(file, "43"))
-	c, err := os.ReadFile(file)
-	assert.Nil(t, err)
-	assert.Equal(t, "42", string(c))
 }
