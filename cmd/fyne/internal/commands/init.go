@@ -14,14 +14,6 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
 
-const tomlFmt = `[Details]
-Icon = "Icon.png"
-Name = %q
-ID = %q
-Version = "0.0.1"
-Build = 1
-`
-
 func Init() *cli.Command {
 	return &cli.Command{
 		Name:      "init",
