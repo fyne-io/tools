@@ -25,6 +25,7 @@ func Init() *cli.Command {
 		Flags: []cli.Flag{
 			stringFlags["app-id"](nil),
 			stringFlags["name"](nil),
+			stringFlags["icon"](nil),
 		},
 	}
 }
@@ -82,6 +83,7 @@ func initAction(ctx *cli.Context) error {
 	modpath := ctx.Args().Get(0)
 	appID := ctx.String("app-id")
 	appName := ctx.String("name")
+	icon := ctx.String("icon")
 
 	if modpath == "" {
 		modpath = "example"
@@ -107,6 +109,7 @@ func initAction(ctx *cli.Context) error {
 	data := &metadata.FyneApp{}
 	data.Details.ID = appID
 	data.Details.Name = appName
+	data.Details.Icon = icon
 
 	if err := checkFileOrDo("main.go", func() error {
 		f, err := os.Create("main.go")
