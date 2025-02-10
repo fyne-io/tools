@@ -44,52 +44,18 @@ func Build() *cli.Command {
 
 	return &cli.Command{
 		Name:        "build",
+		Aliases:     []string{"b"},
 		Usage:       "Build an application.",
 		Description: "You can specify --target to define the OS to build for. The executable file will default to an appropriate name but can be overridden using -o.",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "target",
-				Aliases:     []string{"os"},
-				Usage:       "The mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios, iossimulator).",
-				Destination: &b.os,
-			},
-			&cli.StringFlag{
-				Name:        "sourceDir",
-				Aliases:     []string{"src"},
-				Usage:       "The directory to package, if executable is not set.",
-				Destination: &b.srcdir,
-			},
-			&cli.StringFlag{
-				Name:        "tags",
-				Usage:       "A comma-separated list of build tags.",
-				Destination: &b.tagsToParse,
-			},
-			&cli.BoolFlag{
-				Name:        "release",
-				Usage:       "Enable installation in release mode (disable debug etc).",
-				Destination: &b.release,
-			},
-			&cli.StringFlag{
-				Name:        "o",
-				Usage:       "Specify a name for the output file, default is based on the current directory.",
-				Destination: &b.target,
-			},
-			&cli.BoolFlag{
-				Name:        "pprof",
-				Usage:       "Enable pprof profiling.",
-				Destination: &b.pprof,
-			},
-			&cli.IntFlag{
-				Name:        "pprof-port",
-				Usage:       "Specify the port to use for pprof profiling.",
-				Value:       6060,
-				Destination: &b.pprofPort,
-			},
-			&cli.GenericFlag{
-				Name:  "metadata",
-				Usage: "Specify custom metadata key value pair that you do not want to store in your FyneApp.toml (key=value)",
-				Value: &b.customMetadata,
-			},
+			stringFlags["target"](&b.os),
+			stringFlags["src"](&b.srcdir),
+			stringFlags["tags"](&b.tagsToParse),
+			boolFlags["release"](&b.release),
+			stringFlags["output"](&b.target),
+			boolFlags["pprof"](&b.release),
+			intFlags["pprof-port"](&b.pprofPort),
+			genericFlags["metadata"](&b.customMetadata),
 		},
 		Action: func(ctx *cli.Context) error {
 			argCount := ctx.Args().Len()

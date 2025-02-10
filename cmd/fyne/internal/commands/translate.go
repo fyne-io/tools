@@ -25,26 +25,23 @@ import (
 func Translate() *cli.Command {
 	return &cli.Command{
 		Name:      "translate",
+		Aliases:   []string{"t"},
 		Usage:     "Scans for new translation strings.",
 		ArgsUsage: "translationsFile [source ...]",
-		Description: "Recursively scans the current or given directories/files for \n" +
+		Description: "Recursively scans the current or given directories/files for\n" +
 			"translation strings, and creates or updates the translations file.",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "imports",
 				Aliases: []string{"i"},
-				Usage:   "Additionally scan all imports (slow).",
+				Usage:   "enable scanning of all imports (slow)",
 			},
 			&cli.BoolFlag{
 				Name:    "update",
 				Aliases: []string{"u"},
-				Usage:   "Update existing translations (use with care).",
+				Usage:   "update existing translations (use with care)",
 			},
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-				Usage:   "Show files that are being scanned etc.",
-			},
+			boolFlags["verbose"](nil),
 		},
 		Action: func(ctx *cli.Context) error {
 			opts := translateOpts{

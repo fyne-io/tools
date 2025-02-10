@@ -25,53 +25,19 @@ func Install() *cli.Command {
 
 	return &cli.Command{
 		Name:      "install",
-		Aliases:   []string{"get"},
+		Aliases:   []string{"get", "i"},
 		Usage:     "Packages and installs an application.",
 		ArgsUsage: "[remote[@version]]",
 		Description: "The install command packages an application for the current platform and copies it\n" +
 			"into the system location for applications by default.",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "target",
-				Aliases:     []string{"os"},
-				Usage:       "The mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios, iossimulator).",
-				Destination: &i.os,
-			},
-			&cli.StringFlag{
-				Name:        "installDir",
-				Aliases:     []string{"o"},
-				Usage:       "A specific location to install to, rather than the OS default.",
-				Destination: &i.installDir,
-			},
-			&cli.StringFlag{
-				Name:        "icon",
-				Usage:       "The name of the application icon file.",
-				Value:       "",
-				Destination: &i.icon,
-			},
-			&cli.BoolFlag{
-				Name:        "use-raw-icon",
-				Usage:       "Skip any OS-specific icon pre-processing",
-				Value:       false,
-				Destination: &i.rawIcon,
-			},
-			&cli.StringFlag{
-				Name:        "appID",
-				Aliases:     []string{"id"},
-				Usage:       "For Android, darwin, iOS and Windows targets an appID in the form of a reversed domain name is required, for ios this must match a valid provisioning profile",
-				Destination: &i.AppID,
-			},
-			&cli.BoolFlag{
-				Name:        "release",
-				Usage:       "Enable installation in release mode (disable debug, etc).",
-				Destination: &i.release,
-			},
-			&cli.BoolFlag{
-				Name:        "verbose",
-				Aliases:     []string{"v"},
-				Usage:       "Show details when running",
-				Destination: &i.verbose,
-			},
+			stringFlags["target"](&i.os),
+			stringFlags["dst"](&i.installDir),
+			stringFlags["icon"](&i.icon),
+			boolFlags["use-raw-icon"](&i.rawIcon),
+			stringFlags["app-id"](&i.AppID),
+			boolFlags["release"](&i.release),
+			boolFlags["verbose"](&i.verbose),
 		},
 		Action: i.bundleAction,
 	}
@@ -96,9 +62,9 @@ func NewInstaller() *Installer {
 // Deprecated: Access to the individual cli commands are being removed.
 func (i *Installer) AddFlags() {
 	flag.StringVar(&i.os, "os", "", "The mobile platform to target (android, android/arm, android/arm64, android/amd64, android/386, ios)")
-	flag.StringVar(&i.installDir, "installDir", "", "A specific location to install to, rather than the OS default")
+	flag.StringVar(&i.installDir, "dst", "", "A specific location to install to, rather than the OS default")
 	flag.StringVar(&i.icon, "icon", "Icon.png", "The name of the application icon file")
-	flag.StringVar(&i.AppID, "appID", "", "For ios or darwin targets an appID is required, for ios this must \nmatch a valid provisioning profile")
+	flag.StringVar(&i.AppID, "app-id", "", "For ios or darwin targets an app-id is required, for ios this must \nmatch a valid provisioning profile")
 	flag.BoolVar(&i.release, "release", false, "Should this package be installed in release mode? (disable debug etc)")
 }
 
