@@ -29,32 +29,32 @@ func Bundle() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "name",
-				Usage:       "The variable name to assign the resource (file mode only).",
+				Usage:       "set variable name to assign the resource (file mode only)",
 				Destination: &b.name,
 			},
 			&cli.StringFlag{
 				Name:        "output",
 				Aliases:     []string{"o"},
-				Usage:       "Specify an output file instead of printing to standard output.",
+				Usage:       "specify output file (instead of standard output)",
 				Destination: &b.out,
 			},
 			&cli.StringFlag{
 				Name:        "package",
 				Aliases:     []string{"pkg"},
-				Usage:       "The package to output in headers (if not appending).",
+				Usage:       "set package to output in headers when not appending",
 				Value:       "main",
 				Destination: &b.pkg,
 			},
 			&cli.StringFlag{
 				Name:        "prefix",
-				Usage:       "A prefix for variables (ignored if name is set).",
+				Usage:       "specify prefix for variables, ignored if name is set",
 				Value:       "resource",
 				Destination: &b.prefix,
 			},
 			&cli.BoolFlag{
 				Name:        "append",
 				Aliases:     []string{"a"},
-				Usage:       "Append an existing go file (don't output headers).",
+				Usage:       "append an existing go file, and don't output headers",
 				Destination: &b.noheader,
 			},
 		},

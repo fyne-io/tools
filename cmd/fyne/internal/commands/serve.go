@@ -22,26 +22,13 @@ func Serve() *cli.Command {
 
 	return &cli.Command{
 		Name:        "serve",
+		Aliases:     []string{"s"},
 		Usage:       "Package an application using WebAssembly and expose it via a web server.",
 		Description: `The serve command packages an application using WebAssembly and expose it via a web server which port can be overridden with port.`,
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "sourceDir",
-				Usage:       "The directory to package, if executable is not set",
-				Value:       "",
-				Destination: &s.srcDir,
-			},
-			&cli.StringFlag{
-				Name:        "icon",
-				Usage:       "The name of the application icon file.",
-				Destination: &s.icon,
-			},
-			&cli.IntFlag{
-				Name:        "port",
-				Usage:       "The port to have the http server listen on (default: 8080).",
-				Value:       8080,
-				Destination: &s.port,
-			},
+			stringFlags["src"](&s.srcDir),
+			stringFlags["icon"](&s.icon),
+			intFlags["http-port"](&s.port),
 		},
 		Action: s.Server,
 	}
