@@ -23,16 +23,8 @@ func Init() *cli.Command {
 		Description: "Initializes a new Fyne project in the current directory, including\n" +
 			"a go.mod, main.go, and FyneApp.toml file (unless existing).",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "appID",
-				Aliases: []string{"id"},
-				Usage:   "set appID in reversed domain notation for Android, darwin and Windows targets, or a valid provisioning profile on iOS",
-			},
-			&cli.StringFlag{
-				Name:        "name",
-				Usage:       "set name the application",
-				DefaultText: "executable file name",
-			},
+			stringFlags["app-id"](nil),
+			stringFlags["name"](nil),
 		},
 	}
 }
@@ -88,7 +80,7 @@ func checkFileOrDo(file string, cb func() error) error {
 
 func initAction(ctx *cli.Context) error {
 	modpath := ctx.Args().Get(0)
-	appID := ctx.String("appID")
+	appID := ctx.String("app-id")
 	appName := ctx.String("name")
 
 	if modpath == "" {
