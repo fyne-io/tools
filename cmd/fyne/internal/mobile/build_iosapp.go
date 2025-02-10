@@ -83,11 +83,16 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	}
 
 	// We are using lipo tool to build multiarchitecture binaries.
-	cmd := exec.Command(
-		"xcrun", "lipo",
+	args := []string{
+		"lipo",
 		"-o", filepath.Join(tmpdir, "main/main"),
 		"-create",
-	)
+	}
+	if buildV {
+		printcmd("xcrun %s", strings.Join(args, " "))
+	}
+	cmd := exec.Command("xcrun", args...)
+
 	var nmpkgs map[string]bool
 	for _, arch := range archs {
 		path := filepath.Join(tmpdir, arch)
@@ -124,6 +129,9 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	}
 
 	cmd = exec.Command("xcrun", cmdStrings...)
+	if buildV {
+		printcmd("xcrun %s", strings.Join(cmdStrings, " "))
+	}
 	if err := runCmd(cmd); err != nil {
 		return nil, err
 	}
