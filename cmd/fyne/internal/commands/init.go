@@ -26,6 +26,7 @@ func Init() *cli.Command {
 			stringFlags["app-id"](nil),
 			stringFlags["name"](nil),
 			stringFlags["icon"](nil),
+			boolFlags["verbose"](nil),
 		},
 	}
 }
@@ -84,6 +85,7 @@ func initAction(ctx *cli.Context) error {
 	appID := ctx.String("app-id")
 	appName := ctx.String("name")
 	icon := ctx.String("icon")
+	verbose := ctx.Bool("verbose")
 
 	if modpath == "" {
 		modpath = "example"
@@ -125,7 +127,9 @@ func initAction(ctx *cli.Context) error {
 
 	if err := checkFileOrDo("go.mod", func() error {
 		cmd := exec.Command("go", "mod", "init", modpath)
-		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		if verbose {
+			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		}
 		return cmd.Run()
 	}); err != nil {
 		return err
@@ -138,10 +142,14 @@ func initAction(ctx *cli.Context) error {
 	}
 
 	cmd := exec.Command("go", "mod", "tidy")
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if verbose {
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	}
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to run command: %v", err)
 	}
+
+	fmt.Println("You new app is ready. Run it directly with: go run .")
 
 	return nil
 }
