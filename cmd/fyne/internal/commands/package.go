@@ -430,12 +430,12 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 
 func hasGoCode(dir string) bool {
 	found := false
-	_ = filepath.WalkDir(dir, func(path string, de fs.DirEntry, err error) error {
-		if de.IsDir() || filepath.Ext(de.Name()) != ".go" {
+	_ = filepath.Walk(dir+string(filepath.Separator), func(path string, fi fs.FileInfo, err error) error {
+		if fi.IsDir() || filepath.Ext(path) != ".go" {
 			return err
 		}
 		found = true
-		return filepath.SkipAll
+		return err
 	})
 	return found
 }
