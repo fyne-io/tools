@@ -37,6 +37,7 @@ func Install() *cli.Command {
 			boolFlags["use-raw-icon"](&i.rawIcon),
 			stringFlags["app-id"](&i.AppID),
 			boolFlags["release"](&i.release),
+			stringFlags["tags"](&i.tags),
 			boolFlags["verbose"](&i.verbose),
 		},
 		Action: i.bundleAction,
@@ -47,6 +48,7 @@ func Install() *cli.Command {
 type Installer struct {
 	*appData
 	installDir, srcDir, os string
+	tags                   string
 	Packager               *Packager
 	release                bool
 	verbose                bool
@@ -336,6 +338,7 @@ func (i *Installer) validate() error {
 	i.Packager.AppID = i.AppID
 	i.Packager.icon = i.icon
 	i.Packager.release = i.release
+	i.Packager.tags = i.tags
 	return i.Packager.validate()
 }
 
