@@ -17,7 +17,7 @@ import (
 func Init() *cli.Command {
 	return &cli.Command{
 		Name:      "init",
-		Usage:     "Initializes a new Fyne project.",
+		Usage:     "Initializes a new Fyne project",
 		ArgsUsage: "[module-path]",
 		Action:    initAction,
 		Description: "Initializes a new Fyne project in the current directory, including\n" +

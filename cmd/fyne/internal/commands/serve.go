@@ -23,7 +23,7 @@ func Serve() *cli.Command {
 	return &cli.Command{
 		Name:        "serve",
 		Aliases:     []string{"s"},
-		Usage:       "Package an application using WebAssembly and expose it via a web server.",
+		Usage:       "Packages an application using WebAssembly and exposes it via a web server",
 		Description: `The serve command packages an application using WebAssembly and expose it via a web server which port can be overridden with port.`,
 		Flags: []cli.Flag{
 			stringFlags["src"](&s.srcDir),

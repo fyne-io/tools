@@ -13,7 +13,7 @@ func Version() *cli.Command {
 	return &cli.Command{
 		Name:    "version",
 		Aliases: []string{"v"},
-		Usage:   "Shows version information for fyne.",
+		Usage:   "Shows version information for fyne",
 		Action: func(_ *cli.Context) error {
 			if info, ok := debug.ReadBuildInfo(); ok {
 				fmt.Println("fyne cli version:", info.Main.Version)
