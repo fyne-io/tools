@@ -7,7 +7,7 @@ import (
 
 func main() {
 	a := app.NewWithID({{ printf "%q" .Details.ID }})
-	w := a.NewWindow("Hello World")
+	w := a.NewWindow({{ printf "%q" .Details.Name }})
 
 	w.SetContent(widget.NewLabel("Hello World!"))
 	w.ShowAndRun()
