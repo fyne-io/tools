@@ -28,7 +28,7 @@ To list all available commands enter `fyne help`:
        package, p       Packages an application for distribution
        release, r       Prepares an application for public distribution
        install, get, i  Packages and installs an application
-       serve, s         Package an application using WebAssembly and expose it via a web server
+       serve, s         Packages an application using WebAssembly and exposes it via a web server
        translate, t     Scans for new translation strings
        version, v       Shows version information for fyne
        bundle           Embeds static content into your go application
