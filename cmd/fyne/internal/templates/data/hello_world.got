@@ -1,0 +1,14 @@
+package main
+
+import (
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/widget"
+)
+
+func main() {
+	a := app.NewWithID({{ printf "%q" .Details.ID }})
+	w := a.NewWindow({{ printf "%q" .Details.Name }})
+
+	w.SetContent(widget.NewLabel("Hello World!"))
+	w.ShowAndRun()
+}
