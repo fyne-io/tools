@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 
 	"github.com/lucor/goinfo"
@@ -12,6 +14,8 @@ import (
 )
 
 const fyneModule = "fyne.io/fyne/v2"
+
+var ErrNoGoMod = errors.New("failed to find go.mod")
 
 // Env returns the env command
 func Env() *cli.Command {
@@ -23,6 +27,20 @@ func Env() *cli.Command {
 			workDir, err := os.Getwd()
 			if err != nil {
 				return fmt.Errorf("could not get the path for the current working dir: %v", err)
+			}
+
+			for {
+				fi, err := os.Stat(filepath.Join(workDir, "go.mod"))
+				if err != nil && !errors.Is(err, os.ErrNotExist) {
+					return err
+				}
+				if fi != nil {
+					break
+				}
+				if workDir == "/" {
+					return ErrNoGoMod
+				}
+				workDir = filepath.Dir(workDir)
 			}
 
 			reporters := []goinfo.Reporter{
