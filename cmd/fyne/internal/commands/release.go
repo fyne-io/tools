@@ -53,6 +53,7 @@ func Release() *cli.Command {
 			stringFlags["icon"](&r.icon),
 			boolFlags["use-raw-icon"](&r.rawIcon),
 			genericFlags["metadata"](&r.customMetadata),
+			boolFlags["verbose"](&r.Packager.verbose),
 		},
 		Action: r.releaseAction,
 	}
