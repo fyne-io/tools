@@ -16,8 +16,9 @@ const fyneModule = "fyne.io/fyne/v2"
 // Env returns the env command
 func Env() *cli.Command {
 	return &cli.Command{
-		Name:  "env",
-		Usage: "The env command prints the Fyne module and environment information",
+		Name:    "env",
+		Aliases: []string{"e"},
+		Usage:   "Prints the Fyne module and environment information",
 		Action: func(_ *cli.Context) error {
 			workDir, err := os.Getwd()
 			if err != nil {

@@ -2,8 +2,9 @@ package commands
 
 import (
 	"bytes"
+	"os/exec"
 	"path/filepath"
-	"runtime"
+	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
@@ -71,7 +72,16 @@ func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon strin
 		return err
 	}
 
-	wasmExecSrc := filepath.Join(runtime.GOROOT(), "misc", "wasm", "wasm_exec.js")
+	goroot, err := GOROOT()
+	if err != nil {
+		return err
+	}
+
+	wasmExecSrc := filepath.Join(goroot, "lib", "wasm", "wasm_exec.js")
+	if !util.Exists(wasmExecSrc) { // Fallback for Go < 1.24:
+		wasmExecSrc = filepath.Join(goroot, "misc", "wasm", "wasm_exec.js")
+	}
+
 	wasmExecDst := filepath.Join(appDir, "wasm_exec.js")
 	err = util.CopyFile(wasmExecSrc, wasmExecDst)
 	if err != nil {
@@ -94,4 +104,10 @@ func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon strin
 	}
 
 	return nil
+}
+
+// GOROOT returns the root of the go binary location.
+func GOROOT() (string, error) {
+	output, err := exec.Command("go", "env", "GOROOT").Output()
+	return strings.TrimSuffix(string(output), "\n"), err
 }

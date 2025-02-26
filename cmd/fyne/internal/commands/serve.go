@@ -12,6 +12,7 @@ import (
 // Server serve fyne wasm application over http
 type Server struct {
 	*appData
+	debug       bool
 	port        int
 	srcDir, dir string
 }
@@ -22,31 +23,18 @@ func Serve() *cli.Command {
 
 	return &cli.Command{
 		Name:        "serve",
-		Usage:       "Package an application using WebAssembly and expose it via a web server.",
+		Aliases:     []string{"s"},
+		Usage:       "Packages an application using WebAssembly and exposes it via a web server",
 		Description: `The serve command packages an application using WebAssembly and expose it via a web server which port can be overridden with port.`,
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "sourceDir",
-				Usage:       "The directory to package, if executable is not set",
-				Value:       "",
-				Destination: &s.srcDir,
-			},
-			&cli.StringFlag{
-				Name:        "icon",
-				Usage:       "The name of the application icon file.",
-				Destination: &s.icon,
-			},
-			&cli.IntFlag{
-				Name:        "port",
-				Usage:       "The port to have the http server listen on (default: 8080).",
-				Value:       8080,
-				Destination: &s.port,
-			},
 			&cli.BoolFlag{
-				Name:        "release",
-				Usage:       "Build the served webassembly in release mode.",
-				Destination: &s.Release,
+				Name:        "debug",
+				Usage:       "enable compiling in debug mode",
+				Destination: &s.debug,
 			},
+			stringFlags["src"](&s.srcDir),
+			stringFlags["icon"](&s.icon),
+			intFlags["http-port"](&s.port),
 		},
 		Action: s.Server,
 	}
@@ -57,6 +45,11 @@ func (s *Server) requestPackage() error {
 		os:      "wasm",
 		srcDir:  s.srcDir,
 		appData: s.appData,
+		release: !s.debug,
+	}
+
+	if s.debug {
+		p.tags = "debug"
 	}
 
 	err := p.Package()

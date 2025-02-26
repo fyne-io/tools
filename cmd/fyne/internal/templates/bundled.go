@@ -26,6 +26,9 @@ var entitlementsDarwinPlist string
 //go:embed data/entitlements-ios.plist
 var entitlementsIosPlist string
 
+//go:embed data/hello_world.got
+var helloWorld string
+
 //go:embed data/fyne_metadata_init.got
 var fyneMetadataInit string
 
