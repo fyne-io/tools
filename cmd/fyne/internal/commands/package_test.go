@@ -325,5 +325,12 @@ func Test_hasGoCode(t *testing.T) {
 	_, err = f.Write([]byte("package " + dir + "\n// example"))
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
+
+	f, err = os.Create(filepath.Join(dir, "three.go"))
+	assert.NoError(t, err)
+	_, err = f.Write([]byte("package " + dir + "\n// example"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+
 	assert.True(t, hasGoCode(dir))
 }

@@ -428,6 +428,8 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 	return appID, nil
 }
 
+var stopWalk = errors.New("stop walking")
+
 func hasGoCode(dir string) bool {
 	found := false
 	_ = filepath.Walk(dir+string(filepath.Separator), func(path string, fi fs.FileInfo, err error) error {
@@ -435,7 +437,7 @@ func hasGoCode(dir string) bool {
 			return err
 		}
 		found = true
-		return fs.SkipAll
+		return stopWalk
 	})
 	return found
 }
