@@ -428,7 +428,7 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 	return appID, nil
 }
 
-var stopWalk = errors.New("stop walking")
+var errStopWalking = errors.New("stop walking")
 
 func hasGoCode(dir string) bool {
 	found := false
@@ -437,7 +437,7 @@ func hasGoCode(dir string) bool {
 			return err
 		}
 		found = true
-		return stopWalk
+		return errStopWalking
 	})
 	return found
 }
