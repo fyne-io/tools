@@ -168,7 +168,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"src": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "src",
-			Aliases:     []string{"sourceDir"},
+			Aliases:     []string{"source-dir"},
 			Usage:       "set directory to package, if executable is not set",
 			Destination: dst,
 		}

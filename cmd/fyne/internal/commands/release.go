@@ -375,37 +375,37 @@ func (r *Releaser) validate() error {
 
 	if util.IsMobile(r.os) || r.os == "windows" {
 		if r.AppVersion == "" { // Here it is required, if provided then package validate will check format
-			return errors.New("missing required -appVersion parameter")
+			return errors.New("missing required --app-version parameter")
 		}
 		if r.AppBuild <= 0 {
-			return errors.New("missing required -appBuild parameter")
+			return errors.New("missing required --app-build parameter")
 		}
 	}
 	if r.os == "windows" {
 		if r.developer == "" {
-			return errors.New("missing required -developer parameter for windows release,\n" +
+			return errors.New("missing required --developer parameter for windows release,\n" +
 				"use data from Partner Portal, format \"CN=Company, O=Company, L=City, S=State, C=Country\"")
 		}
 		if r.certificate == "" {
-			return errors.New("missing required -certificate parameter for windows release")
+			return errors.New("missing required --certificate parameter for windows release")
 		}
 		if r.password == "" {
-			return errors.New("missing required -password parameter for windows release")
+			return errors.New("missing required --password parameter for windows release")
 		}
 	}
 	if util.IsAndroid(r.os) {
 		if r.keyStore == "" {
-			return errors.New("missing required -keyStore parameter for android release")
+			return errors.New("missing required --key-store parameter for android release")
 		}
 	} else if r.os == "darwin" {
 		if r.certificate == "" {
 			r.certificate = "3rd Party Mac Developer Application"
 		}
 		if r.profile == "" {
-			return errors.New("missing required -profile parameter for macOS release")
+			return errors.New("missing required --profile parameter for macOS release")
 		}
 		if r.category == "" {
-			return errors.New("missing required -category parameter for macOS release")
+			return errors.New("missing required --category parameter for macOS release")
 		} else if !isValidMacOSCategory(r.category) {
 			return errors.New("category does not match one of the supported list: " +
 				strings.Join(macAppStoreCategories, ", "))
@@ -415,7 +415,7 @@ func (r *Releaser) validate() error {
 			r.certificate = "Apple Distribution"
 		}
 		if r.profile == "" {
-			return errors.New("missing required -profile parameter for iOS release")
+			return errors.New("missing required --profile parameter for iOS release")
 		}
 	}
 	return nil
