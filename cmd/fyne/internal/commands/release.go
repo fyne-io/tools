@@ -33,7 +33,7 @@ func Release() *cli.Command {
 	return &cli.Command{
 		Name:    "release",
 		Aliases: []string{"r"},
-		Usage:   "Prepares an application for public distribution.",
+		Usage:   "Prepares an application for public distribution",
 		Flags: []cli.Flag{
 			stringFlags["target"](&r.os),
 			stringFlags["key-store"](&r.keyStore),

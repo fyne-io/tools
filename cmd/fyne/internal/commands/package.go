@@ -36,7 +36,7 @@ func Package() *cli.Command {
 	return &cli.Command{
 		Name:        "package",
 		Aliases:     []string{"p"},
-		Usage:       "Packages an application for distribution.",
+		Usage:       "Packages an application for distribution",
 		Description: "You may specify the -executable to package, otherwise -sourceDir will be built.",
 		Flags: []cli.Flag{
 			stringFlags["target"](&p.os),
