@@ -435,7 +435,7 @@ func hasGoCode(dir string) bool {
 			return err
 		}
 		found = true
-		return filepath.SkipAll
+		return fs.SkipAll
 	})
 	return found
 }
