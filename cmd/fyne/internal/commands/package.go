@@ -36,7 +36,7 @@ func Package() *cli.Command {
 		Name:        "package",
 		Aliases:     []string{"p"},
 		Usage:       "Packages an application for distribution",
-		Description: "You may specify the -executable to package, otherwise -sourceDir will be built.",
+		Description: "You may specify the --executable to package, otherwise --source-dir will be built.",
 		Flags: []cli.Flag{
 			stringFlags["target"](&p.os),
 			stringFlags["executable"](&p.exe),
@@ -104,7 +104,7 @@ func (p *Packager) AddFlags() {
 // Deprecated: Access to the individual cli commands are being removed.
 func (*Packager) PrintHelp(indent string) {
 	fmt.Println(indent, "The package command prepares an application for installation and testing.")
-	fmt.Println(indent, "You may specify the -executable to package, otherwise -sourceDir will be built.")
+	fmt.Println(indent, "You may specify the --executable to package, otherwise --sourc-dir will be built.")
 	fmt.Println(indent, "Command usage: fyne package [parameters]")
 }
 
@@ -261,7 +261,7 @@ func (p *Packager) validate() (err error) {
 		p.srcDir = baseDir
 	} else {
 		if p.os == "ios" || p.os == "android" {
-			return errors.New("parameter -sourceDir is currently not supported for mobile builds. " +
+			return errors.New("parameter --source-dir is currently not supported for mobile builds. " +
 				"Change directory to the main package and try again")
 		}
 		p.srcDir = util.EnsureAbsPath(p.srcDir)
@@ -294,7 +294,7 @@ func (p *Packager) validate() (err error) {
 			p.removeBuild([]string{p.exe})
 		}
 	} else if p.os == "ios" || p.os == "android" {
-		_, _ = fmt.Fprint(os.Stderr, "Parameter -executable is ignored for mobile builds.\n")
+		_, _ = fmt.Fprint(os.Stderr, "Parameter --executable is ignored for mobile builds.\n")
 	}
 
 	if p.Name == "" {
@@ -319,7 +319,7 @@ func (p *Packager) validate() (err error) {
 		return err
 	}
 	if p.AppVersion != "" && !isValidVersion(p.AppVersion) {
-		return errors.New("invalid -appVersion parameter, integer and '.' characters only up to x.y.z")
+		return errors.New("invalid --app-version parameter, integer and '.' characters only up to x.y.z")
 	}
 
 	return nil
