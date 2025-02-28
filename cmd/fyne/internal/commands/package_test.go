@@ -308,3 +308,29 @@ func Test_PowerShellArguments(t *testing.T) {
 		assert.Equal(t, test.expected, result)
 	}
 }
+
+func Test_hasGoCode(t *testing.T) {
+	dir := t.TempDir()
+	assert.False(t, hasGoCode(dir))
+
+	f, err := os.Create(filepath.Join(dir, "one.txt"))
+	assert.NoError(t, err)
+	_, err = f.Write([]byte("something\n"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+	assert.False(t, hasGoCode(dir))
+
+	f, err = os.Create(filepath.Join(dir, "two.go"))
+	assert.NoError(t, err)
+	_, err = f.Write([]byte("package " + dir + "\n// example"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+
+	f, err = os.Create(filepath.Join(dir, "three.go"))
+	assert.NoError(t, err)
+	_, err = f.Write([]byte("package " + dir + "\n// example"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+
+	assert.True(t, hasGoCode(dir))
+}

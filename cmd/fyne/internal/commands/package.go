@@ -7,6 +7,7 @@ import (
 	"image"
 	_ "image/jpeg" // import image encodings
 	"image/png"    // import image encodings
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -266,7 +267,12 @@ func (p *Packager) validate() (err error) {
 		}
 		p.srcDir = util.EnsureAbsPath(p.srcDir)
 	}
-	os.Chdir(p.srcDir)
+	if err := os.Chdir(p.srcDir); err != nil {
+		return err
+	}
+	if !hasGoCode(p.srcDir) {
+		return fmt.Errorf("failed to find go code in source directory: %s", p.srcDir)
+	}
 
 	p.appData.CustomMetadata = p.customMetadata.m
 	p.appData.Release = p.release
@@ -420,4 +426,18 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 	}
 
 	return appID, nil
+}
+
+var errStopWalking = errors.New("stop walking")
+
+func hasGoCode(dir string) bool {
+	found := false
+	_ = filepath.Walk(dir+string(filepath.Separator), func(path string, fi fs.FileInfo, err error) error {
+		if fi.IsDir() || filepath.Ext(path) != ".go" {
+			return err
+		}
+		found = true
+		return errStopWalking
+	})
+	return found
 }
