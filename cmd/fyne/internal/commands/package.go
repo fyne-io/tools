@@ -7,6 +7,7 @@ import (
 	"image"
 	_ "image/jpeg" // import image encodings
 	"image/png"    // import image encodings
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -35,8 +36,8 @@ func Package() *cli.Command {
 	return &cli.Command{
 		Name:        "package",
 		Aliases:     []string{"p"},
-		Usage:       "Packages an application for distribution.",
-		Description: "You may specify the -executable to package, otherwise -sourceDir will be built.",
+		Usage:       "Packages an application for distribution",
+		Description: "You may specify the --executable to package, otherwise --source-dir will be built.",
 		Flags: []cli.Flag{
 			stringFlags["target"](&p.os),
 			stringFlags["executable"](&p.exe),
@@ -104,7 +105,7 @@ func (p *Packager) AddFlags() {
 // Deprecated: Access to the individual cli commands are being removed.
 func (*Packager) PrintHelp(indent string) {
 	fmt.Println(indent, "The package command prepares an application for installation and testing.")
-	fmt.Println(indent, "You may specify the -executable to package, otherwise -sourceDir will be built.")
+	fmt.Println(indent, "You may specify the --executable to package, otherwise --sourc-dir will be built.")
 	fmt.Println(indent, "Command usage: fyne package [parameters]")
 }
 
@@ -261,12 +262,17 @@ func (p *Packager) validate() (err error) {
 		p.srcDir = baseDir
 	} else {
 		if p.os == "ios" || p.os == "android" {
-			return errors.New("parameter -sourceDir is currently not supported for mobile builds. " +
+			return errors.New("parameter --source-dir is currently not supported for mobile builds. " +
 				"Change directory to the main package and try again")
 		}
 		p.srcDir = util.EnsureAbsPath(p.srcDir)
 	}
-	os.Chdir(p.srcDir)
+	if err := os.Chdir(p.srcDir); err != nil {
+		return err
+	}
+	if !hasGoCode(p.srcDir) {
+		return fmt.Errorf("failed to find go code in source directory: %s", p.srcDir)
+	}
 
 	p.appData.CustomMetadata = p.customMetadata.m
 	p.appData.Release = p.release
@@ -294,7 +300,7 @@ func (p *Packager) validate() (err error) {
 			p.removeBuild([]string{p.exe})
 		}
 	} else if p.os == "ios" || p.os == "android" {
-		_, _ = fmt.Fprint(os.Stderr, "Parameter -executable is ignored for mobile builds.\n")
+		_, _ = fmt.Fprint(os.Stderr, "Parameter --executable is ignored for mobile builds.\n")
 	}
 
 	if p.Name == "" {
@@ -319,7 +325,7 @@ func (p *Packager) validate() (err error) {
 		return err
 	}
 	if p.AppVersion != "" && !isValidVersion(p.AppVersion) {
-		return errors.New("invalid -appVersion parameter, integer and '.' characters only up to x.y.z")
+		return errors.New("invalid --app-version parameter, integer and '.' characters only up to x.y.z")
 	}
 
 	return nil
@@ -420,4 +426,18 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 	}
 
 	return appID, nil
+}
+
+var errStopWalking = errors.New("stop walking")
+
+func hasGoCode(dir string) bool {
+	found := false
+	_ = filepath.Walk(dir+string(filepath.Separator), func(path string, fi fs.FileInfo, err error) error {
+		if fi.IsDir() || filepath.Ext(path) != ".go" {
+			return err
+		}
+		found = true
+		return errStopWalking
+	})
+	return found
 }

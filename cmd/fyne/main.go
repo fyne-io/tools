@@ -15,16 +15,16 @@ func main() {
 		Usage:       "A command line helper for various Fyne tools.",
 		Description: "The fyne command provides tooling for fyne applications and to assist in their development.",
 		Commands: []*cli.Command{
-			commands.Bundle(),
+			commands.Init(),
 			commands.Env(),
-			commands.Install(),
+			commands.Build(),
 			commands.Package(),
 			commands.Release(),
-			commands.Version(),
+			commands.Install(),
 			commands.Serve(),
 			commands.Translate(),
-			commands.Build(),
-			commands.Init(),
+			commands.Version(),
+			commands.Bundle(),
 		},
 	}
 

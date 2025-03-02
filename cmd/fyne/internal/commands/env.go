@@ -22,7 +22,7 @@ func Env() *cli.Command {
 	return &cli.Command{
 		Name:    "env",
 		Aliases: []string{"e"},
-		Usage:   "The env command prints the Fyne module and environment information",
+		Usage:   "Prints the Fyne module and environment information",
 		Action: func(_ *cli.Context) error {
 			workDir, err := os.Getwd()
 			if err != nil {
