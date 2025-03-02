@@ -82,7 +82,7 @@ func lookupDirWithGoMod(workDir string) (string, error) {
 			return "", err
 		}
 		if fi != nil {
-			return workDir, nil
+			break
 		}
 		parentDir := filepath.Dir(workDir)
 		if parentDir == workDir {
