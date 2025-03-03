@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 
 	"github.com/lucor/goinfo"
@@ -23,6 +25,11 @@ func Env() *cli.Command {
 			workDir, err := os.Getwd()
 			if err != nil {
 				return fmt.Errorf("could not get the path for the current working dir: %v", err)
+			}
+
+			workDir, err = lookupDirWithGoMod(workDir)
+			if err != nil {
+				return fmt.Errorf("failed to find go.mod: %v", err)
 			}
 
 			reporters := []goinfo.Reporter{
@@ -64,4 +71,24 @@ func (r *fyneReport) Info() (goinfo.Info, error) {
 	}
 
 	return info, nil
+}
+
+// lookupDirWithGoMod takes a directory and checks for a go.mod file, traverses back towards the root,
+// and returns the first directory with a match
+func lookupDirWithGoMod(workDir string) (string, error) {
+	for {
+		fi, err := os.Stat(filepath.Join(workDir, "go.mod"))
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+		if fi != nil {
+			break
+		}
+		parentDir := filepath.Dir(workDir)
+		if parentDir == workDir {
+			return "", os.ErrNotExist
+		}
+		workDir = parentDir
+	}
+	return workDir, nil
 }
