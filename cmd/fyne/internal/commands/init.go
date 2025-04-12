@@ -113,6 +113,9 @@ func initAction(ctx *cli.Context) error {
 	data.Details.Name = appName
 	data.Details.Icon = icon
 	data.Details.Version = "0.0.0"
+	data.Migrations = map[string]bool{
+		"fyneDo": true,
+	}
 
 	if err := checkFileOrDo("main.go", func() error {
 		f, err := os.Create("main.go")
