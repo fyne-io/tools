@@ -37,4 +37,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-retract v1.26.0 // Published accidentally.
+retract (
+	v1.26.1 // Contains only retraction as v1.6.1 was ignored
+	v1.26.0 // Published accidentally.
+)
