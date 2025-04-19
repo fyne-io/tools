@@ -4,9 +4,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
+
+	"github.com/urfave/cli/v2"
 
 	"fyne.io/tools/cmd/fyne/internal/commands"
-	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -26,6 +28,11 @@ func main() {
 			commands.Version(),
 			commands.Bundle(),
 		},
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		app.Version = info.Main.Version
 	}
 
 	if err := app.Run(os.Args); err != nil {
