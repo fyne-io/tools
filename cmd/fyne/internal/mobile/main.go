@@ -8,10 +8,6 @@ import (
 	"flag"
 )
 
-var (
-	gomobileName = "gomobile"
-)
-
 type command struct {
 	run  func(*command) error
 	Flag flag.FlagSet
