@@ -6,27 +6,14 @@ package mobile
 
 import (
 	"flag"
-	"fmt"
-	"os"
-)
-
-var (
-	gomobileName = "gomobile"
 )
 
 type command struct {
-	run   func(*command) error
-	Flag  flag.FlagSet
-	Name  string
-	Usage string
-	Short string
-	Long  string
+	run  func(*command) error
+	Flag flag.FlagSet
+	Name string
 
 	IconPath, AppName      string
 	Version, Cert, Profile string
 	Build                  int
-}
-
-func (cmd *command) usage() {
-	fmt.Fprintf(os.Stdout, "usage: %s %s %s\n%s", gomobileName, cmd.Name, cmd.Usage, cmd.Long)
 }
