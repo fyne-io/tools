@@ -53,7 +53,7 @@ func Build() *cli.Command {
 			stringFlags["tags"](&b.tagsToParse),
 			boolFlags["release"](&b.release),
 			stringFlags["output"](&b.target),
-			boolFlags["pprof"](&b.release),
+			boolFlags["pprof"](&b.pprof),
 			intFlags["pprof-port"](&b.pprofPort),
 			genericFlags["metadata"](&b.customMetadata),
 		},
