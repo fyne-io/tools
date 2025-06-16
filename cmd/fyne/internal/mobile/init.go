@@ -35,30 +35,6 @@ func removeAll(path string) error {
 	return os.RemoveAll(path)
 }
 
-func resetReadOnlyFlagAll(path string) error {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if !fi.IsDir() {
-		return os.Chmod(path, 0o600)
-	}
-	fd, err := os.Open(filepath.Clean(path))
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	names, _ := fd.Readdirnames(-1)
-	for _, name := range names {
-		err := resetReadOnlyFlagAll(path + string(filepath.Separator) + name)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func goEnv(name string) string {
 	if val := os.Getenv(name); val != "" {
 		return val
