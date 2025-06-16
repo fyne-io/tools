@@ -54,5 +54,5 @@ func TestSaveIndentation(t *testing.T) {
 	assert.Nil(t, err)
 	actual, err := os.ReadFile("./testdata/new.toml")
 	assert.Nil(t, err)
-	assert.Equal(t, expected, actual)
+	assert.Equal(t, string(expected), string(actual))
 }
