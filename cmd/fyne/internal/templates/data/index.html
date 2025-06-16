@@ -40,20 +40,6 @@
 		{{if not .IsReleased}}
 			<script src="webgl-debug.js"></script>
 		{{end}}
-			<script>
-				function getChromeVersion() {
-					var raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
-
-					return raw ? parseInt(raw[2], 10) : 0;
-				}
-
-				var wasmBuild = true;
-				if (window.chrome) {
-					if (getChromeVersion() < 106) {
-						wasmBuild = false;
-					}
-				}
-			</script>
 		<script>
 			function async_load(file, cb) {
 				var d = document, t = 'script',
@@ -79,7 +65,7 @@
 				var main = document.getElementById("main");
 
 				if (webgl_support()) {
-					if (wasmBuild && WebAssembly) {
+					if (WebAssembly) {
 						action.innerHTML = "Downloading wasm_exec.js"
 						async_load("wasm_exec.js", function(){
 							// WebAssembly.instantiateStreaming is not currently available in Safari
