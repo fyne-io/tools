@@ -14,8 +14,6 @@ import (
 	"strings"
 )
 
-var goos = runtime.GOOS
-
 func mkdir(dir string) error {
 	if buildX || buildN {
 		printcmd("mkdir -p %s", dir)
@@ -32,15 +30,6 @@ func removeAll(path string) error {
 	}
 	if buildN {
 		return nil
-	}
-
-	// os.RemoveAll behaves differently in windows.
-	// http://golang.org/issues/9606
-	if goos == "windows" {
-		err := resetReadOnlyFlagAll(path)
-		if err != nil {
-			return err
-		}
 	}
 
 	return os.RemoveAll(path)
@@ -105,7 +94,7 @@ func runCmd(cmd *exec.Cmd) error {
 	}
 
 	if buildWork {
-		if goos == "windows" {
+		if runtime.GOOS == "windows" {
 			cmd.Env = append(cmd.Env, `TEMP=`+tmpdir, `TMP=`+tmpdir)
 		} else {
 			cmd.Env = append(cmd.Env, `TMPDIR=`+tmpdir)

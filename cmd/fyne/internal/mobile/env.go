@@ -303,7 +303,7 @@ func environ(kv []string) []string {
 			new = append(new, ev)
 			continue
 		}
-		if goos == "windows" {
+		if runtime.GOOS == "windows" {
 			elem[0] = strings.ToUpper(elem[0])
 		}
 		envs[elem[0]] = elem[1]
@@ -313,7 +313,7 @@ func environ(kv []string) []string {
 		if len(elem) != 2 || elem[0] == "" {
 			panic(fmt.Sprintf("malformed env var %q from input", ev))
 		}
-		if goos == "windows" {
+		if runtime.GOOS == "windows" {
 			elem[0] = strings.ToUpper(elem[0])
 		}
 		envs[elem[0]] = elem[1]
