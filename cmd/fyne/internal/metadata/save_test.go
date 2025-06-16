@@ -35,3 +35,24 @@ func TestSaveAppMetadata(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, data2.Details.Build)
 }
+
+func TestSaveIndentation(t *testing.T) {
+	r, err := os.Open("./testdata/FyneApp.toml")
+	assert.Nil(t, err)
+	data, err := Load(r)
+	assert.Nil(t, err)
+	r.Close()
+
+	w, err := os.Create("./testdata/new.toml")
+	assert.Nil(t, err)
+	t.Cleanup(func() { os.Remove("./testdata/new.toml") })
+	err = Save(data, w)
+	assert.Nil(t, err)
+	w.Close()
+
+	expected, err := os.ReadFile("./testdata/FyneApp.toml")
+	assert.Nil(t, err)
+	actual, err := os.ReadFile("./testdata/new.toml")
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
+}
