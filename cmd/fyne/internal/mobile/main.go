@@ -10,9 +10,7 @@ import (
 	"os"
 )
 
-var (
-	gomobileName = "gomobile"
-)
+const gomobileName = "gomobile"
 
 type command struct {
 	run   func(*command) error

@@ -4,9 +4,9 @@ on:
   workflow_call:
     inputs:
       tags:
-        description: 'Tags to pass when running tests'
+        description: "Tags to pass when running tests"
         required: false
-        default: ''
+        default: ""
         type: string
 
 jobs:
@@ -21,9 +21,9 @@ jobs:
     with:
       branch: master
       tags: ${{ inputs.tags }}
-        
-  qa-v2_4:
+
+  qa-v2_6:
     uses: fyne-io/tools/.github/workflows/fyne-qa.yml@main
     with:
-      branch: "release/v2.4.x"
+      branch: "release/v2.6.x"
       tags: ${{ inputs.tags }}

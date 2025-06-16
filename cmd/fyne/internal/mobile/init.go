@@ -9,13 +9,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
-)
-
-var (
-	goos = runtime.GOOS
 )
 
 func mkdir(dir string) error {
@@ -25,7 +20,7 @@ func mkdir(dir string) error {
 	if buildN {
 		return nil
 	}
-	return os.MkdirAll(dir, 0750)
+	return os.MkdirAll(dir, 0o750)
 }
 
 func removeAll(path string) error {
@@ -36,40 +31,7 @@ func removeAll(path string) error {
 		return nil
 	}
 
-	// os.RemoveAll behaves differently in windows.
-	// http://golang.org/issues/9606
-	if goos == "windows" {
-		err := resetReadOnlyFlagAll(path)
-		if err != nil {
-			return err
-		}
-	}
-
 	return os.RemoveAll(path)
-}
-
-func resetReadOnlyFlagAll(path string) error {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if !fi.IsDir() {
-		return os.Chmod(path, 0600)
-	}
-	fd, err := os.Open(filepath.Clean(path))
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	names, _ := fd.Readdirnames(-1)
-	for _, name := range names {
-		err := resetReadOnlyFlagAll(path + string(filepath.Separator) + name)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func goEnv(name string) string {
@@ -107,7 +69,7 @@ func runCmd(cmd *exec.Cmd) error {
 	}
 
 	if buildWork {
-		if goos == "windows" {
+		if runtime.GOOS == "windows" {
 			cmd.Env = append(cmd.Env, `TEMP=`+tmpdir, `TMP=`+tmpdir)
 		} else {
 			cmd.Env = append(cmd.Env, `TMPDIR=`+tmpdir)
