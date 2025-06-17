@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +53,8 @@ func TestSaveIndentation(t *testing.T) {
 
 	expected, err := os.ReadFile("./testdata/FyneApp.toml")
 	assert.Nil(t, err)
-	actual, err := os.ReadFile("./testdata/new.toml")
+	got, err := os.ReadFile("./testdata/new.toml")
 	assert.Nil(t, err)
+	actual := strings.ReplaceAll(string(got), "\r\n", "\n")
 	assert.Equal(t, string(expected), string(actual))
 }
