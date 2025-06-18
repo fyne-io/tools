@@ -1,8 +1,10 @@
 package metadata
 
 import (
+	"bytes"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,16 +50,13 @@ func TestSaveIndentation(t *testing.T) {
 	assert.Nil(t, err)
 	r.Close()
 
-	w, err := os.Create("./testdata/new.toml")
-	assert.Nil(t, err)
-	t.Cleanup(func() { os.Remove("./testdata/new.toml") })
+	w := &bytes.Buffer{}
 	err = Save(data, w)
 	assert.Nil(t, err)
-	w.Close()
 
-	expected, err := os.ReadFile("./testdata/FyneApp.toml")
+	content, err := os.ReadFile("./testdata/FyneApp.toml")
 	assert.Nil(t, err)
-	actual, err := os.ReadFile("./testdata/new.toml")
-	assert.Nil(t, err)
-	assert.Equal(t, string(expected), string(actual))
+	expected := strings.ReplaceAll(string(content), "\r\n", "\n")
+	actual := strings.ReplaceAll(w.String(), "\r\n", "\n")
+	assert.Equal(t, expected, actual)
 }
