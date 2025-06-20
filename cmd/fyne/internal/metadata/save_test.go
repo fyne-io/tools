@@ -3,7 +3,6 @@ package metadata
 import (
 	"bytes"
 	"os"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -40,10 +39,6 @@ func TestSaveAppMetadata(t *testing.T) {
 }
 
 func TestSaveIndentation(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Don't run indentation tests on Windows, seems to fail for no apparent reason")
-	}
-
 	r, err := os.Open("./testdata/FyneApp.toml")
 	assert.Nil(t, err)
 	data, err := Load(r)
