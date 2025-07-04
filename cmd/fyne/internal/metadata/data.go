@@ -3,6 +3,7 @@ package metadata
 // FyneApp describes the top level metadata for building a fyne application
 type FyneApp struct {
 	Website     string `toml:",omitempty"`
+	Description string `toml:",omitempty"`
 	Details     AppDetails
 	Development map[string]string `toml:",omitempty"`
 	Release     map[string]string `toml:",omitempty"`

@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	fyne.io/fyne/v2 v2.6.0
-	github.com/BurntSushi/toml v1.4.0
+	github.com/BurntSushi/toml v1.5.0
 	github.com/fogleman/gg v1.3.0
 	github.com/fyne-io/image v0.1.1
 	github.com/go-ole/go-ole v1.3.0

@@ -1,7 +1,7 @@
 package metadata
 
 import (
-	"bytes"
+	"bufio"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,14 +12,12 @@ import (
 // Save attempts to write a FyneApp metadata to the provided writer.
 // If the encoding fails an error will be returned.
 func Save(f *FyneApp, w io.Writer) error {
-	var buf bytes.Buffer
-	err := toml.NewEncoder(&buf).Encode(f)
-	if err != nil {
-		return err
-	}
+	bw := bufio.NewWriter(w)
+	defer bw.Flush()
 
-	_, err = w.Write(buf.Bytes())
-	return err
+	enc := toml.NewEncoder(bw)
+	enc.Indent = ""
+	return enc.Encode(f)
 }
 
 // SaveStandard attempts to save a FyneApp metadata to the `FyneApp.toml` file in the specified dir.
