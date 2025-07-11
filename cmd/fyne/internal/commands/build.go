@@ -170,7 +170,7 @@ func (b *Builder) build() error {
 		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.13")
 	}
 
-	ldFlags := extractLdflagsFromGoFlags()
+	ldFlags, env := extractLdflagsFromGoFlags(env)
 	if !isWeb(goos) {
 		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
 
@@ -372,17 +372,17 @@ func appendEnv(env *[]string, varName, value string) {
 	*env = append(*env, varName+"="+value)
 }
 
-func extractLdflagsFromGoFlags() string {
-	goFlags := os.Getenv("GOFLAGS")
-
-	ldFlags, goFlags := extractLdFlags(goFlags)
-	if goFlags != "" {
-		os.Setenv("GOFLAGS", goFlags)
-	} else {
-		os.Unsetenv("GOFLAGS")
+// extractLdflagsFromGoFlags returns the ldflags and enviroment with ldflags removed from GOFLAGS.
+func extractLdflagsFromGoFlags(env []string) (string, []string) {
+	prefix := "GOFLAGS="
+	for i, v := range env {
+		if strings.HasPrefix(v, prefix) {
+			ldflags, goflags := extractLdFlags(strings.TrimPrefix(v, prefix))
+			env[i] = goflags
+			return ldflags, env
+		}
 	}
-
-	return ldFlags
+	return "", env
 }
 
 func extractLdFlags(goFlags string) (string, string) {
