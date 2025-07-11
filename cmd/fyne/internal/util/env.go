@@ -8,7 +8,7 @@ func ExtractLdflagsFromGoFlags(env []string) (string, []string) {
 	for i, v := range env {
 		if strings.HasPrefix(v, prefix) {
 			ldflags, goflags := extractLdFlags(strings.TrimPrefix(v, prefix))
-			env[i] = goflags
+			env[i] = prefix + goflags
 			return ldflags, env
 		}
 	}
