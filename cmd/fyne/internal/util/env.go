@@ -2,12 +2,12 @@ package util
 
 import "strings"
 
-// ExtractLdflagsFromGoFlags returns the ldflags and enviroment with ldflags removed from GOFLAGS.
+// ExtractLdflagsFromGoFlags returns the ldflags and environment with ldflags removed from GOFLAGS.
 func ExtractLdflagsFromGoFlags(env []string) (string, []string) {
 	prefix := "GOFLAGS="
 	for i, v := range env {
 		if strings.HasPrefix(v, prefix) {
-			ldflags, goflags := extractLdFlags(strings.TrimPrefix(v, prefix))
+			ldflags, goflags := ExtractLdFlags(strings.TrimPrefix(v, prefix))
 			env[i] = prefix + goflags
 			return ldflags, env
 		}
@@ -15,7 +15,8 @@ func ExtractLdflagsFromGoFlags(env []string) (string, []string) {
 	return "", env
 }
 
-func extractLdFlags(goFlags string) (string, string) {
+// ExtractLdFlags extracts ldflags from the value of GOFLAGS environment variable, returns ldflags and new GOFLAGS.
+func ExtractLdFlags(goFlags string) (string, string) {
 	if goFlags == "" {
 		return "", ""
 	}

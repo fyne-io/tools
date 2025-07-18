@@ -21,7 +21,7 @@ func Test_ExtractLdFlags(t *testing.T) {
 	}
 
 	for _, test := range goFlagsTests {
-		ldFlags, goFlags := extractLdFlags(test.value)
+		ldFlags, goFlags := ExtractLdFlags(test.value)
 		assert.Equal(t, test.wantLdFlags, ldFlags)
 		assert.Equal(t, test.wantGoFlags, goFlags)
 	}

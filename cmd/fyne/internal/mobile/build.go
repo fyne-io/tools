@@ -236,10 +236,8 @@ func RunNewBuild(target, appID, icon, name, version string, build int, release, 
 	buildBundleID = appID
 	buildRelease = distribution
 	buildTags = tags
-	buildLdflags, _ = util.ExtractLdflagsFromGoFlags(os.Environ())
 	if release {
-		buildLdflags += " -w"
-		buildLdflags = strings.TrimSpace(buildLdflags)
+		buildLdflags = "-w"
 		buildTrimpath = true
 	}
 
