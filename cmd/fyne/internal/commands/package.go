@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -354,12 +355,20 @@ func calculateExeName(sourceDir, osys string) string {
 }
 
 func isValidVersion(ver string) bool {
-	nums := strings.Split(ver, ".")
-	if len(nums) == 0 || len(nums) > 3 {
+	r, _ := regexp.Compile(
+		`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`,
+	) // official regex for checking semver compliance. Source: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	ok := r.MatchString(ver)
+	if ok {
+		return true
+	}
+	parts := strings.Split(ver, ".")
+	if len(parts) < 1 || len(parts) > 2 {
 		return false
 	}
-	for _, num := range nums {
-		if _, err := strconv.Atoi(num); err != nil {
+	for _, p := range parts {
+		_, err := strconv.Atoi(p)
+		if err != nil {
 			return false
 		}
 	}
