@@ -212,10 +212,11 @@ func (b *Bundler) doBundle(filepath string, out *os.File) {
 		writeHeader(b.pkg, out)
 	}
 
-	if b.name == "" {
-		b.name = sanitiseName(path.Base(filepath), b.prefix)
+	name := b.name
+	if name == "" {
+		name = sanitiseName(path.Base(filepath), b.prefix)
 	}
-	writeResource(filepath, b.name, out)
+	writeResource(filepath, name, out)
 }
 
 func openOutputFile(filePath string, noheader bool) (file *os.File, close func() error, err error) {
