@@ -41,15 +41,30 @@ func Test_fixedVersionInfo(t *testing.T) {
 }
 
 func Test_isValidVersion(t *testing.T) {
-	assert.True(t, isValidVersion("1"))
-	assert.True(t, isValidVersion("1.2"))
-	assert.True(t, isValidVersion("1.2.3"))
+	cases := []struct {
+		in   string
+		want bool
+	}{
+		{"1.2.3", true},
+		{"1.2.3-alpha", true},
+		{"1.2.3-breta.5", true},
+		{"1", true},   // not semver, but required for backwards compatibility
+		{"1.2", true}, // not semver, but required for backwards compatibility
 
-	assert.False(t, isValidVersion("1.2.3.4"))
-	assert.False(t, isValidVersion(""))
-	assert.False(t, isValidVersion("1.2-alpha3"))
-	assert.False(t, isValidVersion("pre1"))
-	assert.False(t, isValidVersion("1..2"))
+		{"1.2.3.4", false},
+		{"", false},
+		{"1.2-alpha3", false},
+		{"pre1", false},
+		{"1..2", false},
+		{"1.xy", false},
+		{"1.2.xy", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.in, func(t *testing.T) {
+			got := isValidVersion(tc.in)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func Test_combinedVersion(t *testing.T) {
