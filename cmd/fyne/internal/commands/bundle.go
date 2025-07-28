@@ -162,17 +162,24 @@ func (b *Bundler) bundleAction(ctx *cli.Context) (err error) {
 	}
 
 	for _, arg := range ctx.Args().Slice() {
-		switch stat, err := os.Stat(arg); {
-		case os.IsNotExist(err):
+		files, err := filepath.Glob(arg)
+		if err != nil {
 			fyne.LogError("Specified file could not be found", err)
 			return err
-		case stat.IsDir():
-			return b.dirBundle(arg, outFile)
-		case b.name != "":
-			b.prefix = ""
-			fallthrough
-		default:
-			b.doBundle(arg, outFile)
+		}
+		for _, file := range files {
+			switch stat, err := os.Stat(file); {
+			case os.IsNotExist(err):
+				fyne.LogError("Specified file could not be found", err)
+				return err
+			case stat.IsDir():
+				return b.dirBundle(file, outFile)
+			case b.name != "":
+				b.prefix = ""
+				fallthrough
+			default:
+				b.doBundle(file, outFile)
+			}
 		}
 	}
 
