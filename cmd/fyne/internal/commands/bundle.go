@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -188,13 +188,13 @@ func (b *Bundler) dirBundle(dirpath string, out *os.File) error {
 
 	for i, file := range files {
 		filename := file.Name()
-		if path.Ext(filename) == ".go" {
+		if filepath.Ext(filename) == ".go" {
 			continue
 		}
 
 		b.name = ""
 
-		b.doBundle(path.Join(dirpath, filename), out)
+		b.doBundle(filepath.Join(dirpath, filename), out)
 		if i == 0 { // only show header on first iteration
 			b.noheader = true
 		}
@@ -208,16 +208,16 @@ func (b *Bundler) dirBundle(dirpath string, out *os.File) error {
 // (pkg) and the data will be assigned to variable named "name". If you are
 // appending an existing resource file then pass true to noheader as the headers
 // should only be output once per file.
-func (b *Bundler) doBundle(filepath string, out *os.File) {
+func (b *Bundler) doBundle(path string, out *os.File) {
 	if !b.noheader {
 		writeHeader(b.pkg, out)
 		b.noheader = true
 	}
 
 	if b.name == "" {
-		b.name = sanitiseName(path.Base(filepath), b.prefix)
+		b.name = sanitiseName(filepath.Base(path), b.prefix)
 	}
-	writeResource(filepath, b.name, out)
+	writeResource(path, b.name, out)
 }
 
 func openOutputFile(filePath string, noheader bool) (file *os.File, close func() error, err error) {
