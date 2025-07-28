@@ -143,7 +143,7 @@ func (b *Bundler) Run(args []string) {
 }
 
 func (b *Bundler) bundleAction(ctx *cli.Context) (err error) {
-	if ctx.Args().Len() != 1 {
+	if ctx.Args().Len() < 1 {
 		return errors.New("missing required file or directory parameter after flags")
 	}
 
@@ -161,18 +161,19 @@ func (b *Bundler) bundleAction(ctx *cli.Context) (err error) {
 		outFile = file
 	}
 
-	arg := ctx.Args().First()
-	switch stat, err := os.Stat(arg); {
-	case os.IsNotExist(err):
-		fyne.LogError("Specified file could not be found", err)
-		return err
-	case stat.IsDir():
-		return b.dirBundle(arg, outFile)
-	case b.name != "":
-		b.prefix = ""
-		fallthrough
-	default:
-		b.doBundle(arg, outFile)
+	for _, arg := range ctx.Args().Slice() {
+		switch stat, err := os.Stat(arg); {
+		case os.IsNotExist(err):
+			fyne.LogError("Specified file could not be found", err)
+			return err
+		case stat.IsDir():
+			return b.dirBundle(arg, outFile)
+		case b.name != "":
+			b.prefix = ""
+			fallthrough
+		default:
+			b.doBundle(arg, outFile)
+		}
 	}
 
 	return nil
@@ -210,6 +211,7 @@ func (b *Bundler) dirBundle(dirpath string, out *os.File) error {
 func (b *Bundler) doBundle(filepath string, out *os.File) {
 	if !b.noheader {
 		writeHeader(b.pkg, out)
+		b.noheader = true
 	}
 
 	if b.name == "" {
