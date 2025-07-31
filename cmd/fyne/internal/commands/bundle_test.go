@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/urfave/cli/v2"
 )
 
 func TestSanitiseName(t *testing.T) {
@@ -57,6 +58,18 @@ func TestWriteResource(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, string(content))
+}
+
+func TestBundleGlobDump(t *testing.T) {
+	app := &cli.App{
+		Name:        "fyne",
+		Usage:       "execute test",
+		Description: "writes the bundle.go and bundle_test.go to stdout",
+		Commands: []*cli.Command{
+			Bundle(),
+		},
+	}
+	assert.NoError(t, app.Run([]string{"fyne", "bundle", "bundle*.go"}))
 }
 
 func BenchmarkWriteResource(b *testing.B) {
