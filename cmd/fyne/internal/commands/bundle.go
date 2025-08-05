@@ -223,9 +223,9 @@ func (b *Bundler) doBundle(path string, out *os.File) {
 
 	name := b.name
 	if name == "" {
-		name = sanitiseName(path.Base(filepath), b.prefix)
+		name = sanitiseName(filepath.Base(path), b.prefix)
 	}
-	writeResource(filepath, name, out)
+	writeResource(path, name, out)
 }
 
 func openOutputFile(filePath string, noheader bool) (file *os.File, close func() error, err error) {
