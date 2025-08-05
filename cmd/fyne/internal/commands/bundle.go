@@ -221,7 +221,7 @@ func (b *Bundler) doBundle(path string, out *os.File) {
 		b.noheader = true
 	}
 
-name := b.name
+	name := b.name
 	if name == "" {
 		name = sanitiseName(path.Base(filepath), b.prefix)
 	}
