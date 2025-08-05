@@ -221,10 +221,11 @@ func (b *Bundler) doBundle(path string, out *os.File) {
 		b.noheader = true
 	}
 
-	if b.name == "" {
-		b.name = sanitiseName(filepath.Base(path), b.prefix)
+name := b.name
+	if name == "" {
+		name = sanitiseName(path.Base(filepath), b.prefix)
 	}
-	writeResource(path, b.name, out)
+	writeResource(filepath, name, out)
 }
 
 func openOutputFile(filePath string, noheader bool) (file *os.File, close func() error, err error) {
@@ -262,18 +263,20 @@ func writeHeader(pkg string, out *os.File) {
 	out.WriteString(fileHeader)
 	out.WriteString("\n\npackage ")
 	out.WriteString(pkg)
-	out.WriteString("\n\nimport \"fyne.io/fyne/v2\"\n\n")
+	out.WriteString("\n\nimport (\n")
+	out.WriteString("\t_ \"embed\"\n")
+	out.WriteString("\t\"fyne.io/fyne/v2\"\n")
+	out.WriteString(")\n\n")
 }
 
 func writeResource(file, name string, f *os.File) {
-	res, err := fyne.LoadResourceFromPath(file)
+	_, err := fmt.Fprintf(f, "//go:embed %s\nvar %sData []byte\n", file, name)
 	if err != nil {
-		fyne.LogError("Unable to load file "+file, err)
-		return
+		fyne.LogError("Unable to write to bundled file", err)
 	}
 
-	const format = "var %s = &fyne.StaticResource{\n\tStaticName: %q,\n\tStaticContent: []byte(\n\t\t%q),\n}\n"
-	_, err = fmt.Fprintf(f, format, name, res.Name(), res.Content())
+	const format = "var %s = &fyne.StaticResource{\n\tStaticName: %q,\n\tStaticContent: %sData,\n}\n"
+	_, err = fmt.Fprintf(f, format, name, file, name)
 	if err != nil {
 		fyne.LogError("Unable to write to bundled file", err)
 	}
