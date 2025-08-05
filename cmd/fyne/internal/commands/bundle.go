@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -143,7 +143,7 @@ func (b *Bundler) Run(args []string) {
 }
 
 func (b *Bundler) bundleAction(ctx *cli.Context) (err error) {
-	if ctx.Args().Len() != 1 {
+	if ctx.Args().Len() < 1 {
 		return errors.New("missing required file or directory parameter after flags")
 	}
 
@@ -161,18 +161,26 @@ func (b *Bundler) bundleAction(ctx *cli.Context) (err error) {
 		outFile = file
 	}
 
-	arg := ctx.Args().First()
-	switch stat, err := os.Stat(arg); {
-	case os.IsNotExist(err):
-		fyne.LogError("Specified file could not be found", err)
-		return err
-	case stat.IsDir():
-		return b.dirBundle(arg, outFile)
-	case b.name != "":
-		b.prefix = ""
-		fallthrough
-	default:
-		b.doBundle(arg, outFile)
+	for _, arg := range ctx.Args().Slice() {
+		files, err := filepath.Glob(arg)
+		if err != nil {
+			fyne.LogError("Specified file could not be found", err)
+			return err
+		}
+		for _, file := range files {
+			switch stat, err := os.Stat(file); {
+			case os.IsNotExist(err):
+				fyne.LogError("Specified file could not be found", err)
+				return err
+			case stat.IsDir():
+				return b.dirBundle(file, outFile)
+			case b.name != "":
+				b.prefix = ""
+				fallthrough
+			default:
+				b.doBundle(file, outFile)
+			}
+		}
 	}
 
 	return nil
@@ -187,13 +195,13 @@ func (b *Bundler) dirBundle(dirpath string, out *os.File) error {
 
 	for i, file := range files {
 		filename := file.Name()
-		if path.Ext(filename) == ".go" {
+		if filepath.Ext(filename) == ".go" {
 			continue
 		}
 
 		b.name = ""
 
-		b.doBundle(path.Join(dirpath, filename), out)
+		b.doBundle(filepath.Join(dirpath, filename), out)
 		if i == 0 { // only show header on first iteration
 			b.noheader = true
 		}
@@ -207,16 +215,17 @@ func (b *Bundler) dirBundle(dirpath string, out *os.File) error {
 // (pkg) and the data will be assigned to variable named "name". If you are
 // appending an existing resource file then pass true to noheader as the headers
 // should only be output once per file.
-func (b *Bundler) doBundle(filepath string, out *os.File) {
+func (b *Bundler) doBundle(path string, out *os.File) {
 	if !b.noheader {
 		writeHeader(b.pkg, out)
+		b.noheader = true
 	}
 
 	name := b.name
 	if name == "" {
-		name = sanitiseName(path.Base(filepath), b.prefix)
+		name = sanitiseName(filepath.Base(path), b.prefix)
 	}
-	writeResource(filepath, name, out)
+	writeResource(path, name, out)
 }
 
 func openOutputFile(filePath string, noheader bool) (file *os.File, close func() error, err error) {
