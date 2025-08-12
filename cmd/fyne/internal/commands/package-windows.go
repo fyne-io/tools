@@ -14,6 +14,7 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"github.com/fyne-io/image/ico"
 	"github.com/josephspurrier/goversioninfo"
+	"golang.org/x/mod/semver"
 )
 
 type windowsData struct {
@@ -162,6 +163,12 @@ func fixedVersionInfo(ver string) (ret goversioninfo.FileVersion) {
 		return ret
 	}
 	split := strings.Split(ver, ".")
+	if v := semver.Canonical("v" + ver); len(v) > 1 {
+		split = strings.Split(v[1:], ".")
+		if len(split) > 2 && len(split[2]) > 0 {
+			split[2] = strings.Split(split[2], "-")[0]
+		}
+	}
 	setVersionField(&ret.Major, split[0])
 	if len(split) > 1 {
 		setVersionField(&ret.Minor, split[1])

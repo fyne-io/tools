@@ -32,6 +32,10 @@ func Test_fixedVersionInfo(t *testing.T) {
 		{"1.1.1.1", goversioninfo.FileVersion{Major: 1, Minor: 1, Patch: 1, Build: 1}},
 		{"2.2.2", goversioninfo.FileVersion{Major: 2, Minor: 2, Patch: 2, Build: 1}},
 		{"3.3.3.3.3", goversioninfo.FileVersion{Major: 3, Minor: 3, Patch: 3, Build: 3}},
+		{"4.4.4-dev", goversioninfo.FileVersion{Major: 4, Minor: 4, Patch: 4, Build: 1}},
+		{"5.5.5+5", goversioninfo.FileVersion{Major: 5, Minor: 5, Patch: 5, Build: 1}},
+		{"6.6-foo+6", goversioninfo.FileVersion{Major: 6, Minor: 0, Patch: 0, Build: 1}},
+		{"7.7.7.7-foo", goversioninfo.FileVersion{Major: 7, Minor: 7, Patch: 7, Build: 1}},
 	}
 
 	for _, tt := range tests {
