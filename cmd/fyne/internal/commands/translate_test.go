@@ -6,7 +6,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -140,7 +140,7 @@ func TestWriteTranslationsFile(t *testing.T) {
 	f, err := os.Open(dst)
 	if assert.NoError(t, err) {
 		defer f.Close()
-		b, err := ioutil.ReadAll(f)
+		b, err := io.ReadAll(f)
 		assert.NoError(t, err)
 		if assert.GreaterOrEqual(t, len(b), 1) {
 			assert.Equal(t, byte('\n'), b[len(b)-1])
