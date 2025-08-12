@@ -6,9 +6,12 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const exampleSource = `
@@ -132,6 +135,16 @@ func TestWriteTranslationsFile(t *testing.T) {
 
 	if err := writeTranslationsFile([]byte(`{"a":2}`), dst); err != nil {
 		t.Fatalf("failed to write translations file: %v", err)
+	}
+
+	f, err := os.Open(dst)
+	if assert.NoError(t, err) {
+		defer f.Close()
+		b, err := io.ReadAll(f)
+		assert.NoError(t, err)
+		if assert.GreaterOrEqual(t, len(b), 1) {
+			assert.Equal(t, byte('\n'), b[len(b)-1])
+		}
 	}
 }
 
