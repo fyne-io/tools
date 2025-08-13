@@ -157,7 +157,8 @@ func runAsAdminWindows(args ...string) error {
 }
 
 func stripPreReleaseAndBuildInfo(v string) string {
-	return strings.Split(strings.Split(v, "-")[0], "+")[0]
+	s := strings.Split(v, "-")[0]
+	return strings.Split(s, "+")[0]
 }
 
 func fixedVersionInfo(ver string) (ret goversioninfo.FileVersion) {
