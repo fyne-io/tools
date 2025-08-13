@@ -16,8 +16,8 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.1
-	golang.org/x/mod v0.17.0
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d
+	golang.org/x/mod v0.20.0
+	golang.org/x/tools v0.24.0
 	golang.org/x/tools/go/vcs v0.1.0-deprecated
 )
 
