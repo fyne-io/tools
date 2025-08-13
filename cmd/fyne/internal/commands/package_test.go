@@ -48,7 +48,7 @@ func Test_fixedVersionInfo(t *testing.T) {
 }
 
 func Test_stripPreReleaseAndBuildInfo(t *testing.T) {
-	for _, test := range []struct {
+	tests := []struct {
 		have string
 		want string
 	}{
@@ -60,7 +60,8 @@ func Test_stripPreReleaseAndBuildInfo(t *testing.T) {
 		{"5-foo+bar", "5"},
 		{"6+foo+bar", "6"},
 		{"7+foo-bar", "7"},
-	} {
+	}
+	for _, test := range tests {
 		assert.Equal(t, test.want, stripPreReleaseAndBuildInfo(test.have))
 	}
 }
