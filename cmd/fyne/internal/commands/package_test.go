@@ -35,7 +35,7 @@ func Test_fixedVersionInfo(t *testing.T) {
 		{"4.4.4-dev", goversioninfo.FileVersion{Major: 4, Minor: 4, Patch: 4, Build: 1}},
 		// semver build metadata is ignored
 		{"5.5.5+5", goversioninfo.FileVersion{Major: 5, Minor: 5, Patch: 5, Build: 1}},
-		// not not semver: must have patch version for pre-release to be valid
+		// not valid semver: must have patch version for pre-release to be valid
 		{"6.6-foo+6", goversioninfo.FileVersion{Major: 6, Minor: 6, Patch: 0, Build: 1}},
 		// not valid semver: max three version components
 		{"7.7.7.7-foo", goversioninfo.FileVersion{Major: 7, Minor: 7, Patch: 7, Build: 7}},
