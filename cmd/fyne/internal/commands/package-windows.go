@@ -165,7 +165,12 @@ func fixedVersionInfo(ver string) (ret goversioninfo.FileVersion) {
 	if len(ver) == 0 {
 		return ret
 	}
-	refs := []*int{&ret.Major, &ret.Minor, &ret.Patch, &ret.Build}
+	refs := []*int{
+		&ret.Major,
+		&ret.Minor,
+		&ret.Patch,
+		&ret.Build,
+	}
 	split := strings.Split(ver, ".")
 	for n, s := range split {
 		if n >= len(refs) {
