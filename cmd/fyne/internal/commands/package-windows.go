@@ -14,7 +14,6 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"github.com/fyne-io/image/ico"
 	"github.com/josephspurrier/goversioninfo"
-	"golang.org/x/mod/semver"
 )
 
 type windowsData struct {
@@ -157,27 +156,22 @@ func runAsAdminWindows(args ...string) error {
 	return exec.Command("powershell.exe", "Start-Process", "cmd.exe", "-Verb", "runAs", "-ArgumentList", cmd).Run()
 }
 
+func stripPreReleaseAndBuildInfo(v string) string {
+	return strings.Split(strings.Split(v, "-")[0], "+")[0]
+}
+
 func fixedVersionInfo(ver string) (ret goversioninfo.FileVersion) {
 	ret.Build = 1 // as 0,0,0,0 is not valid
 	if len(ver) == 0 {
 		return ret
 	}
+	refs := []*int{&ret.Major, &ret.Minor, &ret.Patch, &ret.Build}
 	split := strings.Split(ver, ".")
-	if v := semver.Canonical("v" + ver); len(v) > 1 {
-		split = strings.Split(v[1:], ".")
-		if len(split) > 2 && len(split[2]) > 0 {
-			split[2] = strings.Split(split[2], "-")[0]
+	for n, s := range split {
+		if n >= len(refs) {
+			break
 		}
-	}
-	setVersionField(&ret.Major, split[0])
-	if len(split) > 1 {
-		setVersionField(&ret.Minor, split[1])
-	}
-	if len(split) > 2 {
-		setVersionField(&ret.Patch, split[2])
-	}
-	if len(split) > 3 {
-		setVersionField(&ret.Build, split[3])
+		setVersionField(refs[n], stripPreReleaseAndBuildInfo(s))
 	}
 	return ret
 }
