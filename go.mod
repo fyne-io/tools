@@ -1,6 +1,8 @@
 module fyne.io/tools
 
-go 1.19
+go 1.23.0
+
+toolchain go1.23.5
 
 require (
 	fyne.io/fyne/v2 v2.6.0
@@ -16,8 +18,8 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli/v2 v2.27.1
-	golang.org/x/mod v0.20.0
-	golang.org/x/tools v0.24.0
+	golang.org/x/mod v0.25.0
+	golang.org/x/tools v0.34.0
 	golang.org/x/tools/go/vcs v0.1.0-deprecated
 )
 
@@ -32,8 +34,8 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/image v0.24.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
