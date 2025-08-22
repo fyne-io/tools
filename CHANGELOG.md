@@ -3,6 +3,13 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
+## 1.6.2 - 22 August 2025
+
+### Fixed
+
+* Resolve compile issue with Go 1.25.0 caused by golang.org/x/tools conflict
+
+
 ## 1.6.1 - 15 April 2025
 
 ### Changed
