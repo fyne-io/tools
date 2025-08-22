@@ -19,6 +19,7 @@ jobs:
     - uses: WillAbides/setup-go-faster@v1
       with:
         go-version: ${{ matrix.go-version }}
+        go-version-file: 'go.mod'
 
     - name: Tests
       run: go test "-test.benchtime" 10ms -tags ci ./...
