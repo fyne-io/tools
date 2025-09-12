@@ -266,11 +266,12 @@ func compareNamespaces(have, want *Namespace) error {
 	return nil
 }
 
-func rtou(a []TableRef) (b []uint32) {
+func rtou(a []TableRef) []uint32 {
+	var b []uint32
 	for _, x := range a {
 		b = append(b, uint32(x))
 	}
-	return
+	return b
 }
 
 func compareUint32s(t *testing.T, a, b []uint32) error {
