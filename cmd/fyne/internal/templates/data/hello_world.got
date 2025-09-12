@@ -20,6 +20,6 @@ func main() {
 		fyne.LogError("failed to load translations", err)
 	}
 
-	w.SetContent(widget.NewLabel(lang.X("hello", "Hello World!")))
+	w.SetContent(widget.NewLabel(lang.L("Hello World!")))
 	w.ShowAndRun()
 }
