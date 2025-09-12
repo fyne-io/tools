@@ -152,7 +152,7 @@ func initAction(ctx *cli.Context) error {
 		return fmt.Errorf("failed to run command: %v", err)
 	}
 
-	if err := os.Mkdir("translations", 0755); err != nil {
+	if err := os.Mkdir("translations", 0o755); err != nil {
 		return err
 	}
 
