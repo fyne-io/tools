@@ -11,7 +11,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
+	"golang.org/x/mod/semver"
 
 	"fyne.io/fyne/v2"
 
@@ -355,11 +355,7 @@ func calculateExeName(sourceDir, osys string) string {
 }
 
 func isValidVersion(ver string) bool {
-	r, _ := regexp.Compile(
-		`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`,
-	) // official regex for checking semver compliance. Source: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-	ok := r.MatchString(ver)
-	if ok {
+	if semver.IsValid("v" + ver) {
 		return true
 	}
 	parts := strings.Split(ver, ".")

@@ -73,7 +73,7 @@ func Test_isValidVersion(t *testing.T) {
 	}{
 		{"1.2.3", true},
 		{"1.2.3-alpha", true},
-		{"1.2.3-breta.5", true},
+		{"1.2.3-beta.5", true},
 		{"1", true},   // not semver, but required for backwards compatibility
 		{"1.2", true}, // not semver, but required for backwards compatibility
 
@@ -137,7 +137,7 @@ func Test_processMacOSIcon(t *testing.T) {
 	assert.Equal(t, uint32(0), a)
 }
 
-func Test_MergeMetata(t *testing.T) {
+func Test_MergeMetadata(t *testing.T) {
 	p := &Packager{appData: &appData{}}
 	p.AppVersion = "v0.1"
 	data := &metadata.FyneApp{
