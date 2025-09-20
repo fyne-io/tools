@@ -3,6 +3,35 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
+## Ongoing
+
+### Added
+
+* Support Description metadata
+* Allow more than one bundle argument
+
+### Changed
+
+* Use embed instead of generated []byte for bundle command
+
+### Fixed
+
+* Remove legacy usage and files
+* toml file should not be indented
+* Correct lookup path for tools repo alongside fyne
+* Fix up some keyboard issues on Android (fyne-io/fyne#5806)
+* Entry with mobile.NumberKeyboard does not Type comma and separators (fyne-io/fyne#5101)
+* Support d8 instead of dx for generating dex
+* Make sure translation files end with a newline to prevent warnings from git and other tools
+
+
+## 1.6.2 - 22 August 2025
+
+### Fixed
+
+* Resolve compile issue with Go 1.25.0 caused by golang.org/x/tools conflict
+
+
 ## 1.6.1 - 15 April 2025
 
 ### Changed

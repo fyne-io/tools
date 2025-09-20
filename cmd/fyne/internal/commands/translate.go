@@ -185,6 +185,10 @@ func writeTranslationsFile(b []byte, file string) error {
 		return err
 	}
 
+	if len(b) > 0 && b[len(b)-1] != '\n' {
+		b = append(b, '\n')
+	}
+
 	n, err := nf.Write(b)
 	if err != nil {
 		return err

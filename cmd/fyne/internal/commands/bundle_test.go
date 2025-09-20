@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/urfave/cli/v2"
 )
 
 func TestSanitiseName(t *testing.T) {
@@ -42,8 +43,8 @@ func TestWriteResource(t *testing.T) {
 	writeHeader("test", f)
 	writeResource("testdata/bundle/content.txt", "contentTxt", f)
 
-	const header = fileHeader + "\n\npackage test\n\nimport \"fyne.io/fyne/v2\"\n\n"
-	const expected = header + "var contentTxt = &fyne.StaticResource{\n\tStaticName: \"content.txt\",\n\tStaticContent: []byte(\n\t\t\"I am bundled :)\"),\n}\n"
+	const header = fileHeader + "\n\npackage test\n\nimport (\n\t_ \"embed\"\n\t\"fyne.io/fyne/v2\"\n)\n\n"
+	const expected = header + "//go:embed testdata/bundle/content.txt\nvar contentTxtData []byte\nvar contentTxt = &fyne.StaticResource{\n\tStaticName: \"testdata/bundle/content.txt\",\n\tStaticContent: contentTxtData,\n}\n"
 
 	// Seek file to start so we can read the written data.
 	_, err = f.Seek(0, io.SeekStart)
@@ -57,6 +58,18 @@ func TestWriteResource(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, string(content))
+}
+
+func TestBundleGlobDump(t *testing.T) {
+	app := &cli.App{
+		Name:        "fyne",
+		Usage:       "execute test",
+		Description: "writes the bundle.go and bundle_test.go to stdout",
+		Commands: []*cli.Command{
+			Bundle(),
+		},
+	}
+	assert.NoError(t, app.Run([]string{"fyne", "bundle", "bundle*.go"}))
 }
 
 func BenchmarkWriteResource(b *testing.B) {
