@@ -18,6 +18,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
+	"golang.org/x/mod/semver"
 
 	"fyne.io/fyne/v2"
 
@@ -354,12 +355,16 @@ func calculateExeName(sourceDir, osys string) string {
 }
 
 func isValidVersion(ver string) bool {
-	nums := strings.Split(ver, ".")
-	if len(nums) == 0 || len(nums) > 3 {
+	if semver.IsValid("v" + ver) {
+		return true
+	}
+	parts := strings.Split(ver, ".")
+	if len(parts) < 1 || len(parts) > 2 {
 		return false
 	}
-	for _, num := range nums {
-		if _, err := strconv.Atoi(num); err != nil {
+	for _, p := range parts {
+		_, err := strconv.Atoi(p)
+		if err != nil {
 			return false
 		}
 	}
