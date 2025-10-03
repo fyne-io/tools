@@ -28,16 +28,20 @@ func Version() *cli.Command {
 				return err
 			}
 
-			wdInfo := &report.GoMod{WorkDir: wd, Module: fyneModule}
-			info2, err := wdInfo.Info()
-			if err != nil {
-				return err
+			ver := "(not found)"
+			if wd, err := lookupDirWithGoMod(wd); err == nil {
+				wdInfo := &report.GoMod{WorkDir: wd, Module: fyneModule}
+				info2, err := wdInfo.Info()
+				if err != nil {
+					return err
+				}
+
+				if imported, ok := info2["imported"]; ok && imported.(bool) {
+					ver = info2["version"].(string)
+				}
 			}
 
-			if imported, ok := info2["imported"]; ok && imported.(bool) {
-				fmt.Println("fyne library version:", info2["version"])
-			}
-
+			fmt.Println("fyne library version:", ver)
 			return nil
 		},
 	}
