@@ -266,16 +266,16 @@ func writeHeader(pkg string, out *os.File) {
 	out.WriteString("\n\nimport (\n")
 	out.WriteString("\t_ \"embed\"\n")
 	out.WriteString("\t\"fyne.io/fyne/v2\"\n")
-	out.WriteString(")\n\n")
+	out.WriteString(")\n")
 }
 
 func writeResource(file, name string, f *os.File) {
-	_, err := fmt.Fprintf(f, "//go:embed %s\nvar %sData []byte\n", file, name)
+	_, err := fmt.Fprintf(f, "\n//go:embed %s\nvar %sData []byte\n", file, name)
 	if err != nil {
 		fyne.LogError("Unable to write to bundled file", err)
 	}
 
-	const format = "var %s = &fyne.StaticResource{\n\tStaticName: %q,\n\tStaticContent: %sData,\n}\n"
+	const format = "var %s = &fyne.StaticResource{\n\tStaticName:    %q,\n\tStaticContent: %sData,\n}\n"
 	_, err = fmt.Fprintf(f, format, name, file, name)
 	if err != nil {
 		fyne.LogError("Unable to write to bundled file", err)

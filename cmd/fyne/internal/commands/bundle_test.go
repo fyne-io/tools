@@ -44,7 +44,7 @@ func TestWriteResource(t *testing.T) {
 	writeResource("testdata/bundle/content.txt", "contentTxt", f)
 
 	const header = fileHeader + "\n\npackage test\n\nimport (\n\t_ \"embed\"\n\t\"fyne.io/fyne/v2\"\n)\n\n"
-	const expected = header + "//go:embed testdata/bundle/content.txt\nvar contentTxtData []byte\nvar contentTxt = &fyne.StaticResource{\n\tStaticName: \"testdata/bundle/content.txt\",\n\tStaticContent: contentTxtData,\n}\n"
+	const expected = header + "//go:embed testdata/bundle/content.txt\nvar contentTxtData []byte\nvar contentTxt = &fyne.StaticResource{\n\tStaticName:    \"testdata/bundle/content.txt\",\n\tStaticContent: contentTxtData,\n}\n"
 
 	// Seek file to start so we can read the written data.
 	_, err = f.Seek(0, io.SeekStart)
