@@ -33,8 +33,8 @@ const (
 	minAndroidAPI = 15
 )
 
-func runBuild(cmd *command) (err error) {
-	_, err = runBuildImpl(cmd)
+func runBuild(cmd *command) error {
+	_, err := runBuildImpl(cmd)
 	return err
 }
 

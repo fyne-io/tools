@@ -266,9 +266,10 @@ func compareNamespaces(have, want *Namespace) error {
 	return nil
 }
 
-func rtou(a []TableRef) (b []uint32) {
-	for _, x := range a {
-		b = append(b, uint32(x))
+func rtou(a []TableRef) []uint32 {
+	b := make([]uint32, len(a))
+	for i, x := range a {
+		b[i] = uint32(x)
 	}
 	return b
 }
