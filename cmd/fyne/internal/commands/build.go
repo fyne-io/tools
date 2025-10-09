@@ -15,6 +15,7 @@ import (
 
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	utils "fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // Builder generate the executables.
@@ -170,7 +171,7 @@ func (b *Builder) build() error {
 		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.13")
 	}
 
-	ldFlags := extractLdflagsFromGoFlags()
+	ldFlags, env := utils.ExtractLdflagsFromGoFlags(env)
 	if !isWeb(goos) {
 		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
 
@@ -370,42 +371,6 @@ func appendEnv(env *[]string, varName, value string) {
 	}
 
 	*env = append(*env, varName+"="+value)
-}
-
-func extractLdflagsFromGoFlags() string {
-	goFlags := os.Getenv("GOFLAGS")
-
-	ldFlags, goFlags := extractLdFlags(goFlags)
-	if goFlags != "" {
-		os.Setenv("GOFLAGS", goFlags)
-	} else {
-		os.Unsetenv("GOFLAGS")
-	}
-
-	return ldFlags
-}
-
-func extractLdFlags(goFlags string) (string, string) {
-	if goFlags == "" {
-		return "", ""
-	}
-
-	flags := strings.Fields(goFlags)
-	ldflags := ""
-	newGoFlags := ""
-
-	for _, flag := range flags {
-		if strings.HasPrefix(flag, "-ldflags=") {
-			ldflags += strings.TrimPrefix(flag, "-ldflags=") + " "
-		} else {
-			newGoFlags += flag + " "
-		}
-	}
-
-	ldflags = strings.TrimSpace(ldflags)
-	newGoFlags = strings.TrimSpace(newGoFlags)
-
-	return ldflags, newGoFlags
 }
 
 func normaliseVersion(str string) string {

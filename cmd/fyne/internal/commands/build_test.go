@@ -144,27 +144,6 @@ func Test_AppendEnv(t *testing.T) {
 	}
 }
 
-type extractTest struct {
-	value       string
-	wantLdFlags string
-	wantGoFlags string
-}
-
-func Test_ExtractLdFlags(t *testing.T) {
-	goFlagsTests := []extractTest{
-		{"-ldflags=-w", "-w", ""},
-		{"-ldflags=-s", "-s", ""},
-		{"-ldflags=-w -ldflags=-s", "-w -s", ""},
-		{"-mod=vendor", "", "-mod=vendor"},
-	}
-
-	for _, test := range goFlagsTests {
-		ldFlags, goFlags := extractLdFlags(test.value)
-		assert.Equal(t, test.wantLdFlags, ldFlags)
-		assert.Equal(t, test.wantGoFlags, goFlags)
-	}
-}
-
 func Test_NormaliseVersion(t *testing.T) {
 	assert.Equal(t, "master", normaliseVersion("master"))
 	assert.Equal(t, "2.3.0.0", normaliseVersion("v2.3"))
