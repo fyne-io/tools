@@ -192,8 +192,11 @@ func (p *Packager) doPackage(runner runner) error {
 		tags = strings.Split(p.tags, ",")
 	}
 
-	if ok, set := p.appData.Migrations["fyneDo"]; ok && set && !intUtil.Contains(tags, "migrated_fynedo") {
-		tags = append(tags, "migrated_fynedo")
+	if _, found := p.appData.Migrations["fyneDo"]; intUtil.Contains(tags, "migrated_fynedo") && !found {
+		if p.appData.Migrations == nil {
+			p.appData.Migrations = make(map[string]bool)
+		}
+		p.appData.Migrations["fyneDo"] = true
 	}
 
 	if !util.Exists(p.exe) && !util.IsMobile(p.os) {

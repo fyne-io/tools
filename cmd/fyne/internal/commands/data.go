@@ -11,6 +11,7 @@ type appData struct {
 	CustomMetadata    map[string]string
 	Migrations        map[string]bool
 	VersionAtLeast2_3 bool
+	VersionAtLeast2_6 bool
 }
 
 func (a *appData) appendCustomMetadata(fromFile map[string]string) {
@@ -48,5 +49,7 @@ func (a *appData) mergeMetadata(data *metadata.FyneApp) {
 	} else {
 		a.appendCustomMetadata(data.Development)
 	}
-	a.Migrations = data.Migrations
+	for k, v := range data.Migrations {
+		a.Migrations[k] = v
+	}
 }
