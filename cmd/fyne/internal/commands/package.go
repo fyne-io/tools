@@ -22,8 +22,8 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	intUtil "fyne.io/tools/cmd/fyne/internal/util"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
+	intUtil "fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const (
