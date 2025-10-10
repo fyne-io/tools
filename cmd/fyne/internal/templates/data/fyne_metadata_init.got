@@ -20,6 +20,13 @@ func init() {
 			{{end}}
 		},
 		{{end}}
+		{{if .VersionAtLeast2_6}}
+		Migrations: map[string]bool{
+			{{range $key, $value := .Migrations}}
+			"{{$key}}": {{$value}},
+			{{end}}
+		},
+		{{end}}
 	})
 }
 

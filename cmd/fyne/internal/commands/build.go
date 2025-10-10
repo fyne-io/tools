@@ -15,6 +15,7 @@ import (
 
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	intUtil "fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // Builder generate the executables.
@@ -197,7 +198,7 @@ func (b *Builder) build() error {
 	if b.release {
 		tags = append(tags, "release")
 	}
-	if ok, set := b.appData.Migrations["fyneDo"]; ok && set {
+	if ok, set := b.appData.Migrations["fyneDo"]; ok && set && !intUtil.Contains(tags, "migrated_fynedo") {
 		tags = append(tags, "migrated_fynedo")
 	}
 	if len(tags) > 0 {
@@ -345,6 +346,11 @@ func injectMetadataIfPossible(runner runner, srcdir string, app *appData,
 	fyneGoModVersionAtLeast2_3 := version.NewConstrainGroupFromString(">=2.3")
 	if fyneGoModVersionAtLeast2_3.Match(fyneGoModVersion) {
 		app.VersionAtLeast2_3 = true
+	}
+
+	fyneGoModVersionAtLeast2_6 := version.NewConstrainGroupFromString(">=2.6")
+	if fyneGoModVersionAtLeast2_6.Match(fyneGoModVersion) {
+		app.VersionAtLeast2_6 = true
 	}
 
 	return createMetadataInitFile(srcdir, app)

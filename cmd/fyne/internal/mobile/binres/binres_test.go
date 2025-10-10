@@ -17,6 +17,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func init() {
@@ -343,26 +345,17 @@ func compareStrings(t *testing.T, a, b []string) error {
 		fmt.Fprintf(buf, "Pool(%2v, %s) %q\n", i, v, x)
 	}
 
-	contains := func(xs []string, a string) bool {
-		for _, x := range xs {
-			if x == a {
-				return true
-			}
-		}
-		return false
-	}
-
 	if err != nil {
 		buf.WriteString("\n## only in var a\n")
 		for i, x := range a {
-			if !contains(b, x) {
+			if !util.Contains(b, x) {
 				fmt.Fprintf(buf, "Pool(%2v) %q\n", i, x)
 			}
 		}
 
 		buf.WriteString("\n## only in var b\n")
 		for i, x := range b {
-			if !contains(a, x) {
+			if !util.Contains(a, x) {
 				fmt.Fprintf(buf, "Pool(%2v) %q\n", i, x)
 			}
 		}
