@@ -22,6 +22,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
+	intUtil "fyne.io/tools/cmd/fyne/internal/util"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 )
 
@@ -189,6 +190,10 @@ func (p *Packager) doPackage(runner runner) error {
 	var tags []string
 	if p.tags != "" {
 		tags = strings.Split(p.tags, ",")
+	}
+
+	if ok, set := p.appData.Migrations["fyneDo"]; ok && set && !intUtil.Contains(tags, "migrated_fynedo") {
+		tags = append(tags, "migrated_fynedo")
 	}
 
 	if !util.Exists(p.exe) && !util.IsMobile(p.os) {
