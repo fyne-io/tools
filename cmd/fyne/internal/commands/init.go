@@ -32,7 +32,7 @@ func Init() *cli.Command {
 }
 
 func getAppID(modpath string) string {
-	p := strings.Split(modpath, "/")
+	p := strings.Split(strings.ReplaceAll(modpath, "-", "_"), "/")
 	if len(p) == 0 {
 		return ""
 	}
