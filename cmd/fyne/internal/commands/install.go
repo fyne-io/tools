@@ -218,6 +218,10 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		return fmt.Errorf("failed to run command: %v", err)
 	}
 
+	if len(pkg) > len(repo.Root) && strings.HasPrefix(pkg, repo.Root) {
+		path = path + strings.TrimPrefix(pkg, repo.Root)
+	}
+
 	if !util.Exists(path) { // the error above may be ignorable, unless the path was not found
 		return fmt.Errorf("path doesn't exist: %v", err)
 	}
