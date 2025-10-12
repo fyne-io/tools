@@ -19,6 +19,11 @@ func init() {
 			"{{$key}}": "{{$value}}",
 			{{end}}
 		},
+		Migrations: map[string]bool{
+        	{{range $key, $value := .Migrations}}
+        	"{{$key}}": {{$value}},
+        	{{end}}
+        },
 		{{end}}
 	})
 }
