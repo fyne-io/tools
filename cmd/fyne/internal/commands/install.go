@@ -168,6 +168,13 @@ func getLatestTag(repo string) (string, error) {
 	return tag, nil
 }
 
+func getInstallBaseDir(path, pkg, root string) string {
+	if len(pkg) <= len(root) || !strings.HasPrefix(pkg, root) {
+		return path
+	}
+	return path + strings.TrimPrefix(pkg, root)
+}
+
 func (i *Installer) installRemote(ctx *cli.Context) error {
 	pkg, branch := getPackageAndBranch(ctx.Args().Get(0))
 
@@ -179,11 +186,11 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	}()
 
 	name := filepath.Base(pkg)
-	path, err := os.MkdirTemp("", fmt.Sprintf("fyne-install-%s-*", name))
+	temp, err := os.MkdirTemp("", fmt.Sprintf("fyne-install-%s-*", name))
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(path)
+	defer os.RemoveAll(temp)
 
 	repo, err := vcs.RepoRootForImportPath(pkg, false)
 	if err != nil {
@@ -207,7 +214,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	if branch != "" {
 		args = append(args, "--branch", branch)
 	}
-	args = append(args, path)
+	args = append(args, temp)
 
 	cmd := exec.Command("git", args...)
 	if i.verbose {
@@ -218,9 +225,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		return fmt.Errorf("failed to run command: %v", err)
 	}
 
-	if len(pkg) > len(repo.Root) && strings.HasPrefix(pkg, repo.Root) {
-		path = path + strings.TrimPrefix(pkg, repo.Root)
-	}
+	path := getInstallBaseDir(temp, pkg, repo.Root)
 
 	if !util.Exists(path) { // the error above may be ignorable, unless the path was not found
 		return fmt.Errorf("path doesn't exist: %v", err)
