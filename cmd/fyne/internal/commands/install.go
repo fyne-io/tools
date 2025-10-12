@@ -169,7 +169,7 @@ func getLatestTag(repo string) (string, error) {
 }
 
 func getInstallBaseDir(path, pkg, root string) string {
-	if len(pkg) <= len(root) || !strings.HasPrefix(pkg, root) {
+	if len(pkg) <= len(root) || !strings.HasPrefix(pkg, root) || pkg == "" || root == "" {
 		return path
 	}
 	return path + strings.TrimPrefix(pkg, root)

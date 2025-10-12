@@ -30,6 +30,9 @@ func TestGetInstallBaseDir(t *testing.T) {
 	}{
 		{"dir1", "example.com/foo", "example.com/foo", "dir1"},
 		{"dir2", "example.com/foo/cmd/bar", "example.com/foo", "dir2/cmd/bar"},
+		{"dir3", "", "", "dir3"},
+		{"dir4", "example.com", "", "dir4"},
+		{"dir5", "", "example.com", "dir5"},
 	} {
 		assert.Equal(t, test.want, getInstallBaseDir(test.path, test.pkg, test.root))
 	}
