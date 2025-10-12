@@ -12,9 +12,9 @@ func TestAppID(t *testing.T) {
 		modpath string
 		appid   string
 	}{
-		{"github.com/example/fyne-example", "com.github.example.fyne-example"},
-		{"example/fyne-example", "example.fyne-example"},
-		{"fyne-example", "fyne-example"},
+		{"github.com/example/fyne-example", "com.github.example.fyne_example"},
+		{"example/fyne-example", "example.fyne_example"},
+		{"fyne-example", "fyne_example"},
 		{"fyne.example", "example.fyne"},
 		{"fyne.example/app", "example.fyne.app"},
 		{"sub.example.com", "com.example.sub"},
