@@ -3,16 +3,21 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
-## Ongoing
+## 1.7.0 - 16 Oct 2025
 
 ### Added
 
 * Support Description metadata
 * Allow more than one bundle argument
+* Full support for semver 2.0 spec
+* Translation setup for newly generated apps
 
 ### Changed
 
 * Use embed instead of generated []byte for bundle command
+* Make library version output deterministic and more forgiving
+* Better error messages when trying to install remote apps without FyneApp.toml
+* Replace dashes with underscores in generated app ids
 
 ### Fixed
 
@@ -23,6 +28,8 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Entry with mobile.NumberKeyboard does not Type comma and separators (fyne-io/fyne#5101)
 * Support d8 instead of dx for generating dex
 * Make sure translation files end with a newline to prevent warnings from git and other tools
+* Fix missing Migrations in compiled metadata
+* Support installing Fyne apps in subdirectories
 
 
 ## 1.6.2 - 22 August 2025
