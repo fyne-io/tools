@@ -36,8 +36,8 @@ func Release() *cli.Command {
 		Usage:   "Prepares an application for public distribution",
 		Flags: []cli.Flag{
 			stringFlags["target"](&r.os),
-			stringFlags["key-store"](&r.keyStore),
-			stringFlags["key-store-pass"](&r.keyStorePass),
+			stringFlags["keystore"](&r.keyStore),
+			stringFlags["keystore-pass"](&r.keyStorePass),
 			stringFlags["key-name"](&r.keyName),
 			stringFlags["key-pass"](&r.keyStorePass),
 			stringFlags["name"](&r.Name),
@@ -338,7 +338,7 @@ func (r *Releaser) signAndroid(path string) error {
 	args = append(args, path)
 	if r.release {
 		if r.keyName == "" { // Required to sign Google Play .aab
-			return errors.New("missing required -keyName (alias) parameter")
+			return errors.New("missing required --key-name (alias) parameter")
 		}
 		args = append(args, r.keyName)
 	}
@@ -395,7 +395,7 @@ func (r *Releaser) validate() error {
 	}
 	if util.IsAndroid(r.os) {
 		if r.keyStore == "" {
-			return errors.New("missing required --key-store parameter for android release")
+			return errors.New("missing required --keystore parameter for android release")
 		}
 	} else if r.os == "darwin" {
 		if r.certificate == "" {
