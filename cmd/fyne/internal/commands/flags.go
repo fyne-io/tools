@@ -117,16 +117,16 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Destination: dst,
 		}
 	},
-	"key-store": func(dst *string) cli.Flag {
+	"keystore": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
-			Name:        "key-store",
+			Name:        "keystore",
 			Usage:       "android: location of .keystore file containing signing information",
 			Destination: dst,
 		}
 	},
-	"key-store-pass": func(dst *string) cli.Flag {
+	"keystore-pass": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
-			Name:        "key-store-pass",
+			Name:        "keystore-pass",
 			Usage:       "android: password for the .keystore file",
 			DefaultText: "read from stdin",
 			Destination: dst,
