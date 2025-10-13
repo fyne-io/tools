@@ -18,6 +18,8 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Make library version output deterministic and more forgiving
 * Better error messages when trying to install remote apps without FyneApp.toml
 * Replace dashes with underscores in generated app ids
+* Renamed release flag --key-store and --key-store-pass to --keystore and --keystore-pass
+* Create 16k aligned files for Google Play
 
 ### Fixed
 
