@@ -31,6 +31,12 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Fix missing Migrations in compiled metadata
 * Support installing Fyne apps in subdirectories
 
+### New Contributors
+
+Code in v1.7.0 contains work from the following first time contributors:
+
+* @ErikKalkoken
+
 
 ## 1.6.2 - 22 August 2025
 
