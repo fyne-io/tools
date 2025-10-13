@@ -38,6 +38,11 @@ type manifestTmplData struct {
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool,
 ) (map[string]bool, error) {
+	var env []string
+	if release { // Google Play Store requires 16K alignment
+		env = []string{"CGO_LDFLAGS=\"-Wl,-z,max-page-size=16384\""}
+	}
+
 	ndkRoot, err := ndkRoot()
 	if err != nil {
 		return nil, err
@@ -95,7 +100,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		}
 		err = goBuild(
 			pkg.PkgPath,
-			androidEnv[arch],
+			append(env, androidEnv[arch]...),
 			"-buildmode=c-shared",
 			"-o", libAbsPath,
 		)
