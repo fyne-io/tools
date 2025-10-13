@@ -24,6 +24,12 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Support d8 instead of dx for generating dex
 * Make sure translation files end with a newline to prevent warnings from git and other tools
 
+### New Contributors
+
+Code in v1.7.0 contains work from the following first time contributors:
+
+* @ErikKalkoken
+
 
 ## 1.6.2 - 22 August 2025
 
