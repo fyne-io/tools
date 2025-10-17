@@ -3,7 +3,7 @@ module fyne.io/tools
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.6.0
+	fyne.io/fyne/v2 v2.7.0
 	github.com/BurntSushi/toml v1.5.0
 	github.com/fogleman/gg v1.3.0
 	github.com/fyne-io/image v0.1.1
@@ -14,7 +14,7 @@ require (
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/natefinch/atomic v1.0.1
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/mod v0.20.0
 	golang.org/x/tools v0.24.1
