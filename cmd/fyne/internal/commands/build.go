@@ -346,6 +346,10 @@ func injectMetadataIfPossible(runner runner, srcdir string, app *appData,
 	if fyneGoModVersionAtLeast2_3.Match(fyneGoModVersion) {
 		app.VersionAtLeast2_3 = true
 	}
+	fyneGoModVersionAtLeast2_6 := version.NewConstrainGroupFromString(">=2.6")
+	if fyneGoModVersionAtLeast2_6.Match(fyneGoModVersion) {
+		app.VersionAtLeast2_6 = true
+	}
 
 	return createMetadataInitFile(srcdir, app)
 }

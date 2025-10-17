@@ -11,6 +11,7 @@ type appData struct {
 	CustomMetadata    map[string]string
 	Migrations        map[string]bool
 	VersionAtLeast2_3 bool
+	VersionAtLeast2_6 bool
 }
 
 func (a *appData) appendCustomMetadata(fromFile map[string]string) {
