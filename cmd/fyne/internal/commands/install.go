@@ -236,7 +236,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("failed to load metadata: %w", err)
 		}
-		if meta != nil {
+		if meta != nil && meta.Details.Icon != "" {
 			i.icon = filepath.Join(path, meta.Details.Icon)
 		}
 	}
