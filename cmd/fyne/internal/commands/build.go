@@ -17,6 +17,11 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
 
+const (
+	commonHardeningCFLAGS  = "-Wp,-D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection"
+	commonHardeningLDFLAGS = "-Wl,-z,relro,-z,now -Wl,--as-needed"
+)
+
 // Builder generate the executables.
 type Builder struct {
 	*appData
@@ -164,6 +169,13 @@ func (b *Builder) build() error {
 
 	args := []string{"build"}
 	env := os.Environ()
+
+	optimizationLevel := "-O2 "
+	if b.release {
+		optimizationLevel = "-O3 "
+	}
+	appendEnv(&env, "CGO_CFLAGS", optimizationLevel+commonHardeningCFLAGS)
+	appendEnv(&env, "CGO_LDFLAGS", commonHardeningLDFLAGS)
 
 	if goos == "darwin" {
 		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.13")
