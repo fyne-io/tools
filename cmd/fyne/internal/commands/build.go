@@ -17,9 +17,11 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
 
+// Based on https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/blob/master/include/flags.yml?ref_type=heads.
 const (
-	commonHardeningCFLAGS  = "-Wp,-D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection"
-	commonHardeningLDFLAGS = "-Wl,-z,relro,-z,now -Wl,--as-needed"
+	commonCFLAGS     = "-pipe -fexceptions -fasynchronous-unwind-tables"
+	hardeningCFLAGS  = "-Wp,-D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection"
+	hardeningLDFLAGS = "-Wl,-z,relro,-z,now -Wl,--as-needed"
 )
 
 // Builder generate the executables.
@@ -188,12 +190,12 @@ func (b *Builder) build() error {
 			ldFlags += " -H=windowsgui"
 		}
 
-		optimizationLevel := "-O2 "
+		cflags := "-O2 -g "
 		if b.release {
-			optimizationLevel = "-O3 "
+			cflags = "-O3 "
 		}
-		appendEnv(&env, "CGO_CFLAGS", optimizationLevel+commonHardeningCFLAGS)
-		appendEnv(&env, "CGO_LDFLAGS", commonHardeningLDFLAGS)
+		appendEnv(&env, "CGO_CFLAGS", cflags+commonCFLAGS+hardeningCFLAGS)
+		appendEnv(&env, "CGO_LDFLAGS", hardeningLDFLAGS)
 	}
 
 	if len(ldFlags) > 0 {
