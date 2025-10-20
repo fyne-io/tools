@@ -174,14 +174,14 @@ func (b *Builder) build() error {
 	if !isWeb(goos) {
 		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
 
-		if b.release {
-			ldFlags += " -s -w"
-			args = append(args, "-trimpath")
-		}
-
 		if goos == "windows" {
 			ldFlags += " -H=windowsgui"
 		}
+	}
+
+	if b.release {
+		ldFlags += " -s -w"
+		args = append(args, "-trimpath")
 	}
 
 	if len(ldFlags) > 0 {

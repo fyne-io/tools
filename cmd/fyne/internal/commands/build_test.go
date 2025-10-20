@@ -44,7 +44,7 @@ func Test_BuildWasmReleaseVersion(t *testing.T) {
 		},
 		{
 			expectedValue: expectedValue{
-				args:  []string{"build", "-tags", "release"},
+				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release"},
 				env:   []string{"GOARCH=wasm", "GOOS=js"},
 				osEnv: true,
 				dir:   "myTest",
