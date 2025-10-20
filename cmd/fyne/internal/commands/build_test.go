@@ -75,7 +75,7 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release", relativePath},
-				env:   []string{"CGO_ENABLED=1", "GOOS=linux"},
+				env:   []string{"CGO_ENABLED=1", "GOOS=linux", "CGO_CFLAGS=" + "-O3 " + commonHardeningCFLAGS, "CGO_LDFLAGS=" + commonHardeningLDFLAGS},
 				osEnv: true,
 				dir:   "myTest",
 			},

@@ -170,13 +170,6 @@ func (b *Builder) build() error {
 	args := []string{"build"}
 	env := os.Environ()
 
-	optimizationLevel := "-O2 "
-	if b.release {
-		optimizationLevel = "-O3 "
-	}
-	appendEnv(&env, "CGO_CFLAGS", optimizationLevel+commonHardeningCFLAGS)
-	appendEnv(&env, "CGO_LDFLAGS", commonHardeningLDFLAGS)
-
 	if goos == "darwin" {
 		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.13")
 		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.13")
@@ -194,6 +187,13 @@ func (b *Builder) build() error {
 		if goos == "windows" {
 			ldFlags += " -H=windowsgui"
 		}
+
+		optimizationLevel := "-O2 "
+		if b.release {
+			optimizationLevel = "-O3 "
+		}
+		appendEnv(&env, "CGO_CFLAGS", optimizationLevel+commonHardeningCFLAGS)
+		appendEnv(&env, "CGO_LDFLAGS", commonHardeningLDFLAGS)
 	}
 
 	if len(ldFlags) > 0 {
