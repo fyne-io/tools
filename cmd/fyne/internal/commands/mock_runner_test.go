@@ -69,7 +69,6 @@ func (t *testCommandRuns) setEnv(env []string) {
 	sort.Strings(expectedEnv)
 	sort.Strings(env)
 
-	require.Equal(t.t, len(expectedEnv), len(env))
 	require.Equal(t.t, expectedEnv, env)
 
 	t.runs[t.currentRun].envSet = true

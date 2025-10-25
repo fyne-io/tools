@@ -17,6 +17,14 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
 
+// Partly based on https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/blob/master/include/flags.yml?ref_type=heads.
+const (
+	baseCFLAGSRegular = "-O2 -g -fexceptions -fasynchronous-unwind-tables -pipe"
+	baseCFLAGSRelease = "-O3 -pipe"
+	hardeningCFLAGS   = "-Wp,-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
+	hardeningLDFLAGS  = "-Wl,-z,relro,-z,now"
+)
+
 // Builder generate the executables.
 type Builder struct {
 	*appData
@@ -165,18 +173,9 @@ func (b *Builder) build() error {
 	args := []string{"build"}
 	env := os.Environ()
 
-	if goos == "darwin" {
-		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.13")
-		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.13")
-	}
-
 	ldFlags := extractLdflagsFromGoFlags()
-	if !isWeb(goos) {
-		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
-
-		if goos == "windows" {
-			ldFlags += " -H=windowsgui"
-		}
+	if goos == "windows" {
+		ldFlags += " -H=windowsgui"
 	}
 
 	if b.release {
@@ -190,6 +189,11 @@ func (b *Builder) build() error {
 
 	if b.target != "" {
 		args = append(args, "-o", b.target)
+	}
+
+	if !isWeb(goos) {
+		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
+		b.applyCAndLDFlags(&env, goos)
 	}
 
 	// handle build tags
@@ -286,6 +290,24 @@ func (b *Builder) updateAndGetGoExecutable() runner {
 		}
 	}
 	return fyneGoModRunner
+}
+
+func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
+	cflags := []string{baseCFLAGSRegular, hardeningCFLAGS}
+	if b.release {
+		cflags[0] = baseCFLAGSRelease
+	}
+
+	ldflags := []string{hardeningLDFLAGS, "-Wl,--as-needed"}
+	if goos == "darwin" {
+		ldflags[1] = "-Wl,-dead_strip_dylibs"
+
+		cflags = append(cflags, "-mmacosx-version-min=10.13")
+		ldflags = append(ldflags, "-mmacosx-version-min=10.13")
+	}
+
+	appendEnv(env, "CGO_CFLAGS", strings.Join(cflags, " "))
+	appendEnv(env, "CGO_LDFLAGS", strings.Join(ldflags, " "))
 }
 
 func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
