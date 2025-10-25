@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,6 +67,20 @@ func Test_BuildWasmReleaseVersion(t *testing.T) {
 func Test_BuildLinuxReleaseVersion(t *testing.T) {
 	relativePath := "." + string(os.PathSeparator) + filepath.Join("cmd", "terminal")
 
+	cflags, exists := os.LookupEnv("CGO_CFLAGS")
+	if exists {
+		cflags += " "
+	}
+	ldflags, exists := os.LookupEnv("CGO_LDFLAGS")
+	if exists {
+		ldflags += " "
+	}
+
+	asneeded := "-Wl,--as-needed"
+	if runtime.GOOS == "darwin" {
+		asneeded = "-Wl,-dead_strip_dylibs"
+	}
+
 	expected := []mockRunner{
 		{
 			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
@@ -75,7 +91,7 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release", relativePath},
-				env:   []string{"CGO_ENABLED=1", "GOOS=linux", "CGO_CFLAGS=" + "-O3 " + commonCFLAGS + hardeningCFLAGS, "CGO_LDFLAGS=" + hardeningLDFLAGS},
+				env:   []string{"CGO_ENABLED=1", "GOOS=linux", fmt.Sprintf("CGO_CFLAGS=%s%s %s", cflags, baseCFLAGSRelease, hardeningCFLAGS), fmt.Sprintf("CGO_LDFLAGS=%s%s %s", ldflags, hardeningLDFLAGS, asneeded)},
 				osEnv: true,
 				dir:   "myTest",
 			},
