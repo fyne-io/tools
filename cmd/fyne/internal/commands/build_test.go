@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,11 +75,6 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 		ldflags += " "
 	}
 
-	asneeded := "-Wl,--as-needed"
-	if runtime.GOOS == "darwin" {
-		asneeded = "-Wl,-dead_strip_dylibs"
-	}
-
 	expected := []mockRunner{
 		{
 			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
@@ -91,7 +85,7 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release", relativePath},
-				env:   []string{"CGO_ENABLED=1", "GOOS=linux", fmt.Sprintf("CGO_CFLAGS=%s%s %s", cflags, baseCFLAGSRelease, hardeningCFLAGS), fmt.Sprintf("CGO_LDFLAGS=%s%s %s", ldflags, hardeningLDFLAGS, asneeded)},
+				env:   []string{"CGO_ENABLED=1", "GOOS=linux", fmt.Sprintf("CGO_CFLAGS=%s%s %s", cflags, baseCFLAGSRelease, hardeningCFLAGS), fmt.Sprintf("CGO_LDFLAGS=%s%s -Wl,--as-needed", ldflags, hardeningLDFLAGS)},
 				osEnv: true,
 				dir:   "myTest",
 			},
