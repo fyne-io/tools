@@ -174,13 +174,8 @@ func (b *Builder) build() error {
 	env := os.Environ()
 
 	ldFlags := extractLdflagsFromGoFlags()
-	if !isWeb(goos) {
-		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
-		b.applyCAndLDFlags(&env, goos)
-
-		if goos == "windows" {
-			ldFlags += " -H=windowsgui"
-		}
+	if goos == "windows" {
+		ldFlags += " -H=windowsgui"
 	}
 
 	if b.release {
@@ -194,6 +189,11 @@ func (b *Builder) build() error {
 
 	if b.target != "" {
 		args = append(args, "-o", b.target)
+	}
+
+	if !isWeb(goos) {
+		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
+		b.applyCAndLDFlags(&env, goos)
 	}
 
 	// handle build tags
