@@ -25,6 +25,7 @@ func Bundle() *cli.Command {
 	return &cli.Command{
 		Name:        "bundle",
 		Usage:       "Embeds static content into your go application",
+		ArgsUsage:   "file ...",
 		Description: "Each resource will have a generated filename unless specified.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
