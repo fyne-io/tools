@@ -74,11 +74,13 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 	if exists {
 		ldflags += " "
 	}
+
+	archcflags := ""
 	switch targetArch() {
 	case "amd64":
-		cflags += "-fcf-protection"
+		archcflags = " -fcf-protection"
 	case "arm64":
-		cflags += "-mbranch-protection=bti+pac-ret"
+		archcflags = " -mbranch-protection=bti+pac-ret"
 	}
 
 	expected := []mockRunner{
@@ -91,7 +93,7 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release", relativePath},
-				env:   []string{"CGO_ENABLED=1", "GOOS=linux", fmt.Sprintf("CGO_CFLAGS=%s%s %s", cflags, baseCFLAGSRelease, hardeningCFLAGS), hardeningLDFLAGSLinux},
+				env:   []string{"CGO_ENABLED=1", "GOOS=linux", fmt.Sprintf("CGO_CFLAGS=%s%s %s%s", cflags, baseCFLAGSRelease, hardeningCFLAGS, archcflags), hardeningLDFLAGSLinux},
 				osEnv: true,
 				dir:   "myTest",
 			},
