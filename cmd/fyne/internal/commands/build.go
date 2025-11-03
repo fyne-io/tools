@@ -19,10 +19,11 @@ import (
 
 // Partly based on https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/blob/master/include/flags.yml?ref_type=heads.
 const (
-	baseCFLAGSRegular = "-O2 -g -fexceptions -fasynchronous-unwind-tables -pipe"
-	baseCFLAGSRelease = "-O3 -pipe"
-	hardeningCFLAGS   = "-Wp,-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
-	hardeningLDFLAGS  = "-Wl,-z,relro,-z,now"
+	baseCFLAGSRegular      = "-O2 -g -fexceptions -fasynchronous-unwind-tables -pipe"
+	baseCFLAGSRelease      = "-O3 -pipe"
+	hardeningCFLAGS        = "-Wp,-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
+	hardeningLDFLAGSLinux  = "-Wl,-z,relro,-z,now -Wl,--as-needed"
+	hardeningLDFLAGSDarwin = "-Wl,-dead_strip_dylibs"
 )
 
 // Builder generate the executables.
@@ -298,9 +299,12 @@ func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
 		cflags[0] = baseCFLAGSRelease
 	}
 
-	ldflags := []string{hardeningLDFLAGS, "-Wl,--as-needed"}
-	if goos == "darwin" {
-		ldflags[1] = "-Wl,-dead_strip_dylibs"
+	ldflags := []string{}
+	switch goos {
+	case "linux":
+		ldflags = append(ldflags, hardeningLDFLAGSLinux)
+	case "darwin":
+		ldflags = append(ldflags, hardeningLDFLAGSDarwin)
 
 		cflags = append(cflags, "-mmacosx-version-min=10.13")
 		ldflags = append(ldflags, "-mmacosx-version-min=10.13")
