@@ -310,6 +310,13 @@ func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
 		ldflags = append(ldflags, "-mmacosx-version-min=10.13")
 	}
 
+	switch targetArch() {
+	case "amd64":
+		cflags = append(cflags, "-fcf-protection")
+	case "arm64":
+		cflags = append(cflags, "-mbranch-protection=bti+pac-ret")
+	}
+
 	appendEnv(env, "CGO_CFLAGS", strings.Join(cflags, " "))
 	appendEnv(env, "CGO_LDFLAGS", strings.Join(ldflags, " "))
 }
@@ -378,6 +385,15 @@ func injectMetadataIfPossible(runner runner, srcdir string, app *appData,
 	}
 
 	return createMetadataInitFile(srcdir, app)
+}
+
+func targetArch() string {
+	archEnv, ok := os.LookupEnv("GOARCH")
+	if ok {
+		return archEnv
+	}
+
+	return runtime.GOARCH
 }
 
 func targetOS() string {
