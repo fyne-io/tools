@@ -8,6 +8,7 @@ type FyneApp struct {
 	Development map[string]string `toml:",omitempty"`
 	Release     map[string]string `toml:",omitempty"`
 	Source      *AppSource        `toml:",omitempty"`
+	OpenWith    *OpenWith         `toml:",omitempty"`
 	LinuxAndBSD *LinuxAndBSD      `toml:",omitempty"`
 	Languages   []string          `toml:",omitempty"`
 	Migrations  map[string]bool   `toml:",omitempty"`
@@ -32,4 +33,8 @@ type LinuxAndBSD struct {
 	Comment     string   `toml:",omitempty"`
 	Keywords    []string `toml:",omitempty"`
 	ExecParams  string   `toml:",omitempty"`
+}
+
+type OpenWith struct {
+	MimeType string `toml:",omitempty"`
 }
