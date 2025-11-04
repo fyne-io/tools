@@ -64,8 +64,8 @@ func (p *Packager) packageUNIX() error {
 
 	mimes := ""
 	openWith := ""
-	if p.OpenWith != nil && p.OpenWith.MimeType != "" {
-		mimes = p.OpenWith.MimeType
+	if p.OpenWith != nil && p.OpenWith.MimeTypes != "" {
+		mimes = p.OpenWith.MimeTypes
 		openWith = " %F"
 	}
 
