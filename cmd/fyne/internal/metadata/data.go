@@ -36,5 +36,5 @@ type LinuxAndBSD struct {
 }
 
 type OpenWith struct {
-	MimeType string `toml:",omitempty"`
+	MimeTypes string `toml:",omitempty"`
 }
