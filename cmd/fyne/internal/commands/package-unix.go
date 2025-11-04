@@ -23,6 +23,7 @@ type unixData struct {
 	Comment     string
 	Keywords    string
 	ExecParams  string
+	MimeTypes   string
 
 	SourceRepo, SourceDir string
 }
@@ -60,6 +61,13 @@ func (p *Packager) packageUNIX() error {
 		return fmt.Errorf("failed to copy icon: %w", err)
 	}
 
+	mimes := ""
+	openWith := ""
+	if p.OpenWith != nil && p.OpenWith.MimeType != "" {
+		mimes = p.OpenWith.MimeType
+		openWith = " %F"
+	}
+
 	appsDir := util.EnsureSubDir(shareDir, "applications")
 	desktop := filepath.Join(appsDir, p.AppID+".desktop")
 	deskFile, err := os.Create(desktop)
@@ -76,7 +84,7 @@ func (p *Packager) packageUNIX() error {
 	tplData := unixData{
 		Name:        p.Name,
 		AppID:       p.AppID,
-		Exec:        filepath.Base(p.exe),
+		Exec:        filepath.Base(p.exe) + openWith,
 		Icon:        iconName,
 		Local:       local,
 		GenericName: linuxBSD.GenericName,
@@ -84,6 +92,7 @@ func (p *Packager) packageUNIX() error {
 		Comment:     linuxBSD.Comment,
 		Categories:  formatDesktopFileList(linuxBSD.Categories),
 		ExecParams:  linuxBSD.ExecParams,
+		MimeTypes:   mimes,
 	}
 
 	if p.sourceMetadata != nil {

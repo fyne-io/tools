@@ -34,3 +34,16 @@ func TestDesktopFileSource(t *testing.T) {
 	assert.True(t, strings.Contains(buf.String(), "Repo=https://example.com"))
 	assert.True(t, strings.Contains(buf.String(), "Dir=cmd/name"))
 }
+
+func TestDesktopFileOpenWith(t *testing.T) {
+	tplData := unixData{
+		Name:      "Testing",
+		Exec:      "tester",
+		MimeTypes: "text/plain",
+	}
+	buf := &bytes.Buffer{}
+
+	err := templates.DesktopFileUNIX.Execute(buf, tplData)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(buf.String(), "MimeType=text/plain"))
+}

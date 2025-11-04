@@ -10,6 +10,10 @@ Comment={{.Comment}}{{end}}
 {{- if ne .Categories ""}}
 Categories={{.Categories}}{{end}}
 Keywords={{if ne .Keywords ""}}{{.Keywords}}{{else}}fyne;{{end}}
+{{if or (ne .MimeTypes "") (ne .MimeTypes "") -}}
+MimeType={{.MimeTypes}}
+
+{{end -}}
 
 {{if or (ne .SourceRepo "") (ne .SourceDir "") -}}
 [X-Fyne Source]
