@@ -35,6 +35,7 @@ type LinuxAndBSD struct {
 	ExecParams  string   `toml:",omitempty"`
 }
 
+// CanOpen represents a selection of file types (mime etc) that this application can open.
 type CanOpen struct {
 	MimeTypes string `toml:",omitempty"`
 }
