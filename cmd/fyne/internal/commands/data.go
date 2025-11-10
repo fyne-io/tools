@@ -10,7 +10,7 @@ type appData struct {
 	Release, rawIcon  bool
 	CustomMetadata    map[string]string
 	Migrations        map[string]bool
-	OpenWith          *metadata.OpenWith
+	CanOpen           *metadata.CanOpen
 	VersionAtLeast2_3 bool
 	VersionAtLeast2_6 bool
 }
@@ -51,5 +51,5 @@ func (a *appData) mergeMetadata(data *metadata.FyneApp) {
 		a.appendCustomMetadata(data.Development)
 	}
 	a.Migrations = data.Migrations
-	a.OpenWith = data.OpenWith
+	a.CanOpen = data.CanOpen
 }
