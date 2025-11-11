@@ -17,6 +17,15 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
 
+// Partly based on https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/blob/master/include/flags.yml?ref_type=heads.
+const (
+	baseCFLAGSRegular      = "-O2 -g -fexceptions -fasynchronous-unwind-tables -pipe"
+	baseCFLAGSRelease      = "-O3 -pipe"
+	hardeningCFLAGS        = "-Wp,-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
+	hardeningLDFLAGSLinux  = "-Wl,-z,relro,-z,now -Wl,--as-needed"
+	hardeningLDFLAGSDarwin = "-Wl,-dead_strip_dylibs"
+)
+
 // Builder generate the executables.
 type Builder struct {
 	*appData
@@ -165,18 +174,9 @@ func (b *Builder) build() error {
 	args := []string{"build"}
 	env := os.Environ()
 
-	if goos == "darwin" {
-		appendEnv(&env, "CGO_CFLAGS", "-mmacosx-version-min=10.13")
-		appendEnv(&env, "CGO_LDFLAGS", "-mmacosx-version-min=10.13")
-	}
-
 	ldFlags := extractLdflagsFromGoFlags()
-	if !isWeb(goos) {
-		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
-
-		if goos == "windows" {
-			ldFlags += " -H=windowsgui"
-		}
+	if goos == "windows" {
+		ldFlags += " -H=windowsgui"
 	}
 
 	if b.release {
@@ -190,6 +190,11 @@ func (b *Builder) build() error {
 
 	if b.target != "" {
 		args = append(args, "-o", b.target)
+	}
+
+	if !isWeb(goos) {
+		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
+		b.applyCAndLDFlags(&env, goos)
 	}
 
 	// handle build tags
@@ -288,6 +293,34 @@ func (b *Builder) updateAndGetGoExecutable() runner {
 	return fyneGoModRunner
 }
 
+func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
+	cflags := []string{baseCFLAGSRegular, hardeningCFLAGS}
+	if b.release {
+		cflags[0] = baseCFLAGSRelease
+	}
+
+	ldflags := []string{}
+	switch goos {
+	case "linux":
+		ldflags = append(ldflags, hardeningLDFLAGSLinux)
+	case "darwin":
+		ldflags = append(ldflags, hardeningLDFLAGSDarwin)
+
+		cflags = append(cflags, "-mmacosx-version-min=10.13")
+		ldflags = append(ldflags, "-mmacosx-version-min=10.13")
+	}
+
+	switch targetArch() {
+	case "amd64":
+		cflags = append(cflags, "-fcf-protection")
+	case "arm64":
+		cflags = append(cflags, "-mbranch-protection=bti+pac-ret")
+	}
+
+	appendEnv(env, "CGO_CFLAGS", strings.Join(cflags, " "))
+	appendEnv(env, "CGO_LDFLAGS", strings.Join(ldflags, " "))
+}
+
 func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
 	data, err := metadata.LoadStandard(srcdir)
 	if err == nil {
@@ -352,6 +385,15 @@ func injectMetadataIfPossible(runner runner, srcdir string, app *appData,
 	}
 
 	return createMetadataInitFile(srcdir, app)
+}
+
+func targetArch() string {
+	archEnv, ok := os.LookupEnv("GOARCH")
+	if ok {
+		return archEnv
+	}
+
+	return runtime.GOARCH
 }
 
 func targetOS() string {
