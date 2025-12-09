@@ -20,6 +20,7 @@ func main() {
 			commands.Init(),
 			commands.Env(),
 			commands.Build(),
+			commands.Cross(),
 			commands.Package(),
 			commands.Release(),
 			commands.Install(),
