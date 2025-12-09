@@ -8,9 +8,9 @@ import "fmt"
 
 // osImages maps operating systems to their container images
 var osImages = map[string]string{
-	"linux":   "fyneio/fyne-cross-images:linux",
-	"windows": "fyneio/fyne-cross-images:windows",
-	"darwin":  "fyneio/fyne-cross-images:darwin",
+	"linux":   "fyneio/fyne-cross-images:tools-linux",
+	"windows": "fyneio/fyne-cross-images:tools-windows",
+	"darwin":  "fyneio/fyne-cross-images:tools-darwin",
 }
 
 // targetEnvMap defines OS/arch-specific environment variables for cross-compilation
