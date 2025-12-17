@@ -30,10 +30,8 @@ type darwinData struct {
 const (
 	icnsHeaderSize = 8
 	icnsMagicSize  = 4
-	//icnsOSTypeDark = "\xFD\xD9\x2F\xA8"
+	icnsOSTypeDark = "\xFD\xD9\x2F\xA8"
 )
-
-var icnsOSTypeDark = []byte{0xFD, 0xD9, 0x2F, 0xA8}
 
 func darwinLangs(langs []string) []string {
 	r := make([]string, len(langs))
@@ -158,7 +156,7 @@ func injectDarkIcon(darkImg image.Image, buf *bytes.Buffer) error {
 		return fmt.Errorf("failed to encode icns: %w", err)
 	}
 
-	if _, err := buf.Write(icnsOSTypeDark); err != nil {
+	if _, err := buf.WriteString(icnsOSTypeDark); err != nil {
 		return fmt.Errorf("failed to append dark icon header: %w", err)
 	}
 	if err := binary.Write(buf, binary.BigEndian, uint32(buf2.Len()-icnsHeaderSize)); err != nil {
