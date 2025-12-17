@@ -166,9 +166,7 @@ func injectDarkIcon(darkImg image.Image, buf *bytes.Buffer) error {
 		return fmt.Errorf("failed to append dark icon data: %w", err)
 	}
 
-	if _, err := binary.Encode(buf.Bytes()[icnsMagicSize:], binary.BigEndian, uint32(buf.Len())); err != nil {
-		return fmt.Errorf("failed to adjust icon length: %w", err)
-	}
+	binary.BigEndian.PutUint32(buf.Bytes()[icnsMagicSize:], uint32(buf.Len()))
 
 	return nil
 }
