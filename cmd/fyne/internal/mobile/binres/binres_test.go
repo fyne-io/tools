@@ -6,6 +6,7 @@ package binres
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding"
 	"encoding/xml"
 	"errors"
@@ -441,22 +442,22 @@ func TestTableMarshal(t *testing.T) {
 
 	bin, err := tbl.MarshalBinary()
 	r.NoError(err)
+	r.Greater(len(bin), 1000, "Marshalled data too small")
 
 	xtbl := new(Table)
 	err = xtbl.UnmarshalBinary(bin)
 	r.NoError(err)
 
-	r.Equal(len(tbl.pool.strings), len(xtbl.pool.strings))
-	r.Equal(len(tbl.pkgs), len(xtbl.pkgs))
+	h1 := sha256.Sum256(bin)
 
-	pkg, xpkg := tbl.pkgs[0], xtbl.pkgs[0]
-	err = compareStrings(t, pkg.typePool.strings, xpkg.typePool.strings)
+	bin2, err := xtbl.MarshalBinary()
 	r.NoError(err)
+	h2 := sha256.Sum256(bin2)
 
-	err = compareStrings(t, pkg.keyPool.strings, xpkg.keyPool.strings)
-	r.NoError(err)
+	r.Equal(h1, h2, "Re-marshalled data hash mismatch")
 
-	r.Equal(pkg.specs, xpkg.specs)
+	t.Logf("Table marshal/unmarshal OK: %d bytes, %d strings",
+		len(bin), len(tbl.pool.strings))
 }
 
 func checkResources(t *testing.T) {

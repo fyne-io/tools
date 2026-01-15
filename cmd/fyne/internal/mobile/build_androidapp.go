@@ -18,6 +18,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"sort"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
@@ -155,6 +157,16 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 	}
+
+	// Sign the APK with apksigner only for debug builds (!release)
+	apkPath := buildO[:len(buildO)-3] + "apk" // Get path to .apk file
+	if !buildN && !release {
+		// Only sign debug builds (APK files)
+		if err := signAPK(apkPath); err != nil {
+			return nil, fmt.Errorf("failed to sign APK: %v", err)
+		}
+	}
+
 	if release {
 		_, err := exec.LookPath("bundletool")
 		if err != nil {
@@ -464,3 +476,115 @@ cSL5bhq0N5XHK77sscxW9vXjG0LJMXmFZPp9F6aV6ejkMIXyJ/Yz/EqeaJFwilTq
 Mc6xR47qkdzu0dQ1aPm4XD7AWDtIvPo/GG2DKOucLBbQc2cOWtKS
 -----END RSA PRIVATE KEY-----
 `
+
+// signAPK signs an APK file using apksigner with debug keystore
+func signAPK(apkPath string) error {
+	if buildV {
+		fmt.Fprintf(os.Stderr, "Signing APK with apksigner...\n")
+	}
+
+	// Check if apksigner is available
+	if _, err := exec.LookPath("apksigner"); err != nil {
+		// If apksigner not found, try to find it in Android SDK
+		sdkPath := os.Getenv("ANDROID_SDK_ROOT")
+		if sdkPath == "" {
+			sdkPath = os.Getenv("ANDROID_HOME")
+		}
+		if sdkPath != "" {
+			apksignerPath := filepath.Join(sdkPath, "build-tools")
+			// Look for the latest build-tools version
+			buildToolsDirs, err := os.ReadDir(apksignerPath)
+			if err == nil && len(buildToolsDirs) > 0 {
+				// Sort by name (version) in reverse order
+				sort.Slice(buildToolsDirs, func(i, j int) bool {
+					return buildToolsDirs[i].Name() > buildToolsDirs[j].Name()
+				})
+				apksignerPath = filepath.Join(apksignerPath, buildToolsDirs[0].Name(), "apksigner")
+				if runtime.GOOS == "windows" {
+					apksignerPath += ".bat"
+				}
+				if _, err := os.Stat(apksignerPath); err == nil {
+					// Set full path to apksigner
+					os.Setenv("PATH", apksignerPath+string(os.PathListSeparator)+os.Getenv("PATH"))
+				}
+			}
+		}
+	}
+
+	// Path to debug keystore (standard for Android)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	debugKeystore := filepath.Join(homeDir, ".android", "debug.keystore")
+
+	// Check if debug keystore exists
+	if _, err := os.Stat(debugKeystore); os.IsNotExist(err) {
+		// If debug keystore doesn't exist, create it with keytool
+		if buildV {
+			fmt.Fprintf(os.Stderr, "Debug keystore not found, creating one...\n")
+		}
+
+		// Check if keytool is available
+		if _, err := exec.LookPath("keytool"); err != nil {
+			// Try to find in Java JDK
+			javaHome := os.Getenv("JAVA_HOME")
+			if javaHome != "" {
+				keytoolPath := filepath.Join(javaHome, "bin", "keytool")
+				if runtime.GOOS == "windows" {
+					keytoolPath += ".exe"
+				}
+				if _, err := os.Stat(keytoolPath); err == nil {
+					os.Setenv("PATH", filepath.Dir(keytoolPath)+string(os.PathListSeparator)+os.Getenv("PATH"))
+				}
+			}
+		}
+
+		keytoolCmd := exec.Command("keytool",
+			"-genkey",
+			"-v",
+			"-keystore", debugKeystore,
+			"-alias", "androiddebugkey",
+			"-storepass", "android",
+			"-keypass", "android",
+			"-keyalg", "RSA",
+			"-keysize", "2048",
+			"-validity", "10000",
+			"-dname", "CN=Android Debug,O=Android,C=US")
+
+		if buildV {
+			keytoolCmd.Stdout = os.Stdout
+			keytoolCmd.Stderr = os.Stderr
+		}
+
+		if err := keytoolCmd.Run(); err != nil {
+			return fmt.Errorf("failed to create debug keystore: %v. Make sure Java JDK is installed and keytool is in PATH", err)
+		}
+	}
+
+	// Sign the APK with apksigner
+	cmd := exec.Command("apksigner", "sign",
+		"--ks", debugKeystore,
+		"--ks-pass", "pass:android",
+		"--key-pass", "pass:android",
+		"--v1-signing-enabled", "true",
+		"--v2-signing-enabled", "true",
+		"--v3-signing-enabled", "true",
+		apkPath)
+
+	if buildV {
+		fmt.Fprintf(os.Stderr, "Running command: %s\n", strings.Join(cmd.Args, " "))
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("apksigner failed: %v. Make sure Android SDK build-tools are installed and apksigner is in PATH", err)
+	}
+
+	if buildV {
+		fmt.Fprintf(os.Stderr, "APK signed successfully: %s\n", apkPath)
+	}
+
+	return nil
+}

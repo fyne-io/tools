@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"golang.org/x/tools/go/packages"
@@ -30,7 +31,7 @@ var cmdBuild = &command{
 }
 
 const (
-	minAndroidAPI = 15
+	minAndroidAPI = binres.MinSDK
 )
 
 func runBuild(cmd *command) error {
@@ -109,9 +110,10 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			return pkg, nil
 		}
 		target := 35
-		if !buildRelease {
-			target = 29 // TODO once we have gomobile debug signing working for v2 android signs
-		}
+		// if !buildRelease {
+		// 	target = 29 // TODO once we have gomobile debug signing working for v2 android signs
+		// }
+		// Done by signAPK in build_androidapp.go
 		nmpkgs, err = goAndroidBuild(pkg, buildBundleID, targetArchs, cmd.IconPath, cmd.AppName, cmd.Version, cmd.Build, target, buildRelease)
 		if err != nil {
 			return nil, err

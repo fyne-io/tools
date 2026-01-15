@@ -11,7 +11,12 @@ import (
 )
 
 // MinSDK is the targeted sdk version for support by package binres.
-const MinSDK = 15
+const (
+	// MinSDK = 15
+	// platformBuildVersionName="4.0.4-1406430"
+	MinSDK           = 21
+	BuildVersionName = "5.0.1-1624448"
+)
 
 // Requires environment variable ANDROID_HOME to be set.
 func apiResources() ([]byte, error) {
