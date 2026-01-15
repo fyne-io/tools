@@ -477,72 +477,71 @@ Mc6xR47qkdzu0dQ1aPm4XD7AWDtIvPo/GG2DKOucLBbQc2cOWtKS
 -----END RSA PRIVATE KEY-----
 `
 
-// signAPK signs an APK file using apksigner with debug keystore
+// signAPK signs an APK file using apksigner with a debug keystore.
+// It automatically locates Android SDK build-tools and Java keytool,
+// and generates a debug keystore if it is missing.
 func signAPK(apkPath string) error {
 	if buildV {
 		fmt.Fprintf(os.Stderr, "Signing APK with apksigner...\n")
 	}
 
-	// Check if apksigner is available
+	// 1. Locate apksigner in System PATH or Android SDK
 	if _, err := exec.LookPath("apksigner"); err != nil {
-		// If apksigner not found, try to find it in Android SDK
 		sdkPath := os.Getenv("ANDROID_SDK_ROOT")
 		if sdkPath == "" {
 			sdkPath = os.Getenv("ANDROID_HOME")
 		}
 		if sdkPath != "" {
-			apksignerPath := filepath.Join(sdkPath, "build-tools")
-			// Look for the latest build-tools version
-			buildToolsDirs, err := os.ReadDir(apksignerPath)
-			if err == nil && len(buildToolsDirs) > 0 {
-				// Sort by name (version) in reverse order
-				sort.Slice(buildToolsDirs, func(i, j int) bool {
-					return buildToolsDirs[i].Name() > buildToolsDirs[j].Name()
-				})
-				apksignerPath = filepath.Join(apksignerPath, buildToolsDirs[0].Name(), "apksigner")
-				if runtime.GOOS == "windows" {
-					apksignerPath += ".bat"
-				}
-				if _, err := os.Stat(apksignerPath); err == nil {
-					// Set full path to apksigner
-					os.Setenv("PATH", apksignerPath+string(os.PathListSeparator)+os.Getenv("PATH"))
+			btPath := filepath.Join(sdkPath, "build-tools")
+			if dirs, err := os.ReadDir(btPath); err == nil && len(dirs) > 0 {
+				// Sort build-tools versions in descending order (newest first)
+				sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() > dirs[j].Name() })
+
+				for _, d := range dirs {
+					execName := "apksigner"
+					if runtime.GOOS == "windows" {
+						execName += ".bat"
+					}
+					fullPath := filepath.Join(btPath, d.Name(), execName)
+					if _, err := os.Stat(fullPath); err == nil {
+						// Add the DIRECTORY containing the executable to PATH
+						os.Setenv("PATH", filepath.Dir(fullPath)+string(os.PathListSeparator)+os.Getenv("PATH"))
+						break
+					}
 				}
 			}
 		}
 	}
 
-	// Path to debug keystore (standard for Android)
+	// 2. Define path to debug.keystore
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
-	debugKeystore := filepath.Join(homeDir, ".android", "debug.keystore")
+	keystoreDir := filepath.Join(homeDir, ".android")
+	debugKeystore := filepath.Join(keystoreDir, "debug.keystore")
 
-	// Check if debug keystore exists
+	// 3. Ensure keystore exists or create a new one
 	if _, err := os.Stat(debugKeystore); os.IsNotExist(err) {
-		// If debug keystore doesn't exist, create it with keytool
 		if buildV {
 			fmt.Fprintf(os.Stderr, "Debug keystore not found, creating one...\n")
 		}
 
-		// Check if keytool is available
+		// CRITICAL: Create .android directory if it doesn't exist (mandatory for CI environments)
+		if err := os.MkdirAll(keystoreDir, 0755); err != nil {
+			return fmt.Errorf("failed to create keystore directory: %v", err)
+		}
+
+		// Locate keytool (bundled with Java JDK)
 		if _, err := exec.LookPath("keytool"); err != nil {
-			// Try to find in Java JDK
-			javaHome := os.Getenv("JAVA_HOME")
-			if javaHome != "" {
-				keytoolPath := filepath.Join(javaHome, "bin", "keytool")
-				if runtime.GOOS == "windows" {
-					keytoolPath += ".exe"
-				}
-				if _, err := os.Stat(keytoolPath); err == nil {
-					os.Setenv("PATH", filepath.Dir(keytoolPath)+string(os.PathListSeparator)+os.Getenv("PATH"))
-				}
+			if javaHome := os.Getenv("JAVA_HOME"); javaHome != "" {
+				binPath := filepath.Join(javaHome, "bin")
+				os.Setenv("PATH", binPath+string(os.PathListSeparator)+os.Getenv("PATH"))
 			}
 		}
 
 		keytoolCmd := exec.Command("keytool",
-			"-genkey",
-			"-v",
+			"-genkey", "-v",
 			"-keystore", debugKeystore,
 			"-alias", "androiddebugkey",
 			"-storepass", "android",
@@ -552,39 +551,35 @@ func signAPK(apkPath string) error {
 			"-validity", "10000",
 			"-dname", "CN=Android Debug,O=Android,C=US")
 
-		if buildV {
-			keytoolCmd.Stdout = os.Stdout
-			keytoolCmd.Stderr = os.Stderr
-		}
-
-		if err := keytoolCmd.Run(); err != nil {
-			return fmt.Errorf("failed to create debug keystore: %v. Make sure Java JDK is installed and keytool is in PATH", err)
+		if out, err := keytoolCmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("keytool failed to generate keystore: %v\nOutput: %s", err, string(out))
 		}
 	}
 
-	// Sign the APK with apksigner
-	cmd := exec.Command("apksigner", "sign",
+	// 4. Sign the APK
+	// Using V1, V2, and V3 signing schemes to ensure compatibility with all Android versions in 2026
+	signArgs := []string{"sign",
 		"--ks", debugKeystore,
 		"--ks-pass", "pass:android",
 		"--key-pass", "pass:android",
 		"--v1-signing-enabled", "true",
 		"--v2-signing-enabled", "true",
 		"--v3-signing-enabled", "true",
-		apkPath)
+		apkPath,
+	}
+
+	cmd := exec.Command("apksigner", signArgs...)
+	if buildV {
+		fmt.Fprintf(os.Stderr, "Executing: %s\n", strings.Join(cmd.Args, " "))
+	}
+
+	// CombinedOutput captures stderr for better debugging in CI logs
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("apksigner failed: %v\nOutput: %s", err, string(out))
+	}
 
 	if buildV {
-		fmt.Fprintf(os.Stderr, "Running command: %s\n", strings.Join(cmd.Args, " "))
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		fmt.Printf("APK signed successfully: %s\n", apkPath)
 	}
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("apksigner failed: %v. Make sure Android SDK build-tools are installed and apksigner is in PATH", err)
-	}
-
-	if buildV {
-		fmt.Fprintf(os.Stderr, "APK signed successfully: %s\n", apkPath)
-	}
-
 	return nil
 }
