@@ -460,7 +460,7 @@ func (r *Releaser) zipAlign(path string) error {
 func findWindowsSDKBin() (string, error) {
 	inPath, err := exec.LookPath("makeappx.exe")
 	if err == nil {
-		return inPath, nil
+		return filepath.Dir(inPath), nil
 	}
 
 	matches, err := filepath.Glob("C:\\Program Files (x86)\\Windows Kits\\*\\bin\\*\\*\\makeappx.exe")
