@@ -458,17 +458,26 @@ func (r *Releaser) zipAlign(path string) error {
 }
 
 func findWindowsSDKBin() (string, error) {
-	inPath, err := exec.LookPath("makeappx.exe")
-	if err == nil {
+	// Determine architecture directory based on GOARCH
+	archDir := "x64"
+	switch os.Getenv("GOARCH") {
+	case "386":
+		archDir = "x86"
+	case "arm64":
+		archDir = "arm64"
+	}
+
+	// Try architecture-specific Windows SDK location first
+	if matches, _ := filepath.Glob("C:\\Program Files (x86)\\Windows Kits\\*\\bin\\*\\" + archDir + "\\makeappx.exe"); len(matches) > 0 {
+		return filepath.Dir(matches[0]), nil
+	}
+
+	// Fallback: search in PATH
+	if inPath, err := exec.LookPath("makeappx.exe"); err == nil {
 		return filepath.Dir(inPath), nil
 	}
 
-	matches, err := filepath.Glob("C:\\Program Files (x86)\\Windows Kits\\*\\bin\\*\\*\\makeappx.exe")
-	if err != nil || len(matches) == 0 {
-		return "", errors.New("failed to look up standard locations for makeappx.exe")
-	}
-
-	return filepath.Dir(matches[0]), nil
+	return "", errors.New("cannot find makeappx.exe")
 }
 
 func isValidMacOSCategory(in string) bool {
