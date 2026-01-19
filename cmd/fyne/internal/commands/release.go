@@ -371,17 +371,18 @@ func (r *Releaser) signAndroid(path string) error {
 }
 
 func (r *Releaser) signWindows(appx string) error {
+	// appx is name or name.appx
+	ext := filepath.Ext(appx)
+	name := strings.TrimSuffix(appx, ext)
+	if ext != ".appx" {
+		ext = ".exe"
+	}
+	signed := name + ext
 	// for linux runner
 	if osslsigncode, err := exec.LookPath("osslsigncode"); err == nil {
-		name := appx
-		ext := ".exe"
-		if filepath.Ext(appx) == ".appx" {
-			ext = ".appx"
-			name = strings.TrimSuffix(appx, ext)
-		}
 		unsigned := name + ".unsigned" + ext
 		os.Remove(unsigned)
-		err := os.Rename(name+ext, unsigned)
+		err := os.Rename(signed, unsigned)
 		if err != nil {
 			return err
 		}
@@ -391,7 +392,7 @@ func (r *Releaser) signWindows(appx string) error {
 			"-pkcs12", r.certificate,
 			"-pass", r.password,
 			"-in", unsigned,
-			"-out", name+ext)
+			"-out", signed)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
@@ -406,7 +407,7 @@ func (r *Releaser) signWindows(appx string) error {
 	}
 
 	cmd := exec.Command(filepath.Join(binDir, "signtool.exe"),
-		"sign", "/a", "/v", "/fd", "SHA256", "/f", r.certificate, "/p", r.password, appx)
+		"sign", "/a", "/v", "/fd", "SHA256", "/f", r.certificate, "/p", r.password, signed)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
