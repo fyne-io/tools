@@ -273,14 +273,20 @@ func (r *Releaser) packageMacOSRelease() error {
 }
 
 func (r *Releaser) packageWindowsRelease(outFile string) error {
+	// outFile is name.appx
+	// r.Name is name or name.exe but exist as file name.exe
 	payload := filepath.Join(r.dir, "Payload")
 	_ = os.Mkdir(payload, 0o750)
 	defer os.RemoveAll(payload)
 
-	util.CopyFile(r.Name, filepath.Join(payload, r.Name))
+	base := strings.TrimSuffix(r.Name, ".exe") + ".exe"
+	err := util.CopyFile(base, filepath.Join(payload, base))
+	if err != nil {
+		return err
+	}
 
 	// try sign exe
-	if err := r.signWindows(filepath.Join(r.dir, r.Name)); err != nil {
+	if err := r.signWindows(filepath.Join(r.dir, base)); err != nil {
 		// appx need sign if sign exe failed then return
 		return err
 	}
@@ -304,10 +310,13 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		return errors.New("failed to write application manifest template")
 	}
 
-	util.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
+	err = util.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
+	if err != nil {
+		return err
+	}
 
-	// for linux runner
 	if makemsix, err := exec.LookPath("makemsix"); err == nil {
+		// for linux runner
 		cmd := exec.Command(makemsix, "pack",
 			"/d", payload,
 			"/p", outFile)
@@ -371,18 +380,14 @@ func (r *Releaser) signAndroid(path string) error {
 }
 
 func (r *Releaser) signWindows(appx string) error {
-	// appx is name or name.appx
-	ext := filepath.Ext(appx)
-	name := strings.TrimSuffix(appx, ext)
-	if ext != ".appx" {
-		ext = ".exe"
-	}
-	signed := name + ext
-	// for linux runner
+	// appx is name.exe or name.appx
 	if osslsigncode, err := exec.LookPath("osslsigncode"); err == nil {
+		// for linux runner
+		ext := filepath.Ext(appx)
+		name := strings.TrimSuffix(appx, ext)
 		unsigned := name + ".unsigned" + ext
 		os.Remove(unsigned)
-		err := os.Rename(signed, unsigned)
+		err := os.Rename(appx, unsigned)
 		if err != nil {
 			return err
 		}
@@ -392,7 +397,7 @@ func (r *Releaser) signWindows(appx string) error {
 			"-pkcs12", r.certificate,
 			"-pass", r.password,
 			"-in", unsigned,
-			"-out", signed)
+			"-out", appx)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
@@ -407,7 +412,7 @@ func (r *Releaser) signWindows(appx string) error {
 	}
 
 	cmd := exec.Command(filepath.Join(binDir, "signtool.exe"),
-		"sign", "/a", "/v", "/fd", "SHA256", "/f", r.certificate, "/p", r.password, signed)
+		"sign", "/a", "/v", "/fd", "SHA256", "/f", r.certificate, "/p", r.password, appx)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
