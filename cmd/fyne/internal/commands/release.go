@@ -277,6 +277,14 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 	_ = os.Mkdir(payload, 0o750)
 	defer os.RemoveAll(payload)
 
+	util.CopyFile(r.Name, filepath.Join(payload, r.Name))
+
+	// try sign exe
+	if err := r.signWindows(filepath.Join(r.dir, r.Name)); err != nil {
+		// appx need sign if sign exe failed then return
+		return err
+	}
+
 	manifestPath := filepath.Join(payload, "appxmanifest.xml")
 	manifest, err := os.Create(manifestPath)
 	if err != nil {
@@ -297,7 +305,19 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 	}
 
 	util.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
-	util.CopyFile(r.Name, filepath.Join(payload, r.Name))
+
+	// for linux runner
+	if makemsix, err := exec.LookPath("makemsix"); err == nil {
+		cmd := exec.Command(makemsix, "pack",
+			"/d", payload,
+			"/p", outFile)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err == nil {
+			return nil
+		}
+	}
 
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
@@ -351,6 +371,35 @@ func (r *Releaser) signAndroid(path string) error {
 }
 
 func (r *Releaser) signWindows(appx string) error {
+	// for linux runner
+	if osslsigncode, err := exec.LookPath("osslsigncode"); err == nil {
+		name := appx
+		ext := ".exe"
+		if filepath.Ext(appx) == ".appx" {
+			ext = ".appx"
+			name = strings.TrimSuffix(appx, ext)
+		}
+		unsigned := name + ".unsigned" + ext
+		os.Remove(unsigned)
+		err := os.Rename(name+ext, unsigned)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(unsigned)
+		cmd := exec.Command(osslsigncode, "sign", "-verbose",
+			"-h", "sha256",
+			"-pkcs12", r.certificate,
+			"-pass", r.password,
+			"-in", unsigned,
+			"-out", name+ext)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err == nil {
+			return nil
+		}
+	}
+
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
 		return errors.New("cannot find signtool.exe, make sure you have installed the Windows SDK")
