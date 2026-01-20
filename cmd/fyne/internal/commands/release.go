@@ -291,7 +291,7 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		return err
 	}
 
-	manifestPath := filepath.Join(payload, "appxmanifest.xml")
+	manifestPath := filepath.Join(payload, "AppxManifest.xml")
 	manifest, err := os.Create(manifestPath)
 	if err != nil {
 		return err
