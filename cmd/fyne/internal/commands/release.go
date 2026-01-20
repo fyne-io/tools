@@ -504,7 +504,7 @@ func (r *Releaser) zipAlign(path string) error {
 	}
 
 	cmd := filepath.Join(util.AndroidBuildToolsPath(), "zipalign")
-	err = exec.Command(cmd, "16", unaligned, path).Run()
+	err = exec.Command(cmd, "-p", "16", unaligned, path).Run()
 	if err != nil {
 		_ = os.Rename(path, unaligned) // ignore error, return previous
 		return err
