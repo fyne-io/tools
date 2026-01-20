@@ -1,20 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest">
-  <Identity Name="{{.AppID}}"
-            Version="{{.Version}}"
-            Publisher="{{.Developer}}" />
+<Package
+  xmlns="http://schemas.microsoft.com"
+  xmlns:rescap="http://schemas.microsoft.com"
+  IgnorableNamespaces="rescap">
+
+  
+
   <Properties>
     <DisplayName>{{.Name}}</DisplayName>
     <PublisherDisplayName>{{.DeveloperName}}</PublisherDisplayName>
     <Logo>Icon.png</Logo>
   </Properties>
+
   <Prerequisites>
-    <OSMinVersion>6.2</OSMinVersion>
-    <OSMaxVersionTested>10.0</OSMaxVersionTested>
+    <OSMinVersion>10.0.0.0</OSMinVersion>
+    <OSMaxVersionTested>10.0.19041.0</OSMaxVersionTested>
   </Prerequisites>
+
   <Resources>
     <Resource Language="en-us" />
   </Resources>
 
-  <!-- TODO <Applications> -->
+  <Applications>
+    <Application Id="App" 
+                 Executable="{{.Name}}.exe" 
+                 EntryPoint="Windows.FullTrustApplication">
+      <VisualElements 
+          DisplayName="{{.Name}}" 
+          Description="{{.Name}}"
+          BackgroundColor="transparent"
+          Square150x150Logo="Icon.png" 
+          Square44x44Logo="Icon.png">
+        <DefaultTile Wide310x150Logo="Icon.png" />
+        <SplashScreen Image="Icon.png" />
+      </VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
 </Package>
