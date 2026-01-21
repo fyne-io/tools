@@ -242,14 +242,14 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 							Space: "",
 							Local: "platformBuildVersionCode",
 						},
-						Value: "15",
+						Value: strconv.Itoa(MinSDK),
 					},
 					xml.Attr{
 						Name: xml.Name{
 							Space: "",
 							Local: "platformBuildVersionName",
 						},
-						Value: "4.0.4-1406430",
+						Value: BuildVersionName,
 					})
 
 				q = append(q, ltoken{tkn, line})
@@ -266,7 +266,7 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 									Space: androidSchema,
 									Local: "minSdkVersion",
 								},
-								Value: fmt.Sprintf("%v", MinSDK),
+								Value: strconv.Itoa(MinSDK),
 							},
 							{
 								Name: xml.Name{
