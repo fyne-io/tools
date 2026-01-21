@@ -278,14 +278,11 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 	payload := filepath.Join(r.dir, "Payload")
 	_ = os.Mkdir(payload, 0o750)
 	defer os.RemoveAll(payload)
-
 	base := strings.TrimSuffix(r.Name, ".exe") + ".exe"
-	err := util.CopyFile(base, filepath.Join(payload, base))
-	if err != nil {
+	if err := util.CopyFile(base, filepath.Join(payload, base)); err != nil {
 		return err
 	}
 
-	// try sign exe
 	if err := r.signWindows(filepath.Join(r.dir, base)); err != nil {
 		// appx need sign if sign exe failed then return
 		return err
@@ -317,7 +314,7 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 
 	if makemsix, err := exec.LookPath("makemsix"); err == nil {
 		// for linux runner
-		cmd := exec.Command(makemsix, "pack",
+		cmd := exec.Command(makemsix, "pack", "/o",
 			"/d", payload,
 			"/p", outFile)
 		cmd.Stdout = os.Stdout
@@ -333,7 +330,7 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		return errors.New("cannot find makeappx.exe, make sure you have installed the Windows SDK")
 	}
 
-	cmd := exec.Command(filepath.Join(binDir, "makeappx.exe"), "pack", "/d", payload, "/p", outFile)
+	cmd := exec.Command(filepath.Join(binDir, "makeappx.exe"), "pack", "/d", payload, "/p", outFile, "/o")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
