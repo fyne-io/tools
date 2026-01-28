@@ -47,3 +47,15 @@ func TestDesktopFileOpenWith(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(buf.String(), "MimeType=text/plain"))
 }
+
+func TestDesktopFile(t *testing.T) {
+	tplData := unixData{
+		Name:           "Testing",
+		StartupWMClass: "Testing",
+	}
+	buf := &bytes.Buffer{}
+
+	err := templates.DesktopFileUNIX.Execute(buf, tplData)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(buf.String(), "StartupWMClass=Testing"))
+}

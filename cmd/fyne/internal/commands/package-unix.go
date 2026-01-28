@@ -13,17 +13,18 @@ import (
 )
 
 type unixData struct {
-	Name        string
-	AppID       string
-	Exec        string
-	Icon        string
-	Local       string
-	GenericName string
-	Categories  string
-	Comment     string
-	Keywords    string
-	ExecParams  string
-	MimeTypes   string
+	Name           string
+	AppID          string
+	Exec           string
+	Icon           string
+	Local          string
+	GenericName    string
+	Categories     string
+	Comment        string
+	Keywords       string
+	ExecParams     string
+	MimeTypes      string
+	StartupWMClass string
 
 	SourceRepo, SourceDir string
 }
@@ -88,17 +89,18 @@ func (p *Packager) packageUNIX() error {
 		linuxBSD = *p.linuxAndBSDMetadata
 	}
 	tplData := unixData{
-		Name:        p.Name,
-		AppID:       p.AppID,
-		Exec:        filepath.Base(p.exe) + openWith,
-		Icon:        appIDOrName,
-		Local:       local,
-		GenericName: linuxBSD.GenericName,
-		Keywords:    formatDesktopFileList(linuxBSD.Keywords),
-		Comment:     linuxBSD.Comment,
-		Categories:  formatDesktopFileList(linuxBSD.Categories),
-		ExecParams:  linuxBSD.ExecParams,
-		MimeTypes:   mimes,
+		Name:           p.Name,
+		AppID:          p.AppID,
+		Exec:           filepath.Base(p.exe) + openWith,
+		Icon:           appIDOrName,
+		Local:          local,
+		GenericName:    linuxBSD.GenericName,
+		Keywords:       formatDesktopFileList(linuxBSD.Keywords),
+		Comment:        linuxBSD.Comment,
+		Categories:     formatDesktopFileList(linuxBSD.Categories),
+		ExecParams:     linuxBSD.ExecParams,
+		MimeTypes:      mimes,
+		StartupWMClass: p.Name,
 	}
 
 	if p.sourceMetadata != nil {

@@ -21,3 +21,7 @@ Repo={{.SourceRepo}}
 Dir={{.SourceDir}}
 
 {{end -}}
+{{if ne .StartupWMClass "" -}}
+StartupWMClass={{.StartupWMClass}}
+
+{{end -}}
