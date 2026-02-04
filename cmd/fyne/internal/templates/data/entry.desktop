@@ -4,7 +4,7 @@ Name={{.Name}}
 {{- if ne .GenericName ""}}
 GenericName={{.GenericName}}{{end}}
 Exec={{.Exec}} {{- .ExecParams}}
-Icon={{.AppID}}
+Icon={{.Icon}}
 {{- if ne .Comment ""}}
 Comment={{.Comment}}{{end}}
 {{- if ne .Categories ""}}
