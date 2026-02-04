@@ -54,8 +54,13 @@ func (p *Packager) packageUNIX() error {
 		return fmt.Errorf("failed to copy application binary file: %w", err)
 	}
 
+	appIDOrName := p.AppID
+	if appIDOrName == "" {
+		appIDOrName = p.Name
+	}
+
 	iconDir := util.EnsureSubDir(shareDir, "pixmaps")
-	iconName := p.AppID + filepath.Ext(p.icon)
+	iconName := appIDOrName + filepath.Ext(p.icon)
 	iconPath := filepath.Join(iconDir, iconName)
 	err = util.CopyFile(p.icon, iconPath)
 	if err != nil {
@@ -70,7 +75,7 @@ func (p *Packager) packageUNIX() error {
 	}
 
 	appsDir := util.EnsureSubDir(shareDir, "applications")
-	desktop := filepath.Join(appsDir, p.AppID+".desktop")
+	desktop := filepath.Join(appsDir, appIDOrName+".desktop")
 	deskFile, err := os.Create(desktop)
 	if err != nil {
 		return fmt.Errorf("failed to create desktop file: %w", err)
@@ -86,7 +91,7 @@ func (p *Packager) packageUNIX() error {
 		Name:        p.Name,
 		AppID:       p.AppID,
 		Exec:        filepath.Base(p.exe) + openWith,
-		Icon:        iconName,
+		Icon:        appIDOrName,
 		Local:       local,
 		GenericName: linuxBSD.GenericName,
 		Keywords:    formatDesktopFileList(linuxBSD.Keywords),
