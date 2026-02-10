@@ -15,7 +15,7 @@ const MinSDK = 15
 
 // Requires environment variable ANDROID_HOME to be set.
 func apiResources() ([]byte, error) {
-	apiResPath, err := apiResourcesPath()
+	apiResPath, err := LatestAPIResourcesPath()
 	if err != nil {
 		return nil, err
 	}
@@ -52,15 +52,24 @@ func apiResources() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func apiResourcesPath() (string, error) {
-	// TODO(elias.naur): use the logic from gomobile's androidAPIPath and use the any installed version of the
-	// Android SDK instead. Currently, the binres_test.go tests fail on anything newer than android-15.
+func LatestAPIResourcesPath() (string, error) {
 	sdkdir := os.Getenv("ANDROID_HOME")
 	if sdkdir == "" {
 		return "", fmt.Errorf("ANDROID_HOME env var not set")
 	}
-	platform := fmt.Sprintf("android-%v", MinSDK)
-	return path.Join(sdkdir, "platforms", platform, "android.jar"), nil
+	parent := path.Join(sdkdir, "platforms")
+	dir, err := os.ReadDir(parent)
+	if err != nil {
+		return "", err
+	}
+
+	maxSDK := ""
+	for _, d := range dir {
+		if d.Name() > maxSDK {
+			maxSDK = d.Name()
+		}
+	}
+	return path.Join(sdkdir, "platforms", maxSDK, "android.jar"), nil
 }
 
 // PackResources produces a stripped down gzip version of the resources.arsc from api jar.
