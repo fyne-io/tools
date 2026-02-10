@@ -207,7 +207,8 @@ func detectAdaptiveIcons(dir, iconPath, foreground, background, monochrome strin
 }
 
 func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int, versionCode int,
-	versionName, packageName, iconFG, iconBG, iconMono string) error {
+	versionName, packageName, iconFG, iconBG, iconMono string,
+) error {
 	// Add any assets.
 	var arsc struct {
 		iconPath string

@@ -233,7 +233,8 @@ var (
 
 // RunNewBuild executes a new mobile build for the specified configuration
 func RunNewBuild(target, appID, icon, name, version string, build int, release, distribution bool, cert, profile string,
-	tags []string, iconFG, iconBG, iconMono string) error {
+	tags []string, iconFG, iconBG, iconMono string,
+) error {
 	buildTarget = target
 	buildBundleID = appID
 	buildRelease = distribution
