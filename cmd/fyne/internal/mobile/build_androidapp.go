@@ -27,12 +27,13 @@ import (
 )
 
 type manifestTmplData struct {
-	JavaPkgPath string
-	Name        string
-	Debug       bool
-	LibName     string
-	Version     string
-	Build       int
+	JavaPkgPath  string
+	Name         string
+	Debug        bool
+	LibName      string
+	Version      string
+	Build        int
+	AdaptiveIcon bool
 }
 
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
@@ -60,15 +61,19 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 
+		iconForeground, _, _ := detectAdaptiveIcons(dir, iconPath)
+		adaptive := iconForeground != "" && util.Exists(iconForeground)
+
 		buf := new(bytes.Buffer)
 		buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
 		err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
-			JavaPkgPath: bundleID,
-			Name:        strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
-			Debug:       !buildRelease,
-			LibName:     libName,
-			Version:     version,
-			Build:       build,
+			JavaPkgPath:  bundleID,
+			Name:         strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+			Debug:        !buildRelease,
+			LibName:      libName,
+			Version:      version,
+			Build:        build,
+			AdaptiveIcon: adaptive,
 		})
 		if err != nil {
 			return nil, err
@@ -143,7 +148,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	if err != nil {
 		return nil, err
 	}
-	err = addAssets(apkw, manifestData, dir, iconPath, target)
+	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, bundleID)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +177,44 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	return nmpkgs[androidArchs[0]], nil
 }
 
-func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int) error {
+// detectAdaptiveIcons checks for adaptive icon layers based on metadata or convention
+// Returns: foreground path, background path, monochrome path (empty strings if not found)
+func detectAdaptiveIcons(dir, iconPath string) (string, string, string) {
+	iconParent := filepath.Dir(iconPath)
+	// TODO support passing in through metadata - this is a bit of a guess
+	foreground := filepath.Join(iconParent, "Icon-foreground.png")
+	background := filepath.Join(iconParent, "Icon-background.png")
+	monochrome := filepath.Join(iconParent, "Icon-monochrome.png")
+
+	if !util.Exists(foreground) {
+		foreground = filepath.Join(dir, "Icon-foreground.png")
+	}
+	if !util.Exists(background) {
+		background = filepath.Join(dir, "Icon-background.png")
+	}
+	if !util.Exists(monochrome) {
+		monochrome = filepath.Join(dir, "Icon-monochrome.png")
+	}
+
+	if util.Exists(foreground) {
+		fg := foreground
+		bg := ""
+		if util.Exists(background) {
+			bg = background
+		}
+		mono := ""
+		if util.Exists(monochrome) {
+			mono = monochrome
+		}
+		return fg, bg, mono
+	}
+
+	return "", "", ""
+}
+
+func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int, versionCode int,
+	versionName,
+	packageName string) error {
 	// Add any assets.
 	var arsc struct {
 		iconPath string
@@ -224,6 +266,64 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		}
 	}
 
+	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconPath)
+
+	// Use aapt2 for adaptive icons, fallback to binres for legacy icons
+	if iconForeground != "" {
+		// Use iconForeground as background if no separate background provided
+		if iconBackground == "" {
+			iconBackground = iconForeground
+		}
+
+		// Compile adaptive icon resources with aapt2
+		arscPath, resDir, compiledManifestPath, err := compileAndroidResources(
+			tmpdir,
+			manifestData,
+			iconForeground,
+			iconBackground,
+			iconMonochrome,
+			target,
+			versionCode,
+			versionName,
+			packageName,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to compile adaptive icon resources: %w", err)
+		}
+
+		w, err := apkwCreate("resources.arsc", apkw)
+		if err != nil {
+			return err
+		}
+		arscData, err := os.ReadFile(arscPath)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(arscData); err != nil {
+			return err
+		}
+
+		err = filepath.Walk(resDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			relPath, err := filepath.Rel(resDir, path)
+			if err != nil {
+				return err
+			}
+			return apkwWriteFile("res/"+relPath, path, apkw)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to write res directory: %w", err)
+		}
+
+		return apkwWriteFile("AndroidManifest.xml", compiledManifestPath, apkw)
+	}
+
+	// Legacy single icon mode using binres
 	bxml, err := binres.UnmarshalXML(bytes.NewReader(manifestData), arsc.iconPath != "", target)
 	if err != nil {
 		return err
@@ -393,7 +493,10 @@ func convertAPKToAAB(aabPath string) error {
 	}
 	defer removeAll(tmpPath)
 
-	aapt2 := filepath.Join(util.AndroidBuildToolsPath(), "aapt2")
+	aapt2, err := util.Aapt2Path()
+	if err != nil {
+		return err
+	}
 	cmd := exec.Command(aapt2, "convert", "--output-format", "proto", "-o", apkProtoPath, apkPath)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
