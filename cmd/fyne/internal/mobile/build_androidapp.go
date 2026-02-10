@@ -262,75 +262,79 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 
 	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconPath, iconFG, iconBG, iconMono)
 
-	// Use aapt2 for adaptive icons, fallback to binres for legacy icons
-	if iconForeground != "" {
-		// Use iconForeground as background if no separate background provided
-		if iconBackground == "" {
-			iconBackground = iconForeground
-		}
-
-		// Compile adaptive icon resources with aapt2
-		arscPath, resDir, compiledManifestPath, err := compileAndroidResources(
-			tmpdir,
-			manifestData,
-			iconForeground,
-			iconBackground,
-			iconMonochrome,
-			target,
-			versionCode,
-			versionName,
-			packageName,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to compile adaptive icon resources: %w", err)
-		}
-
-		w, err := apkwCreate("resources.arsc", apkw)
-		if err != nil {
-			return err
-		}
-		arscData, err := os.ReadFile(arscPath)
-		if err != nil {
-			return err
-		}
-		if _, err := w.Write(arscData); err != nil {
-			return err
-		}
-
-		err = filepath.Walk(resDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				return nil
-			}
-			relPath, err := filepath.Rel(resDir, path)
-			if err != nil {
-				return err
-			}
-			return apkwWriteFile("res/"+relPath, path, apkw)
-		})
-		if err != nil {
-			return fmt.Errorf("failed to write res directory: %w", err)
-		}
-
-		return apkwWriteFile("AndroidManifest.xml", compiledManifestPath, apkw)
+	// No adaptive icons, use legacy build
+	if iconForeground == "" {
+		legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
 	}
 
+	// Use iconForeground as background if no separate background provided
+	if iconBackground == "" {
+		iconBackground = iconForeground
+	}
+
+	// Compile adaptive icon resources with aapt2
+	arscPath, resDir, compiledManifestPath, err := compileAndroidResources(
+		tmpdir,
+		manifestData,
+		iconForeground,
+		iconBackground,
+		iconMonochrome,
+		target,
+		versionCode,
+		versionName,
+		packageName,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to compile adaptive icon resources: %w", err)
+	}
+
+	w, err := apkwCreate("resources.arsc", apkw)
+	if err != nil {
+		return err
+	}
+	arscData, err := os.ReadFile(arscPath)
+	if err != nil {
+		return err
+	}
+	if _, err := w.Write(arscData); err != nil {
+		return err
+	}
+
+	err = filepath.Walk(resDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		relPath, err := filepath.Rel(resDir, path)
+		if err != nil {
+			return err
+		}
+		return apkwWriteFile("res/"+relPath, path, apkw)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to write res directory: %w", err)
+	}
+
+	return apkwWriteFile("AndroidManifest.xml", compiledManifestPath, apkw)
+}
+
+func legacyAddAssets(apkw *Writer, manifestData []byte, iconPath string, target int) error {
 	// Legacy single icon mode using binres
-	bxml, err := binres.UnmarshalXML(bytes.NewReader(manifestData), arsc.iconPath != "", target)
+	bxml, err := binres.UnmarshalXML(bytes.NewReader(manifestData), iconPath != "", target)
 	if err != nil {
 		return err
 	}
 
 	// generate resources.arsc identifying single xxxhdpi icon resource.
-	if arsc.iconPath != "" {
+	if iconPath != "" {
 		pkgname, err := bxml.RawValueByName("manifest", xml.Name{Local: "package"})
 		if err != nil {
 			return err
 		}
 		tbl, name := binres.NewMipmapTable(pkgname)
-		if err := apkwWriteFile(name, arsc.iconPath, apkw); err != nil {
+		if err := apkwWriteFile(name, iconPath, apkw); err != nil {
 			return err
 		}
 		w, err := apkwCreate("resources.arsc", apkw)
