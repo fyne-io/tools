@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -235,7 +236,7 @@ func extractDirFromZip(zipPath, prefix, destDir string) error {
 	}
 
 	for _, f := range r.File {
-		if !filepath.HasPrefix(f.Name, prefix) {
+		if !strings.HasPrefix(f.Name, prefix) {
 			continue
 		}
 
