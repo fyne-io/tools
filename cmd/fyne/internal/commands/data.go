@@ -4,6 +4,7 @@ import "fyne.io/tools/cmd/fyne/internal/metadata"
 
 type appData struct {
 	icon, Name        string
+	darkIcon          string
 	AppID, AppVersion string
 	AppBuild          int
 	ResGoString       string
@@ -32,6 +33,9 @@ func (a *appData) appendCustomMetadata(fromFile map[string]string) {
 func (a *appData) mergeMetadata(data *metadata.FyneApp) {
 	if a.icon == "" {
 		a.icon = data.Details.Icon
+	}
+	if a.darkIcon == "" {
+		a.darkIcon = data.Details.DarkIcon
 	}
 	if a.Name == "" {
 		a.Name = data.Details.Name

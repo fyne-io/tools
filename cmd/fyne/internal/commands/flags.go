@@ -70,6 +70,13 @@ var stringFlags = map[string]func(*string) cli.Flag{
 			Destination: dst,
 		}
 	},
+	"dark-icon": func(dst *string) cli.Flag {
+		return &cli.StringFlag{
+			Name:        "dark-icon",
+			Usage:       "set name of the application icon file in dark mode (where supported)",
+			Destination: dst,
+		}
+	},
 	"developer": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "developer",
