@@ -273,11 +273,22 @@ func (r *Releaser) packageMacOSRelease() error {
 }
 
 func (r *Releaser) packageWindowsRelease(outFile string) error {
+	// outFile is name.appx
+	// r.Name is name or name.exe but exist as file name.exe
 	payload := filepath.Join(r.dir, "Payload")
 	_ = os.Mkdir(payload, 0o750)
 	defer os.RemoveAll(payload)
+	base := strings.TrimSuffix(r.Name, ".exe") + ".exe"
+	if err := util.CopyFile(base, filepath.Join(payload, base)); err != nil {
+		return err
+	}
 
-	manifestPath := filepath.Join(payload, "appxmanifest.xml")
+	if err := r.signWindows(filepath.Join(r.dir, base)); err != nil {
+		// appx need sign if sign exe failed then return
+		return err
+	}
+
+	manifestPath := filepath.Join(payload, "AppxManifest.xml")
 	manifest, err := os.Create(manifestPath)
 	if err != nil {
 		return err
@@ -296,15 +307,30 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		return errors.New("failed to write application manifest template")
 	}
 
-	util.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
-	util.CopyFile(r.Name, filepath.Join(payload, r.Name))
+	err = util.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
+	if err != nil {
+		return err
+	}
+
+	if makemsix, err := exec.LookPath("makemsix"); err == nil {
+		// for linux runner
+		cmd := exec.Command(makemsix, "pack", "/o",
+			"/d", payload,
+			"/p", outFile)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err == nil {
+			return nil
+		}
+	}
 
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
 		return errors.New("cannot find makeappx.exe, make sure you have installed the Windows SDK")
 	}
 
-	cmd := exec.Command(filepath.Join(binDir, "makeappx.exe"), "pack", "/d", payload, "/p", outFile)
+	cmd := exec.Command(filepath.Join(binDir, "makeappx.exe"), "pack", "/d", payload, "/p", outFile, "/o")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -351,6 +377,32 @@ func (r *Releaser) signAndroid(path string) error {
 }
 
 func (r *Releaser) signWindows(appx string) error {
+	// appx is name.exe or name.appx
+	if osslsigncode, err := exec.LookPath("osslsigncode"); err == nil {
+		// for linux runner
+		ext := filepath.Ext(appx)
+		name := strings.TrimSuffix(appx, ext)
+		unsigned := name + ".unsigned" + ext
+		os.Remove(unsigned)
+		err := os.Rename(appx, unsigned)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(unsigned)
+		cmd := exec.Command(osslsigncode, "sign", "-verbose",
+			"-h", "sha256",
+			"-pkcs12", r.certificate,
+			"-pass", r.password,
+			"-in", unsigned,
+			"-out", appx)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err == nil {
+			return nil
+		}
+	}
+
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
 		return errors.New("cannot find signtool.exe, make sure you have installed the Windows SDK")
@@ -449,7 +501,7 @@ func (r *Releaser) zipAlign(path string) error {
 	}
 
 	cmd := filepath.Join(util.AndroidBuildToolsPath(), "zipalign")
-	err = exec.Command(cmd, "16", unaligned, path).Run()
+	err = exec.Command(cmd, "-p", "16", unaligned, path).Run()
 	if err != nil {
 		_ = os.Rename(path, unaligned) // ignore error, return previous
 		return err
@@ -458,17 +510,26 @@ func (r *Releaser) zipAlign(path string) error {
 }
 
 func findWindowsSDKBin() (string, error) {
-	inPath, err := exec.LookPath("makeappx.exe")
-	if err == nil {
-		return inPath, nil
+	// Determine architecture directory based on GOARCH
+	archDir := "x64"
+	switch os.Getenv("GOARCH") {
+	case "386":
+		archDir = "x86"
+	case "arm64":
+		archDir = "arm64"
 	}
 
-	matches, err := filepath.Glob("C:\\Program Files (x86)\\Windows Kits\\*\\bin\\*\\*\\makeappx.exe")
-	if err != nil || len(matches) == 0 {
-		return "", errors.New("failed to look up standard locations for makeappx.exe")
+	// Try architecture-specific Windows SDK location first
+	if matches, _ := filepath.Glob("C:\\Program Files (x86)\\Windows Kits\\*\\bin\\*\\" + archDir + "\\makeappx.exe"); len(matches) > 0 {
+		return filepath.Dir(matches[0]), nil
 	}
 
-	return filepath.Dir(matches[0]), nil
+	// Fallback: search in PATH
+	if inPath, err := exec.LookPath("makeappx.exe"); err == nil {
+		return filepath.Dir(inPath), nil
+	}
+
+	return "", errors.New("cannot find makeappx.exe")
 }
 
 func isValidMacOSCategory(in string) bool {

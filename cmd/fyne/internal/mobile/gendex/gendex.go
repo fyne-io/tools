@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 )
 
 var outfile = flag.String("o", "dex.go", "result will be written file")
@@ -137,11 +138,20 @@ func findLast(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer dir.Close()
+
 	children, err := dir.Readdirnames(-1)
 	if err != nil {
 		return "", err
 	}
-	return path + "/" + children[len(children)-1], nil
+
+	if len(children) == 0 {
+		return "", os.ErrNotExist
+	}
+
+	sort.Strings(children)
+
+	return filepath.Join(path, children[len(children)-1]), nil
 }
 
 var header = `// Copyright 2015 The Go Authors.  All rights reserved.

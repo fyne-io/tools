@@ -18,6 +18,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"sort"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
@@ -155,6 +157,16 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 	}
+
+	// Sign the APK with apksigner only for debug builds (!release)
+	apkPath := buildO[:len(buildO)-3] + "apk" // Get path to .apk file
+	if !buildN && !release {
+		// Only sign debug builds (APK files)
+		if err := signAPK(apkPath); err != nil {
+			return nil, fmt.Errorf("failed to sign APK: %v", err)
+		}
+	}
+
 	if release {
 		_, err := exec.LookPath("bundletool")
 		if err != nil {
@@ -464,3 +476,110 @@ cSL5bhq0N5XHK77sscxW9vXjG0LJMXmFZPp9F6aV6ejkMIXyJ/Yz/EqeaJFwilTq
 Mc6xR47qkdzu0dQ1aPm4XD7AWDtIvPo/GG2DKOucLBbQc2cOWtKS
 -----END RSA PRIVATE KEY-----
 `
+
+// signAPK signs an APK file using apksigner with a debug keystore.
+// It automatically locates Android SDK build-tools and Java keytool,
+// and generates a debug keystore if it is missing.
+func signAPK(apkPath string) error {
+	if buildV {
+		fmt.Fprintf(os.Stderr, "Signing APK with apksigner...\n")
+	}
+
+	// 1. Locate apksigner in System PATH or Android SDK
+	if _, err := exec.LookPath("apksigner"); err != nil {
+		sdkPath := os.Getenv("ANDROID_SDK_ROOT")
+		if sdkPath == "" {
+			sdkPath = os.Getenv("ANDROID_HOME")
+		}
+		if sdkPath != "" {
+			btPath := filepath.Join(sdkPath, "build-tools")
+			if dirs, err := os.ReadDir(btPath); err == nil && len(dirs) > 0 {
+				// Sort build-tools versions in descending order (newest first)
+				sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name() > dirs[j].Name() })
+
+				for _, d := range dirs {
+					execName := "apksigner"
+					if runtime.GOOS == "windows" {
+						execName += ".bat"
+					}
+					fullPath := filepath.Join(btPath, d.Name(), execName)
+					if _, err := os.Stat(fullPath); err == nil {
+						// Add the DIRECTORY containing the executable to PATH
+						os.Setenv("PATH", filepath.Dir(fullPath)+string(os.PathListSeparator)+os.Getenv("PATH"))
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Define path to debug.keystore
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	keystoreDir := filepath.Join(homeDir, ".android")
+	debugKeystore := filepath.Join(keystoreDir, "debug.keystore")
+
+	// 3. Ensure keystore exists or create a new one
+	if _, err := os.Stat(debugKeystore); os.IsNotExist(err) {
+		if buildV {
+			fmt.Fprintf(os.Stderr, "Debug keystore not found, creating one...\n")
+		}
+
+		// CRITICAL: Create .android directory if it doesn't exist (mandatory for CI environments)
+		if err := os.MkdirAll(keystoreDir, 0755); err != nil {
+			return fmt.Errorf("failed to create keystore directory: %v", err)
+		}
+
+		// Locate keytool (bundled with Java JDK)
+		if _, err := exec.LookPath("keytool"); err != nil {
+			if javaHome := os.Getenv("JAVA_HOME"); javaHome != "" {
+				binPath := filepath.Join(javaHome, "bin")
+				os.Setenv("PATH", binPath+string(os.PathListSeparator)+os.Getenv("PATH"))
+			}
+		}
+
+		keytoolCmd := exec.Command("keytool",
+			"-genkey", "-v",
+			"-keystore", debugKeystore,
+			"-alias", "androiddebugkey",
+			"-storepass", "android",
+			"-keypass", "android",
+			"-keyalg", "RSA",
+			"-keysize", "2048",
+			"-validity", "10000",
+			"-dname", "CN=Android Debug,O=Android,C=US")
+
+		if out, err := keytoolCmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("keytool failed to generate keystore: %v\nOutput: %s", err, string(out))
+		}
+	}
+
+	// 4. Sign the APK
+	// Using V1, V2, and V3 signing schemes to ensure compatibility with all Android versions in 2026
+	signArgs := []string{"sign",
+		"--ks", debugKeystore,
+		"--ks-pass", "pass:android",
+		"--key-pass", "pass:android",
+		"--v1-signing-enabled", "true",
+		"--v2-signing-enabled", "true",
+		"--v3-signing-enabled", "true",
+		apkPath,
+	}
+
+	cmd := exec.Command("apksigner", signArgs...)
+	if buildV {
+		fmt.Fprintf(os.Stderr, "Executing: %s\n", strings.Join(cmd.Args, " "))
+	}
+
+	// CombinedOutput captures stderr for better debugging in CI logs
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("apksigner failed: %v\nOutput: %s", err, string(out))
+	}
+
+	if buildV {
+		fmt.Printf("APK signed successfully: %s\n", apkPath)
+	}
+	return nil
+}
