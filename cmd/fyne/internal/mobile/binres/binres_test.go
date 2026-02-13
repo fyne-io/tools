@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -465,12 +466,17 @@ func checkResources(t *testing.T) {
 	if sdkdir == "" {
 		t.Skip("ANDROID_HOME env var not set")
 	}
-	rscPath, err := apiResourcesPath()
+	rscPath, err := LatestAPIResourcesPath()
 	if err != nil {
 		t.Skipf("failed to find resources: %v", err)
 	}
 	if _, err := os.Stat(rscPath); err != nil {
 		t.Skipf("failed to find resources: %v", err)
+	}
+
+	version := filepath.Base(filepath.Dir(rscPath))
+	if version > "android-15" {
+		t.Skipf("Cannot run legacy tests after SDK 15: %s", version)
 	}
 }
 
