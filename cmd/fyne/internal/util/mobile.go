@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -58,4 +59,17 @@ func RequireAndroidSDK() error {
 	}
 
 	return nil
+}
+
+// Aapt2Path returns the path to aapt2 executable
+func Aapt2Path() (string, error) {
+	buildTools := AndroidBuildToolsPath()
+	aapt2 := filepath.Join(buildTools, "aapt2")
+	if runtime.GOOS == "windows" {
+		aapt2 += ".exe"
+	}
+	if !Exists(aapt2) {
+		return "", fmt.Errorf("aapt2 not found in Android SDK build-tools (%s)", buildTools)
+	}
+	return aapt2, nil
 }

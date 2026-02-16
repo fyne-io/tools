@@ -8,6 +8,7 @@ type appData struct {
 	AppBuild          int
 	ResGoString       string
 	Release, rawIcon  bool
+	AdaptiveIcon      *metadata.AdaptiveIcon
 	CustomMetadata    map[string]string
 	Migrations        map[string]bool
 	CanOpen           *metadata.CanOpen
@@ -45,6 +46,8 @@ func (a *appData) mergeMetadata(data *metadata.FyneApp) {
 	if a.AppBuild == 0 {
 		a.AppBuild = data.Details.Build
 	}
+	a.AdaptiveIcon = data.AdaptiveIcon
+
 	if a.Release {
 		a.appendCustomMetadata(data.Release)
 	} else {

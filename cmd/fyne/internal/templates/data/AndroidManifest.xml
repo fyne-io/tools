@@ -4,7 +4,8 @@
 	android:versionCode="{{.Build}}"
 	android:versionName="{{.Version}}">
 
-	<application android:label="{{.Name}}" android:debuggable="{{.Debug}}">
+	<application android:label="{{.Name}}" android:debuggable="{{.Debug}}"
+				 {{if .AdaptiveIcon}}android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"{{end}}>
 	<activity android:name="org.golang.app.GoNativeActivity"
 		android:label="{{.Name}}"
 		android:configChanges="orientation|keyboardHidden|uiMode"
