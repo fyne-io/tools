@@ -70,23 +70,23 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 		return fmt.Errorf("failed to write ic_launcher_round.xml: %w", err)
 	}
 
+	if !hasMonochrome {
+		return nil
+	}
 	// If monochrome provided, create v33 resources with monochrome support
-	if hasMonochrome {
-		anydpiV33Dir := filepath.Join(resDir, "mipmap-anydpi-v33")
-		if err := os.MkdirAll(anydpiV33Dir, 0o755); err != nil {
-			return fmt.Errorf("failed to create mipmap-anydpi-v33 directory: %w", err)
-		}
-
-		adaptiveXMLWithMono := generateAdaptiveIconXML(true)
-		if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
-			return fmt.Errorf("failed to write v33 ic_launcher.xml: %w", err)
-		}
-
-		if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
-			return fmt.Errorf("failed to write v33 ic_launcher_round.xml: %w", err)
-		}
+	anydpiV33Dir := filepath.Join(resDir, "mipmap-anydpi-v33")
+	if err := os.MkdirAll(anydpiV33Dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create mipmap-anydpi-v33 directory: %w", err)
 	}
 
+	adaptiveXMLWithMono := generateAdaptiveIconXML(true)
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+		return fmt.Errorf("failed to write v33 ic_launcher.xml: %w", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+		return fmt.Errorf("failed to write v33 ic_launcher_round.xml: %w", err)
+	}
 	return nil
 }
 
@@ -203,22 +203,24 @@ func extractFileFromZip(zipPath, fileName, destPath string) error {
 	defer r.Close()
 
 	for _, f := range r.File {
-		if f.Name == fileName {
-			rc, err := f.Open()
-			if err != nil {
-				return err
-			}
-			defer rc.Close()
+		if f.Name != fileName {
+			continue
+		}
 
-			dest, err := os.Create(destPath)
-			if err != nil {
-				return err
-			}
-			defer dest.Close()
-
-			_, err = io.Copy(dest, rc)
+		rc, err := f.Open()
+		if err != nil {
 			return err
 		}
+		defer rc.Close()
+
+		dest, err := os.Create(destPath)
+		if err != nil {
+			return err
+		}
+		defer dest.Close()
+
+		_, err = io.Copy(dest, rc)
+		return err
 	}
 	return fmt.Errorf("file %s not found in zip", fileName)
 }

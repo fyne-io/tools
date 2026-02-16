@@ -190,20 +190,20 @@ func detectAdaptiveIcons(dir, iconPath, foreground, background, monochrome strin
 		monochrome = filepath.Join(dir, "Icon-monochrome.png")
 	}
 
-	if util.Exists(foreground) {
-		fg := foreground
-		bg := ""
-		if util.Exists(background) {
-			bg = background
-		}
-		mono := ""
-		if util.Exists(monochrome) {
-			mono = monochrome
-		}
-		return fg, bg, mono
+	if !util.Exists(foreground) {
+		return "", "", ""
 	}
 
-	return "", "", ""
+	fg := foreground
+	bg := ""
+	if util.Exists(background) {
+		bg = background
+	}
+	mono := ""
+	if util.Exists(monochrome) {
+		mono = monochrome
+	}
+	return fg, bg, mono
 }
 
 func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int, versionCode int,
