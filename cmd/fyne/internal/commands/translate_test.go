@@ -19,6 +19,17 @@ package main
 
 func main() {
 	lang.X("example", "Example")
+	lang.X("multipass", "One" +
+		" " +
+		"Two" +
+		" " +
+		"Three")
+	lang.X("multiline", ` + "`" + `first
+second
+third` + "`" + `)
+	lang.X("mixer", "prefix\n"+` + "`" + `first
+second
+third` + "`" + `+"\npostfix")
 }
 `
 
@@ -185,13 +196,22 @@ func TestTranslationsVisitor(t *testing.T) {
 	translations := make(map[string]any)
 	ast.Walk(&visitor{opts: &opts, m: translations}, af)
 
-	key := "example"
-	val, found := translations[key]
-	if !found {
-		t.Errorf("failed to find key: %v", key)
-	}
-	if val != "Example" {
-		t.Errorf("invalid value for key: %v: %v", key, val)
+	for _, test := range []struct {
+		key  string
+		want string
+	}{
+		{"example", "Example"},
+		{"multipass", "One Two Three"},
+		{"multiline", "first\nsecond\nthird"},
+		{"mixer", "prefix\nfirst\nsecond\nthird\npostfix"},
+	} {
+		val, found := translations[test.key]
+		if !found {
+			t.Errorf("failed to find key: %v", test.key)
+		}
+		if val != test.want {
+			t.Errorf("invalid value for key: %v: %v", test.key, val)
+		}
 	}
 }
 
