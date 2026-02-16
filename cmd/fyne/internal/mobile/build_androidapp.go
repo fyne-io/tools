@@ -61,7 +61,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 
-		foreground, _, _ := detectAdaptiveIcons(dir, iconPath, iconFG, iconBG, iconMono)
+		foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 		adaptive := foreground != "" && util.Exists(foreground)
 
 		buf := new(bytes.Buffer)
@@ -148,7 +148,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	if err != nil {
 		return nil, err
 	}
-	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, bundleID, iconFG, iconBG, iconMono)
+	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, iconFG, iconBG, iconMono)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 
 // detectAdaptiveIcons checks for adaptive icon layers based on metadata or convention
 // Returns: foreground path, background path, monochrome path (empty strings if not found)
-func detectAdaptiveIcons(dir, iconPath, foreground, background, monochrome string) (string, string, string) {
+func detectAdaptiveIcons(dir, foreground, background, monochrome string) (string, string, string) {
 	if !util.Exists(foreground) {
 		foreground = filepath.Join(dir, "Icon-foreground.png")
 	}
@@ -207,7 +207,7 @@ func detectAdaptiveIcons(dir, iconPath, foreground, background, monochrome strin
 }
 
 func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int, versionCode int,
-	versionName, packageName, iconFG, iconBG, iconMono string,
+	versionName, iconFG, iconBG, iconMono string,
 ) error {
 	// Add any assets.
 	var arsc struct {
@@ -260,7 +260,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		}
 	}
 
-	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconPath, iconFG, iconBG, iconMono)
+	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 
 	// No adaptive icons, use legacy build
 	if iconForeground == "" {
@@ -282,7 +282,6 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		target,
 		versionCode,
 		versionName,
-		packageName,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to compile adaptive icon resources: %w", err)

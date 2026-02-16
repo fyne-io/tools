@@ -92,7 +92,7 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 
 // compileAndroidResources compiles Android resources using aapt2
 // Returns: resources.arsc path, res/ directory path, compiled AndroidManifest.xml path, error
-func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath, backgroundPath, monochromePath string, targetSDK, versionCode int, versionName, packageName string) (arscPath string, resDir string, manifestPath string, err error) {
+func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath, backgroundPath, monochromePath string, targetSDK, versionCode int, versionName string) (arscPath string, resDir string, manifestPath string, err error) {
 	aapt2, err := util.Aapt2Path()
 	if err != nil {
 		return "", "", "", err
