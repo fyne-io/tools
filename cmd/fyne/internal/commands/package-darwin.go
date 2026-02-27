@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,6 +26,12 @@ type darwinData struct {
 	Category      string
 	Languages     []string
 }
+
+const (
+	icnsHeaderSize = 8
+	icnsMagicSize  = 4
+	icnsOSTypeDark = "\xFD\xD9\x2F\xA8"
+)
 
 func darwinLangs(langs []string) []string {
 	r := make([]string, len(langs))
@@ -65,14 +74,29 @@ func (p *Packager) packageDarwin() (err error) {
 	resDir := util.EnsureSubDir(contentsDir, "Resources")
 	icnsPath := filepath.Join(resDir, "icon.icns")
 
-	img, err := os.Open(p.icon)
+	srcImg, err := loadIcon(p.icon)
 	if err != nil {
-		return fmt.Errorf("failed to open source image \"%s\": %w", p.icon, err)
+		return err
 	}
-	defer img.Close()
-	srcImg, _, err := image.Decode(img)
-	if err != nil {
-		return fmt.Errorf("failed to decode source image: %w", err)
+	if !p.rawIcon {
+		srcImg = processMacOSIcon(srcImg)
+	}
+	buf := &bytes.Buffer{}
+	if err := icns.Encode(buf, srcImg); err != nil {
+		return fmt.Errorf("failed to encode icns: %w", err)
+	}
+
+	if p.darkIcon != "" {
+		darkSrcImg, err := loadIcon(p.darkIcon)
+		if err != nil {
+			return err
+		}
+		if !p.rawIcon {
+			darkSrcImg = processMacOSIcon(darkSrcImg)
+		}
+		if err := injectDarkIcon(darkSrcImg, buf); err != nil {
+			return err
+		}
 	}
 	dest, err := os.Create(icnsPath)
 	if err != nil {
@@ -83,14 +107,26 @@ func (p *Packager) packageDarwin() (err error) {
 			err = r
 		}
 	}()
-	if !p.rawIcon {
-		srcImg = processMacOSIcon(srcImg)
-	}
-	if err := icns.Encode(dest, srcImg); err != nil {
-		return fmt.Errorf("failed to encode icns: %w", err)
+	if _, err := io.Copy(dest, buf); err != nil {
+		return fmt.Errorf("failed to write destination file: %w", err)
 	}
 
 	return nil
+}
+
+func loadIcon(icon string) (image.Image, error) {
+	f, err := os.Open(icon)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open source image %q: %w", icon, err)
+	}
+	defer f.Close()
+
+	img, _, err := image.Decode(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode source image: %w", err)
+	}
+
+	return img, nil
 }
 
 func processMacOSIcon(in image.Image) image.Image {
@@ -112,4 +148,25 @@ func processMacOSIcon(in image.Image) image.Image {
 	dc.DrawImage(sized, border, border)
 
 	return dc.Image()
+}
+
+func injectDarkIcon(darkImg image.Image, buf *bytes.Buffer) error {
+	buf2 := &bytes.Buffer{}
+	if err := icns.Encode(buf2, darkImg); err != nil {
+		return fmt.Errorf("failed to encode icns: %w", err)
+	}
+
+	if _, err := buf.WriteString(icnsOSTypeDark); err != nil {
+		return fmt.Errorf("failed to append dark icon header: %w", err)
+	}
+	if err := binary.Write(buf, binary.BigEndian, uint32(buf2.Len()-icnsHeaderSize)); err != nil {
+		return fmt.Errorf("failed to append dark icon length: %w", err)
+	}
+	if _, err := buf.Write(buf2.Bytes()[icnsHeaderSize:]); err != nil {
+		return fmt.Errorf("failed to append dark icon data: %w", err)
+	}
+
+	binary.BigEndian.PutUint32(buf.Bytes()[icnsMagicSize:], uint32(buf.Len()))
+
+	return nil
 }
