@@ -153,6 +153,7 @@ func TestBootstrap(t *testing.T) {
 
 func TestEncode(t *testing.T) {
 	r := require.New(t)
+	checkResources(t)
 	f, err := os.Open("testdata/bootstrap.xml")
 	r.NoError(err)
 

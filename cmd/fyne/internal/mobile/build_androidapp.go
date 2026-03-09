@@ -264,7 +264,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 
 	// No adaptive icons, use legacy build
 	if iconForeground == "" {
-		legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
+		return legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
 	}
 
 	// Use iconForeground as background if no separate background provided
