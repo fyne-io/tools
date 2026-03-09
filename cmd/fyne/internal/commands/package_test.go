@@ -207,7 +207,7 @@ func Test_buildPackageWasm(t *testing.T) {
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release"},
-				env:   []string{"GOARCH=wasm", "GOOS=js"},
+				env:   []string{"GOARCH=wasm", "GOOS=js", "CGO_ENABLED=0"},
 				osEnv: true,
 				dir:   "myTest",
 			},
@@ -241,7 +241,7 @@ func Test_PackageWasm(t *testing.T) {
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-o", "myTest.wasm"},
-				env:   []string{"GOARCH=wasm", "GOOS=js"},
+				env:   []string{"GOARCH=wasm", "GOOS=js", "CGO_ENABLED=0"},
 				osEnv: true,
 				dir:   "myTest",
 			},
