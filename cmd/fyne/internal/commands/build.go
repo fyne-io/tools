@@ -195,6 +195,8 @@ func (b *Builder) build() error {
 	if !isWeb(goos) {
 		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
 		b.applyCAndLDFlags(&env, goos)
+	} else {
+		env = append(env, "CGO_ENABLED=0") // CGO is not available in WebAssembly
 	}
 
 	// handle build tags
