@@ -265,7 +265,7 @@ func writeHeader(pkg string, out *os.File) {
 	out.WriteString("\n\npackage ")
 	out.WriteString(pkg)
 	out.WriteString("\n\nimport (\n")
-	out.WriteString("\t_ \"embed\"\n")
+	out.WriteString("\t_ \"embed\"\n\n")
 	out.WriteString("\t\"fyne.io/fyne/v2\"\n")
 	out.WriteString(")\n")
 }
