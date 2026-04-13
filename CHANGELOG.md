@@ -3,6 +3,44 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
+## 1.7.1 - 12 Apr 2026
+
+### Added
+
+* Start support for open with in metadata (#104)
+* Support for adaptive and themed android icons (#115)
+* Parsing of concatenated strings with fyne translate (#117)
+
+### Changed
+
+* Apply hardening C/LD-FLAGS and optimize (#100)
+* Improve help to show that at least one file is needed (#102)
+* Set StartupWMClass in Unix/Linux .desktop files (#112)
+* gendex: Sort directory names in findLast (#123)
+
+### Fixed
+
+* Update Fyne version (#97)
+* Don't generate Migration code for pre-2.6 library usage (#98)
+* Support remote install with icons that are simply Icon.png (#99)
+* Fix release flags not being set for WASM (#101)
+* Don't make tarbombs (#105)
+* Fallback to app name if AppID is not present for package_unix (#114)
+* Update Android to API 21 in to keep the builds for Play Store happy (#119)
+* Make sure that CGO is not enabled when building in WASM mode (#121)
+* fyne serve: fix blank wasm loading screen while app is starting (#122)
+
+### New Contributors
+
+Code in v1.7.1 contains work from the following first time contributors:
+
+* @dweymouth
+* @gezb
+* @MaxGyver83
+* @ncw
+* @typenoob
+
+
 ## 1.7.0 - 16 Oct 2025
 
 ### Added
