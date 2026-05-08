@@ -81,7 +81,7 @@ func gendex() error {
 		return err
 	}
 
-	classFiles, err := filepath.Glob(tmpdir + "/work/org/golang/app/GoNativeActivity*")
+	classFiles, err := filepath.Glob(tmpdir + "/work/org/golang/app/*.class")
 	if err != nil {
 		return err
 	}
