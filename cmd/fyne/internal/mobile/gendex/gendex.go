@@ -264,11 +264,13 @@ func (r *classReader) u1() byte {
 	r.pos++
 	return v
 }
+
 func (r *classReader) u2() uint16 {
 	v := binary.BigEndian.Uint16(r.buf[r.pos:])
 	r.pos += 2
 	return v
 }
+
 func (r *classReader) u4() uint32 {
 	v := binary.BigEndian.Uint32(r.buf[r.pos:])
 	r.pos += 4
