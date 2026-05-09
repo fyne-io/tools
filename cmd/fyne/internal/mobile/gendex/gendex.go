@@ -91,6 +91,7 @@ func gendex() error {
 	// for `mandated` synthetic enclosing-instance parameters of inner classes
 	// with name_index=0; the AOSP-bundled R8 NPEs reading those entries. Since
 	// MethodParameters is purely metadata for reflection, dropping it is safe.
+	// Seems to be because of a compatibility issue between javac and d8
 	for _, f := range classFiles {
 		if err := stripMethodParameters(f); err != nil {
 			return fmt.Errorf("strip MethodParameters %s: %w", f, err)
