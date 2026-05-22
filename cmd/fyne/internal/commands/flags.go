@@ -105,6 +105,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"key-name": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "key-name",
+			Aliases:     []string{"keyName"},
 			Usage:       "android: alias for the signer's private key, which is needed when reading a .keystore file",
 			Destination: dst,
 		}
@@ -112,6 +113,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"key-pass": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "key-pass",
+			Aliases:     []string{"keyPass"},
 			Usage:       "android: password for the signer's private key, which is needed if the private key is password-protected",
 			DefaultText: "read from stdin",
 			Destination: dst,
@@ -120,6 +122,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"keystore": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "keystore",
+			Aliases:     []string{"key-store", "keyStore"},
 			Usage:       "android: location of .keystore file containing signing information",
 			Destination: dst,
 		}
@@ -127,6 +130,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"keystore-pass": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "keystore-pass",
+			Aliases:     []string{"key-store-pass", "keyStorePass"},
 			Usage:       "android: password for the .keystore file",
 			DefaultText: "read from stdin",
 			Destination: dst,
