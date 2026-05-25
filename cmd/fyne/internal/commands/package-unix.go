@@ -127,7 +127,12 @@ func (p *Packager) packageUNIX() error {
 		if p.os == "openbsd" {
 			tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
 		}
-		tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
+
+		if fyneCrossCompat {
+			tarCmdArgs = append(tarCmdArgs, "-C", outDir, ".")
+		} else {
+			tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
+		}
 
 		var buf bytes.Buffer
 		tarCmd := exec.Command("tar", tarCmdArgs...)
