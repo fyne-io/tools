@@ -43,7 +43,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"app-id": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "app-id",
-			Aliases:     []string{"id"},
+			Aliases:     []string{"id", "appID"},
 			Usage:       "set app-id in reversed domain notation for android, darwin, and windows targets, or a valid provisioning profile for ios",
 			Destination: dst,
 		}
@@ -51,6 +51,7 @@ var stringFlags = map[string]func(*string) cli.Flag{
 	"app-version": func(dst *string) cli.Flag {
 		return &cli.StringFlag{
 			Name:        "app-version",
+			Aliases:     []string{"appVersion"},
 			Usage:       "set version number in the form x, x.y or x.y.z semantic version",
 			Destination: dst,
 		}
@@ -231,6 +232,7 @@ var intFlags = map[string]func(*int) cli.Flag{
 	"app-build": func(dst *int) cli.Flag {
 		return &cli.IntFlag{
 			Name:        "app-build",
+			Aliases:     []string{"appBuild"},
 			Usage:       "set build number (integer >0, increasing with each build)",
 			Destination: dst,
 		}
