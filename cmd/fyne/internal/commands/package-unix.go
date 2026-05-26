@@ -113,33 +113,35 @@ func (p *Packager) packageUNIX() error {
 		return fmt.Errorf("failed to write desktop entry string: %w", err)
 	}
 
-	if !p.install {
-		parent := filepath.Dir(outDir)
-		defer os.RemoveAll(parent)
+	if p.install {
+		return nil
+	}
 
-		makefile, _ := os.Create(filepath.Join(outDir, "Makefile"))
-		err := templates.MakefileUNIX.Execute(makefile, tplData)
-		if err != nil {
-			return fmt.Errorf("failed to write Makefile string: %w", err)
-		}
+	parent := filepath.Dir(outDir)
+	defer os.RemoveAll(parent)
 
-		tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
-		if p.os == "openbsd" {
-			tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
-		}
+	makefile, _ := os.Create(filepath.Join(outDir, "Makefile"))
+	err = templates.MakefileUNIX.Execute(makefile, tplData)
+	if err != nil {
+		return fmt.Errorf("failed to write Makefile string: %w", err)
+	}
 
-		if fyneCrossCompat {
-			tarCmdArgs = append(tarCmdArgs, "-C", outDir, ".")
-		} else {
-			tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
-		}
+	tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
+	if p.os == "openbsd" {
+		tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
+	}
 
-		var buf bytes.Buffer
-		tarCmd := exec.Command("tar", tarCmdArgs...)
-		tarCmd.Stderr = &buf
-		if err = tarCmd.Run(); err != nil {
-			return fmt.Errorf("failed to create archive with tar: %s - %w", buf.String(), err)
-		}
+	if fyneCrossCompat {
+		tarCmdArgs = append(tarCmdArgs, "-C", outDir, ".")
+	} else {
+		tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
+	}
+
+	var buf bytes.Buffer
+	tarCmd := exec.Command("tar", tarCmdArgs...)
+	tarCmd.Stderr = &buf
+	if err = tarCmd.Run(); err != nil {
+		return fmt.Errorf("failed to create archive with tar: %s - %w", buf.String(), err)
 	}
 
 	return nil
