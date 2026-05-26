@@ -131,8 +131,13 @@ func (p *Packager) packageUNIX() error {
 		tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
 	}
 
+	// Compatibility mode for old fyne-cross versions using images with new CLI
+	// versions resulting in a tar archive prefix of "./appname/" instead of "./".
+	// This is to allow producing a final set of compatible images before
+	// switching to a new namespace and merging fyne-cross into fyne-tools as
+	// one of the supported commands.
 	if fyneCrossCompat {
-		tarCmdArgs = append(tarCmdArgs, "-C", outDir, ".")
+		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr")
 	} else {
 		tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
 	}
