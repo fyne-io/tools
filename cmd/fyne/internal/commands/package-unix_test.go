@@ -90,7 +90,7 @@ func TestPackageLinux(t *testing.T) {
 
 	assert.NoError(t, os.Mkdir(dir, 0o755), "create dir for test app")
 	assert.NoError(t, os.Chdir(dir), "change into new app dir")
-	assert.NoError(t, os.WriteFile("Icon.png", theme.FyneLogo().Content(), 0o644))
+	assert.NoError(t, os.WriteFile("Icon.png", theme.FyneLogo().Content(), 0o644)) //lint:ignore SA1019 It is fine for our own use.
 
 	app := &cli.App{
 		Name: "fyne",
