@@ -3,6 +3,17 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
+## 1.7.2 - 28 May 2026
+
+### Changed
+
+* Compatibility mode for fyne-cross-images (#130)
+
+### Fixed
+
+* Pass flag to compiler instead of preprocessor directly (#129)
+
+
 ## 1.7.1 - 12 Apr 2026
 
 ### Added
