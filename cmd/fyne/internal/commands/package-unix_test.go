@@ -85,6 +85,11 @@ func TestPackageLinux(t *testing.T) {
 		return
 	}
 
+	if os.Getenv("FYNE_TEST_PACKAGE_LINUX") != "yes" {
+		t.Skip("skipping test that needs all Fyne libraries")
+		return
+	}
+
 	basedir := t.TempDir()
 	dir := filepath.Join(basedir, "testapp")
 
