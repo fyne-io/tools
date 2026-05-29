@@ -313,8 +313,6 @@ func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
 	}
 
 	switch targetArch() {
-	case "amd64":
-		cflags = append(cflags, "-fcf-protection")
 	case "arm64":
 		cflags = append(cflags, "-mbranch-protection=bti+pac-ret")
 	}
