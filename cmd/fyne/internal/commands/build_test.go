@@ -77,8 +77,6 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 
 	archcflags := ""
 	switch targetArch() {
-	case "amd64":
-		archcflags = " -fcf-protection"
 	case "arm64":
 		archcflags = " -mbranch-protection=bti+pac-ret"
 	}

@@ -3,7 +3,7 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
-## 1.7.2 - 28 May 2026
+## 1.7.2 - 29 May 2026
 
 ### Changed
 
@@ -12,6 +12,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 ### Fixed
 
 * Pass flag to compiler instead of preprocessor directly (#129)
+* Build with compilers missing support flow-control protection (#133)
 
 
 ## 1.7.1 - 12 Apr 2026
