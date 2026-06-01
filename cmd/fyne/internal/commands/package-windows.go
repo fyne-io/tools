@@ -70,7 +70,7 @@ func (p *Packager) packageWindows(tags []string) error {
 	}
 
 	// launch rsrc to generate the object file
-	outPath := filepath.Join(exePath, "fyne.syso")
+	outPath := filepath.Join(p.srcDir, "fyne.syso")
 
 	vi := &goversioninfo.VersionInfo{}
 	vi.ProductName = p.Name
