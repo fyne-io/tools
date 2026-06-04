@@ -49,7 +49,8 @@ func Linux() *cli.Command {
 		Usage:     "Builds and packages a fyne application for the linux OS",
 		Args:      true,
 		ArgsUsage: "[package]",
-		Flags: append(cliFlags,
+		Flags: append(
+			cliFlags,
 			&cli.GenericFlag{
 				Name:        "arch",
 				Usage:       fmt.Sprintf("set list of target architecture to build separated by comma; supported: %s", linuxArchSupported),

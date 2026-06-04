@@ -156,7 +156,8 @@ func (i *localContainerImage) cmd(vol volume.Volume, opts options, cmdArgs []str
 	}
 
 	// add default env variables
-	args = append(args,
+	args = append(
+		args,
 		"-e", "CGO_ENABLED=1", // enable CGO
 		"-e", fmt.Sprintf("GOCACHE=%s", vol.GoCacheDirContainer()), // mount GOCACHE to reuse cache between builds
 	)

@@ -275,7 +275,8 @@ func (i *kubernetesContainerImage) Prepare() error {
 
 	download := func(vol volume.Volume, downloadPath string, containerPath string) error {
 		log.Infof("Downloading %s to %s", downloadPath, containerPath)
-		return i.Run(i.runner.vol, options{},
+		return i.Run(
+			i.runner.vol, options{},
 			AddAWSParameters(i.runner.aws, "fyne-cross-s3", "download-directory", downloadPath, containerPath),
 		)
 	}
@@ -320,13 +321,15 @@ func (i *kubernetesContainerImage) Finalize(packageName string) (ret error) {
 	// to compress it in a format that Darwin understand by default
 	if strings.ToLower(filepath.Ext(packageName)) == ".app" {
 		uploadPath += ".tar.xz"
-		ret = i.Run(i.runner.vol, options{},
+		ret = i.Run(
+			i.runner.vol, options{},
 			AddAWSParameters(i.runner.aws,
 				"fyne-cross-s3", "upload-directory",
 				volume.JoinPathContainer(i.runner.vol.TmpDirContainer(), i.ID(), packageName), uploadPath),
 		)
 	} else {
-		ret = i.Run(i.runner.vol, options{},
+		ret = i.Run(
+			i.runner.vol, options{},
 			AddAWSParameters(i.runner.aws,
 				"fyne-cross-s3", "upload-file",
 				volume.JoinPathContainer(i.runner.vol.TmpDirContainer(), i.ID(), packageName), uploadPath),
@@ -339,7 +342,8 @@ func (i *kubernetesContainerImage) Finalize(packageName string) (ret error) {
 	// Upload cached data to S3
 	for _, mountPoint := range i.cloudLocalMount {
 		log.Infof("Uploading %s to %s", mountPoint.inContainer, i.runner.s3Path+"/"+mountPoint.name+"-"+i.ID()+".tar.zstd")
-		err := i.Run(i.runner.vol, options{},
+		err := i.Run(
+			i.runner.vol, options{},
 			AddAWSParameters(i.runner.aws,
 				"fyne-cross-s3", "upload-directory",
 				mountPoint.inContainer, i.runner.s3Path+"/"+mountPoint.name+"-"+i.ID()+".tar.zstd"),

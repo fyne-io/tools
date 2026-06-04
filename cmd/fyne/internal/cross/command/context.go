@@ -32,7 +32,7 @@ const (
 type Architecture string
 
 func (a Architecture) String() string {
-	return (string)(a)
+	return string(a)
 }
 
 // Context represent a build context

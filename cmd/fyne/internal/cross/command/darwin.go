@@ -47,7 +47,8 @@ func Darwin() *cli.Command {
 		TargetArch:  &targetArchFlag{runtime.GOARCH},
 	}
 
-	cliFlags = append(cliFlags,
+	cliFlags = append(
+		cliFlags,
 		&cli.GenericFlag{
 			Name:        "arch",
 			Usage:       fmt.Sprintf("set list of target architectures to build separated by comma; supported: %s", darwinArchSupported),
@@ -148,7 +149,8 @@ func (cmd *darwin) Build(image containerImage) (string, error) {
 	// copy the binary into the expected bin/$ID/packageName location in the container
 	image.Run(cmd.defaultContext.Volume, options{},
 		[]string{
-			"sh", "-c", fmt.Sprintf("cp %q/* %q",
+			"sh", "-c", fmt.Sprintf(
+				"cp %q/* %q",
 				volume.JoinPathContainer(cmd.defaultContext.TmpDirContainer(), image.ID(), packageName, "Contents", "MacOS"),
 				volume.JoinPathContainer(cmd.defaultContext.BinDirContainer(), image.ID()),
 			),

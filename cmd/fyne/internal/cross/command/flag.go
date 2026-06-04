@@ -113,7 +113,8 @@ func newCommonFlags() (*CommonFlags, []cli.Flag, error) {
 
 	flags := &CommonFlags{}
 	cliFlags := kubernetesFlags(flags)
-	cliFlags = append(cliFlags,
+	cliFlags = append(
+		cliFlags,
 		&cli.IntFlag{
 			Name:        "app-build",
 			Usage:       "set build number, should be greater than 0 and incremented for each build",
