@@ -47,7 +47,8 @@ func Windows() *cli.Command {
 		Usage:     "Builds and packages a fyne application for the windows OS",
 		Args:      true,
 		ArgsUsage: "[package]",
-		Flags: append(cliFlags,
+		Flags: append(
+			cliFlags,
 			&cli.GenericFlag{
 				Name:        "arch",
 				Usage:       fmt.Sprintf("set list of target architectures to build separated by comma; supported: %s", windowsArchSupported),
