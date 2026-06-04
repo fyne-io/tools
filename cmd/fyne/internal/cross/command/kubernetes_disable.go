@@ -1,0 +1,24 @@
+//go:build !k8s
+// +build !k8s
+
+package command
+
+import (
+	"errors"
+
+	"github.com/urfave/cli/v2"
+)
+
+var errNotImplemented error = errors.New("kubernetes support not built in. Compile fyne-cross with `-tag k8s` to enable it")
+
+func kubernetesFlags(_ *CommonFlags) []cli.Flag {
+	return nil
+}
+
+func checkKubernetesClient() (err error) {
+	return errNotImplemented
+}
+
+func newKubernetesContainerRunner(context Context) (containerEngine, error) {
+	return nil, errNotImplemented
+}

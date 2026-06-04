@@ -27,6 +27,7 @@ func main() {
 			commands.Translate(),
 			commands.Version(),
 			commands.Bundle(),
+			commands.Cross(),
 		},
 	}
 
