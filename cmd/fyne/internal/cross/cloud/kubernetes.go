@@ -102,10 +102,12 @@ func (k8s *K8sClient) NewPod(ctx context.Context, name string, image string, nam
 	}
 
 	pod := &core.Pod{
-		ObjectMeta: meta.ObjectMeta{Name: name,
+		ObjectMeta: meta.ObjectMeta{
+			Name: name,
 			Labels: map[string]string{
 				"app": "fyne-cross",
-			}},
+			},
+		},
 		Spec: core.PodSpec{
 			RestartPolicy: core.RestartPolicyNever,
 			Containers: []core.Container{
@@ -252,7 +254,8 @@ func (p *Pod) Command(ctx context.Context, workDir string, cmdArgs []string) (st
 func (p *Pod) Close() error {
 	deletePolicy := meta.DeletePropagationForeground
 	if err := p.client.kubectl.CoreV1().Pods(p.namespace).Delete(context.Background(), p.name, meta.DeleteOptions{
-		PropagationPolicy: &deletePolicy}); err != nil {
+		PropagationPolicy: &deletePolicy,
+	}); err != nil {
 		return err
 	}
 	return nil

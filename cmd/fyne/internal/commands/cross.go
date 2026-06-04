@@ -8,9 +8,9 @@ import (
 
 func Cross() *cli.Command {
 	return &cli.Command{
-		Name:        "cross",
-		Aliases:     []string{"x"},
-		Usage:       "Cross-compiles a Fyne application",
+		Name:    "cross",
+		Aliases: []string{"x"},
+		Usage:   "Cross-compiles a Fyne application",
 		Subcommands: []*cli.Command{
 			crossCommand.DarwinSDKExtract(),
 			crossCommand.Darwin(),
@@ -24,4 +24,3 @@ func Cross() *cli.Command {
 		},
 	}
 }
-

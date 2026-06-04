@@ -170,7 +170,8 @@ func main() {
 					return nil
 				},
 			},
-		}}
+		},
+	}
 
 	err := app.Run(os.Args)
 	if err != nil {

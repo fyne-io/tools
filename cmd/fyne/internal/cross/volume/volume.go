@@ -34,7 +34,7 @@ func Copy(src string, dst string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, data, 0644)
+	return os.WriteFile(dst, data, 0o644)
 }
 
 // DefaultCacheDirHost returns the default cache dir on the host
@@ -113,7 +113,6 @@ func JoinPathHost(elem ...string) string {
 
 // Zip compress the source file into a zip archive
 func Zip(source string, archive string) error {
-
 	sourceData, err := os.Open(source)
 	if err != nil {
 		return fmt.Errorf("could not read the source file content: %s", err)
@@ -234,7 +233,7 @@ func createHostDirs(l Volume) error {
 	}
 
 	for _, dir := range dirs {
-		err := os.MkdirAll(dir, 0755)
+		err := os.MkdirAll(dir, 0o755)
 		if err != nil {
 			return fmt.Errorf("cannot create the fyne-cross directory %s: %s", dir, err)
 		}
