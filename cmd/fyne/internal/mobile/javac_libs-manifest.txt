@@ -1,0 +1,8 @@
+d86b1d8e2f0bb06ef919e43e3fcafa5b  javac_libs/camera-camera2-1.4.2-classes.jar
+0f18224a39bfe666f84ed9048b33d090  javac_libs/camera-lifecycle-1.4.2.jar
+0b518c622c1d9b5563757c0072cf9d53  javac_libs/camerax.jar
+d754172cac36640084356d0ebab3c11b  javac_libs/core-1.1.0.aar
+f26982fb4a9c06bd60baf9667ff44c0d  javac_libs/lifecycle-process-2.9.2.aar
+1f0e6924831149ff45c804c5b000f896  javac_libs/lifecycle-service-2.9.2.aar
+2178c2b8a4772361ebd09348c60381f4  javac_libs/listenablefuture-1.0.jar
+d094c22570d65e132c19cea5d352e381  javac_libs/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar
