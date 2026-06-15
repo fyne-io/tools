@@ -66,7 +66,7 @@ func gendex() error {
 		piece, data = data[:l], data[l:]
 		fmt.Fprintf(buf, "%s\n", piece)
 	}
-	fmt.Fprintf(buf, "`")
+	fmt.Fprintf(buf, "`\n")
 	out := buf.Bytes()
 	if err != nil {
 		buf.WriteTo(os.Stderr)
