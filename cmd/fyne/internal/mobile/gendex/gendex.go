@@ -55,6 +55,7 @@ func gendex() error {
 
 	buf := new(bytes.Buffer)
 	fmt.Fprint(buf, header)
+	fmt.Fprint(buf, "`")
 
 	var piece string
 	for len(data) > 0 {
@@ -63,9 +64,9 @@ func gendex() error {
 			l = len(data)
 		}
 		piece, data = data[:l], data[l:]
-		fmt.Fprintf(buf, "\t`%s` +\n", piece)
+		fmt.Fprintf(buf, "%s\n", piece)
 	}
-	fmt.Fprintf(buf, "\t``")
+	fmt.Fprintf(buf, "`")
 	out := buf.Bytes()
 	if err != nil {
 		buf.WriteTo(os.Stderr)
