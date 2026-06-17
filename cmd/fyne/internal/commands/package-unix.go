@@ -121,6 +121,7 @@ func (p *Packager) packageUNIX() error {
 	defer os.RemoveAll(parent)
 
 	makefile, _ := os.Create(filepath.Join(outDir, "Makefile"))
+	tplData.Icon += ".png"
 	err = templates.MakefileUNIX.Execute(makefile, tplData)
 	if err != nil {
 		return fmt.Errorf("failed to write Makefile string: %w", err)
