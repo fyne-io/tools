@@ -90,7 +90,7 @@ func (p *Packager) packageUNIX() error {
 	}
 	tplData := unixData{
 		Name:           p.Name,
-		AppID:          p.AppID,
+		AppID:          appIDOrName,
 		Exec:           filepath.Base(p.exe) + openWith,
 		Icon:           appIDOrName,
 		Local:          local,
