@@ -19,6 +19,7 @@ type FyneApp struct {
 // AppDetails describes the build information, this group may be OS or arch specific
 type AppDetails struct {
 	Icon     string `toml:",omitempty"`
+	DarkIcon string `toml:",omitempty"`
 	Name, ID string `toml:",omitempty"`
 	Version  string `toml:",omitempty"`
 	Build    int    `toml:",omitempty"`

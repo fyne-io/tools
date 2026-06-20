@@ -48,6 +48,7 @@ func Package() *cli.Command {
 			intFlags["app-build"](&p.AppBuild),
 			stringFlags["src"](&p.srcDir),
 			stringFlags["icon"](&p.icon),
+			stringFlags["dark-icon"](&p.darkIcon),
 			boolFlags["use-raw-icon"](&p.rawIcon),
 			stringFlags["app-id"](&p.AppID),
 			stringFlags["certificate"](&p.certificate),
