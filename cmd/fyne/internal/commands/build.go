@@ -21,9 +21,6 @@ import (
 const (
 	baseCFLAGSRegular      = "-O2 -g -fexceptions -fasynchronous-unwind-tables -pipe"
 	baseCFLAGSRelease      = "-O3 -pipe"
-	hardeningCFLAGS        = "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
-	hardeningLDFLAGSLinux  = "-Wl,-z,relro,-z,now -Wl,--as-needed"
-	hardeningLDFLAGSDarwin = "-Wl,-dead_strip_dylibs"
 )
 
 // Builder generate the executables.
@@ -296,9 +293,15 @@ func (b *Builder) updateAndGetGoExecutable() runner {
 }
 
 func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
-	cflags := []string{baseCFLAGSRegular, hardeningCFLAGS}
+	cflags := []string{baseCFLAGSRegular}
 	if b.release {
 		cflags[0] = baseCFLAGSRelease
+	}
+
+	arch := targetArch()
+	cflagsHardening := hardeningFlagsLookup(ccVersion(), arch, goos)
+	if cflagsHardening != "" {
+		cflags = append(cflags, cflagsHardening)
 	}
 
 	ldflags := []string{}
@@ -312,7 +315,7 @@ func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
 		ldflags = append(ldflags, "-mmacosx-version-min=10.13")
 	}
 
-	switch targetArch() {
+	switch arch {
 	case "arm64":
 		cflags = append(cflags, "-mbranch-protection=bti+pac-ret")
 	}
