@@ -20,7 +20,7 @@ type hardeningFlags struct {
 }
 
 var hardeningFlagsTable = []hardeningFlags{
-	{"ubuntu", "amd64", "gcc", "0", "11.4.0", "-fstack-protector-strong"},
+	{"ubuntu", "amd64", "gcc", "0", "11.4.0", "-fstack-protector-strong"}, // https://github.com/fyne-io/tools/issues/137
 }
 
 func ccVersion() string {
