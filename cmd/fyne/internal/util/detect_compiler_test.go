@@ -8,9 +8,9 @@ import (
 
 func Test_DetectCompiler(t *testing.T) {
 	tests := []struct {
-		unameInfo string
-		ccVersion string
-		osName    string
+		unameInfo string // uname -prs
+		ccVersion string // cc --version
+		osName    string // runtime.GOOS
 		wantInfo  *CompilerInfo
 		wantError error
 	}{
