@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	hardeningCFLAGS        = "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
+	hardeningCFLAGS        = "-D_FORTIFY_SOURCE=3 -fcf-protection -fstack-protector-strong"
 	hardeningLDFLAGSLinux  = "-Wl,-z,relro,-z,now -Wl,--as-needed"
 	hardeningLDFLAGSDarwin = "-Wl,-dead_strip_dylibs"
 )
@@ -20,7 +20,8 @@ type hardeningFlags struct {
 }
 
 var hardeningFlagsTable = []hardeningFlags{
-	{"ubuntu", "amd64", "gcc", "0", "11.4.0", "-fstack-protector-strong"}, // https://github.com/fyne-io/tools/issues/137
+	{"ubuntu", "amd64", "gcc", "*", "11.4.0", "-fcf-protection -fstack-protector-strong"}, // https://github.com/fyne-io/tools/issues/137
+	{"windows", "*", "gcc", "*", "*", "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"},     // mingw doesn't support -fcf-protection -- XXX: double check for better conditions
 }
 
 func ccVersion() string {
@@ -44,16 +45,19 @@ func hardeningFlagsLookup(out, goos, arch string) string {
 		return ""
 	}
 	for _, e := range hardeningFlagsTable {
-		if e.os != info.OS {
+		if e.cc != "*" && e.cc != info.Name {
 			continue
 		}
-		if e.arch != arch {
+		if e.os != "*" && e.os != info.OS {
 			continue
 		}
-		if semver.Compare("v"+info.Version, "v"+e.minVer) < 0 {
+		if e.arch != "*" && e.arch != arch {
 			continue
 		}
-		if semver.Compare("v"+info.Version, "v"+e.maxVer) > 0 {
+		if e.minVer != "*" && semver.Compare("v"+info.Version, "v"+e.minVer) < 0 {
+			continue
+		}
+		if e.maxVer != "*" && semver.Compare("v"+info.Version, "v"+e.maxVer) > 0 {
 			continue
 		}
 		return e.cflags
