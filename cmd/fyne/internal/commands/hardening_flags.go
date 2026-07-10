@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	hardeningCFLAGS = "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
-	hardeningLDFLAGSLinux = "-Wl,-z,relro,-z,now -Wl,--as-needed"
+	hardeningCFLAGS        = "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"
+	hardeningLDFLAGSLinux  = "-Wl,-z,relro,-z,now -Wl,--as-needed"
 	hardeningLDFLAGSDarwin = "-Wl,-dead_strip_dylibs"
 )
 

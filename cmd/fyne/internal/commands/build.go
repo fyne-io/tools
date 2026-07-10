@@ -19,8 +19,8 @@ import (
 
 // Partly based on https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/blob/master/include/flags.yml?ref_type=heads.
 const (
-	baseCFLAGSRegular      = "-O2 -g -fexceptions -fasynchronous-unwind-tables -pipe"
-	baseCFLAGSRelease      = "-O3 -pipe"
+	baseCFLAGSRegular = "-O2 -g -fexceptions -fasynchronous-unwind-tables -pipe"
+	baseCFLAGSRelease = "-O3 -pipe"
 )
 
 // Builder generate the executables.
