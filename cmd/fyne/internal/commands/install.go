@@ -144,7 +144,7 @@ func getPackageAndBranch(s string) (string, string) {
 }
 
 func getLatestTag(repo string) (string, error) {
-	cmd := exec.Command("git", "ls-remote", "-q", repo)
+	cmd := exec.Command("git", "ls-remote", "-q", "--sort", "v:refname", repo)
 	b, err := cmd.Output()
 	if err != nil {
 		return "", err
