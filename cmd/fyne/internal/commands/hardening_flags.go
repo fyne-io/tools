@@ -39,7 +39,7 @@ func ccVersion() string {
 	return string(out)
 }
 
-func hardeningFlagsLookup(out, goos, arch string) string {
+func hardeningCFlagsLookup(out, goos, arch string) string {
 	info, err := intutil.DetectCompiler(out, goos)
 	if err != nil {
 		return ""
