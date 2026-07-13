@@ -15,7 +15,7 @@ func Test_hardeningCFlagsLookup(t *testing.T) {
 	assert.Equal(t, "-fcf-protection -fstack-protector-strong", hardeningCFlagsLookup("cc (Ubuntu) 11.4.0", "ubuntu", "amd64"))
 
 	// compiler version higher
-	assert.Equal(t, hardeningCFLAGS, hardeningCFlagsLookup("clang version 11.4.1", "ubuntu", "amd64"))
+	assert.Equal(t, hardeningCFLAGS, hardeningCFlagsLookup("cc (Ubuntu) 11.4.1", "ubuntu", "amd64"))
 
 	// different compiler
 	assert.Equal(t, hardeningCFLAGS, hardeningCFlagsLookup("clang version 11.3.0", "ubuntu", "amd64"))
