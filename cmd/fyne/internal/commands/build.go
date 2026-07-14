@@ -278,18 +278,15 @@ func injectPprofFile(srcdir string, port int) (func(), error) {
 }
 
 func (b *Builder) updateAndGetGoExecutable() runner {
-	fyneGoModRunner := b.runner
-	if b.runner == nil {
-		fyneGoModRunner = newCommand("go")
-		goBin := os.Getenv("GO")
-		if goBin != "" {
-			fyneGoModRunner = newCommand(goBin)
-			b.runner = fyneGoModRunner
-		} else {
-			b.runner = newCommand("go")
-		}
+	if b.runner != nil {
+		return b.runner
 	}
-	return fyneGoModRunner
+	if goBin := os.Getenv("GO"); goBin != "" {
+		b.runner = newCommand(goBin)
+	} else {
+		b.runner = newCommand("go")
+	}
+	return b.runner
 }
 
 func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
