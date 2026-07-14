@@ -299,7 +299,7 @@ func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
 	}
 
 	arch := targetArch()
-	cflagsHardening := hardeningCFlagsLookup(ccVersion(), arch, goos)
+	cflagsHardening := hardeningCFlagsLookup(ccVersion(), goos, arch)
 	if cflagsHardening != "" {
 		cflags = append(cflags, cflagsHardening)
 	}
