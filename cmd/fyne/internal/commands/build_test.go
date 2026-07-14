@@ -76,11 +76,13 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 	}
 
 	archcflags := ""
-	switch targetArch() {
+	arch := targetArch()
+	switch arch {
 	case "arm64":
 		archcflags = " -mbranch-protection=bti+pac-ret"
 	}
 
+	hardeningCFlags := hardeningCFlagsLookup(ccVersion(), "linux", arch)
 	expected := []mockRunner{
 		{
 			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
@@ -91,7 +93,7 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release", relativePath},
-				env:   []string{"CGO_ENABLED=1", "GOOS=linux", fmt.Sprintf("CGO_CFLAGS=%s%s %s%s", cflags, baseCFLAGSRelease, hardeningCFLAGS, archcflags), fmt.Sprintf("CGO_LDFLAGS=%s%s", ldflags, hardeningLDFLAGSLinux)},
+				env:   []string{"CGO_ENABLED=1", "GOOS=linux", fmt.Sprintf("CGO_CFLAGS=%s%s %s%s", cflags, baseCFLAGSRelease, hardeningCFlags, archcflags), fmt.Sprintf("CGO_LDFLAGS=%s%s", ldflags, hardeningLDFLAGSLinux)},
 				osEnv: true,
 				dir:   "myTest",
 			},
@@ -104,7 +106,7 @@ func Test_BuildLinuxReleaseVersion(t *testing.T) {
 	linuxBuildTest := &testCommandRuns{runs: expected, t: t}
 	b := &Builder{appData: &appData{}, os: "linux", srcdir: "myTest", release: true, runner: linuxBuildTest, goPackage: relativePath}
 	err := b.build()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	linuxBuildTest.verifyExpectation()
 }
 
