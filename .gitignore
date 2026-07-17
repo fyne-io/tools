@@ -21,3 +21,9 @@ cmd/fyne/fyne
 
 # Go workspace file
 go.work
+
+# Gendex artifacts and dependencies
+cmd/fyne/internal/mobile/classes.dex
+cmd/fyne/internal/mobile/javac_libs
+cmd/fyne/internal/mobile/d8_libs
+cmd/fyne/internal/mobile/work
