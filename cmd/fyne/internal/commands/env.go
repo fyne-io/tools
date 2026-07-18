@@ -74,8 +74,35 @@ func (r *fyneReport) Info() (goinfo.Info, error) {
 }
 
 // lookupDirWithGoMod takes a directory and checks for a go.mod file, traverses back towards the root,
-// and returns the first directory with a match
+// and returns the first directory with a match. In case of a relative path the traversal stops at
+// the relative root
 func lookupDirWithGoMod(workDir string) (string, error) {
+	isRelative := !filepath.IsAbs(workDir)
+	relDir := ""
+
+	if isRelative {
+		relDir = workDir
+		for {
+			dir, file := filepath.Split(relDir)
+			if dir == "." || dir == ".." || file == "." || file == ".." {
+				break
+			}
+			relDir = filepath.Clean(dir)
+		}
+
+		if absDir, err := filepath.Abs(relDir); err != nil {
+			return "", err
+		} else {
+			relDir = absDir
+		}
+
+		if absDir, err := filepath.Abs(workDir); err != nil {
+			return "", err
+		} else {
+			workDir = absDir
+		}
+	}
+
 	for {
 		fi, err := os.Stat(filepath.Join(workDir, "go.mod"))
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -85,10 +112,11 @@ func lookupDirWithGoMod(workDir string) (string, error) {
 			break
 		}
 		parentDir := filepath.Dir(workDir)
-		if parentDir == workDir {
+		if parentDir == workDir || isRelative && parentDir == relDir {
 			return "", os.ErrNotExist
 		}
 		workDir = parentDir
 	}
+
 	return workDir, nil
 }

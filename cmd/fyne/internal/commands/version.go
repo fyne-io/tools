@@ -10,6 +10,22 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func getFyneGoModVersion(dir string) (string, error) {
+	wd, err := lookupDirWithGoMod(dir)
+	if err != nil {
+		return "", err
+	}
+
+	wdInfo := &report.GoMod{WorkDir: wd, Module: fyneModule}
+	if info, err := wdInfo.Info(); err != nil {
+		return "", err
+	} else if imported, ok := info["imported"]; ok && imported.(bool) {
+		return info["version"].(string), nil
+	}
+
+	return "", fmt.Errorf("fyne version not found")
+}
+
 // Version returns the cli command for the program version.
 func Version() *cli.Command {
 	return &cli.Command{
@@ -29,16 +45,8 @@ func Version() *cli.Command {
 			}
 
 			ver := "(not found)"
-			if wd, err := lookupDirWithGoMod(wd); err == nil {
-				wdInfo := &report.GoMod{WorkDir: wd, Module: fyneModule}
-				info2, err := wdInfo.Info()
-				if err != nil {
-					return err
-				}
-
-				if imported, ok := info2["imported"]; ok && imported.(bool) {
-					ver = info2["version"].(string)
-				}
+			if v, err := getFyneGoModVersion(wd); err == nil {
+				ver = v
 			}
 
 			fmt.Println("fyne library version:", ver)

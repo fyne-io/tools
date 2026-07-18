@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -112,38 +111,11 @@ type goModEdit struct {
 	}
 }
 
-func getFyneGoModVersion(runner runner) (string, error) {
-	dependenciesOutput, err := runner.runOutput("mod", "edit", "-json")
-	if err != nil {
-		return "", err
-	}
-
-	var parsed goModEdit
-	err = json.Unmarshal(dependenciesOutput, &parsed)
-	if err != nil {
-		return "", err
-	}
-
-	if parsed.Module.Path == "fyne.io/fyne/v2" {
-		return "master", nil
-	}
-
-	for _, dep := range parsed.Require {
-		if dep.Path == "fyne.io/fyne/v2" {
-			return dep.Version, nil
-		}
-	}
-
-	return "", fmt.Errorf("fyne version not found")
-}
-
 func (b *Builder) build() error {
 	goos := b.os
 	if goos == "" {
 		goos = targetOS()
 	}
-
-	fyneGoModRunner := b.updateAndGetGoExecutable()
 
 	srcdir, err := b.computeSrcDir()
 	if err != nil {
@@ -161,7 +133,7 @@ func (b *Builder) build() error {
 		}
 	}
 
-	close, err := injectMetadataIfPossible(fyneGoModRunner, srcdir, b.appData, createMetadataInitFile)
+	close, err := injectMetadataIfPossible(srcdir, b.appData, createMetadataInitFile)
 	if err != nil {
 		fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
 	} else if close != nil {
@@ -277,18 +249,6 @@ func injectPprofFile(srcdir string, port int) (func(), error) {
 	return func() { os.Remove(pprofInitFilePath) }, nil
 }
 
-func (b *Builder) updateAndGetGoExecutable() runner {
-	if b.runner != nil {
-		return b.runner
-	}
-	if goBin := os.Getenv("GO"); goBin != "" {
-		b.runner = newCommand(goBin)
-	} else {
-		b.runner = newCommand("go")
-	}
-	return b.runner
-}
-
 func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
 	cflags := []string{baseCFLAGSRegular}
 	if b.release {
@@ -361,10 +321,10 @@ func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
 	return func() { os.Remove(metadataInitFilePath) }, err
 }
 
-func injectMetadataIfPossible(runner runner, srcdir string, app *appData,
+func injectMetadataIfPossible(srcdir string, app *appData,
 	createMetadataInitFile func(srcdir string, app *appData) (func(), error),
 ) (func(), error) {
-	fyneGoModVersion, err := getFyneGoModVersion(runner)
+	fyneGoModVersion, err := getFyneGoModVersion(srcdir)
 	if err != nil {
 		return nil, err
 	}
