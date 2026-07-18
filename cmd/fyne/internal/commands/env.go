@@ -79,13 +79,14 @@ func (r *fyneReport) Info() (goinfo.Info, error) {
 func lookupDirWithGoMod(workDir string) (string, error) {
 	isRelative := !filepath.IsAbs(workDir)
 	relDir := ""
+	volName := filepath.VolumeName(workDir)
 
 	if isRelative {
 		relDir = workDir
 		for {
 			dir, file := filepath.Split(relDir)
 			dir = filepath.Clean(dir)
-			if dir == "" || dir == "." || dir == ".." || file == "." || file == ".." {
+			if dir == "" || dir == "." || dir == ".." || dir == volName || file == "" || file == "." || file == ".." {
 				break
 			}
 			relDir = filepath.Clean(dir)
