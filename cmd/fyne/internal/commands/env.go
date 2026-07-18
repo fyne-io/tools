@@ -84,7 +84,8 @@ func lookupDirWithGoMod(workDir string) (string, error) {
 		relDir = workDir
 		for {
 			dir, file := filepath.Split(relDir)
-			if dir == "." || dir == ".." || file == "." || file == ".." {
+			dir = filepath.Clean(dir)
+			if dir == "" || dir == "." || dir == ".." || file == "." || file == ".." {
 				break
 			}
 			relDir = filepath.Clean(dir)
