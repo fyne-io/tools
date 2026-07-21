@@ -30,7 +30,7 @@ var cmdBuild = &command{
 }
 
 const (
-	minAndroidAPI = 15
+	minAndroidAPI = 21
 )
 
 func runBuild(cmd *command) error {
@@ -108,7 +108,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 			return pkg, nil
 		}
-		target := 35
+		target := 36
 		if !buildRelease {
 			target = 29 // TODO once we have gomobile debug signing working for v2 android signs
 		}
