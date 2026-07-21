@@ -215,20 +215,15 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 	}
 	arsc.iconPath = iconPath
 	assetsDir := filepath.Join(dir, "assets")
-	assetsDirExists := true
-	fi, err := os.Stat(assetsDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			assetsDirExists = false
-		} else {
-			return err
-		}
-	} else {
+	assetsDirExists := false
+	if fi, err := os.Stat(assetsDir); err != nil && !os.IsNotExist(err) {
+		return err
+	} else if fi != nil {
 		assetsDirExists = fi.IsDir()
 	}
 	if assetsDirExists {
 		// if assets is a symlink, follow the symlink.
-		assetsDir, err = filepath.EvalSymlinks(assetsDir)
+		assetsDir, err := filepath.EvalSymlinks(assetsDir)
 		if err != nil {
 			return err
 		}
