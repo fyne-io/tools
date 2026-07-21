@@ -21,8 +21,8 @@ func Test_hardeningCFlagsLookup(t *testing.T) {
 	assert.Equal(t, hardeningCFLAGS, hardeningCFlagsLookup("clang version 11.3.0", "ubuntu", "amd64"))
 	assert.Equal(t, hardeningCFLAGS, hardeningCFlagsLookup("clang version 11.4.0", "ubuntu", "amd64"))
 
-	// different arch
-	assert.Equal(t, hardeningCFLAGS, hardeningCFlagsLookup("cc (Ubuntu) 11.4.0", "ubuntu", "arm64"))
+	// arm64 doesn't support -fcf-protection
+	assert.Equal(t, "-D_FORTIFY_SOURCE=3 -fstack-protector-strong", hardeningCFlagsLookup("cc (Ubuntu) 11.4.0", "ubuntu", "arm64"))
 
 	// no specific flags
 	assert.Equal(t, hardeningCFLAGS, hardeningCFlagsLookup("clang version 1.2.3", "darwin", "amd64"))
