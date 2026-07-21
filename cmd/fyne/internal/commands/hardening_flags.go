@@ -19,6 +19,7 @@ type hardeningFlags struct {
 	os, arch, cc, minVer, maxVer, cflags string
 }
 
+// specific flags go first, generic flags last
 var hardeningFlagsTable = []hardeningFlags{
 	{"ubuntu", "amd64", "gcc", "*", "11.4.0", "-fcf-protection -fstack-protector-strong"}, // Ubuntu 22.04/gcc 11.4.0 fails with _FORTIFY_SOURCE redefined error
 	{"windows", "*", "gcc", "*", "*", "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"},     // mingw doesn't support -fcf-protection -- XXX: double check for better conditions
