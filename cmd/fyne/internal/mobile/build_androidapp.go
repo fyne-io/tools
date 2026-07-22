@@ -39,10 +39,8 @@ type manifestTmplData struct {
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
 ) (map[string]bool, error) {
-	var env []string
-	if release { // Google Play Store requires 16K alignment
-		env = []string{"CGO_LDFLAGS=\"-Wl,-z,max-page-size=16384\""}
-	}
+	// 16 KB max page size applied to debug as well as release builds.
+	env := []string{"CGO_LDFLAGS=\"-Wl,-z,max-page-size=16384\""}
 
 	ndkRoot, err := ndkRoot()
 	if err != nil {
@@ -169,6 +167,17 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		}
 		err = convertAPKToAAB(buildO)
 		if err != nil {
+			return nil, err
+		}
+	} else if !buildN {
+		// debug build.
+		// v1 signatures have unreliable alignment.
+		// Align first, then add v2/v3/v4 signatures before signing.
+		apkPath := buildO[:len(buildO)-3] + "apk"
+		if err := zipalignAPK(apkPath); err != nil {
+			return nil, err
+		}
+		if err := signAPKModern(apkPath); err != nil {
 			return nil, err
 		}
 	}

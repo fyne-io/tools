@@ -10,6 +10,9 @@
 .idea
 cmd/fyne/fyne
 
+# Android V2/V3 signature sidecar files
+*.idsig
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -21,3 +24,7 @@ cmd/fyne/fyne
 
 # Go workspace file
 go.work
+
+# Editor temp files/configs
+.idea/
+*~
