@@ -101,21 +101,13 @@ func isWeb(goos string) bool {
 	return goos == "js" || goos == "wasm" || goos == "web"
 }
 
-type goModEdit struct {
-	Module struct {
-		Path string
-	}
-	Require []struct {
-		Path    string
-		Version string
-	}
-}
-
 func (b *Builder) build() error {
 	goos := b.os
 	if goos == "" {
 		goos = targetOS()
 	}
+
+	b.updateGoExecutable()
 
 	srcdir, err := b.computeSrcDir()
 	if err != nil {
@@ -247,6 +239,17 @@ func injectPprofFile(srcdir string, port int) (func(), error) {
 	}
 
 	return func() { os.Remove(pprofInitFilePath) }, nil
+}
+
+func (b *Builder) updateGoExecutable() {
+	if b.runner != nil {
+		return
+	}
+	goBin := os.Getenv("GO")
+	if goBin == "" {
+		goBin = "go"
+	}
+	b.runner = newCommand(goBin)
 }
 
 func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
