@@ -101,6 +101,16 @@ func isWeb(goos string) bool {
 	return goos == "js" || goos == "wasm" || goos == "web"
 }
 
+type goModEdit struct {
+	Module struct {
+		Path string
+	}
+	Require []struct {
+		Path    string
+		Version string
+	}
+}
+
 func (b *Builder) build() error {
 	goos := b.os
 	if goos == "" {
