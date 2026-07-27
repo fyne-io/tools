@@ -180,7 +180,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 	r.setEnv(os.Environ())
 	out, err := r.runOutput("-create", "-output", p.exe, p.exe+"-amd64", p.exe+"-arm64")
 	if err != nil {
-		return nil, fmt.Errorf("runner failed: %s", string(out))
+		return nil, fmt.Errorf("failed to create universal binary: %s", string(out))
 	}
 
 	return []string{p.exe}, nil
