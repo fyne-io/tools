@@ -152,33 +152,6 @@ func (p *Packager) packageWithoutValidate() error {
 }
 
 func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) {
-	if p.os == "darwin" {
-		for _, arch := range []string{"amd64", "arm64"} {
-			b := &Builder{
-				os:      p.os + "/" + arch,
-				srcdir:  p.srcDir,
-				target:  p.exe + "-" + arch,
-				release: p.release,
-				tags:    tags,
-				runner:  runner,
-
-				appData: p.appData,
-			}
-			if err := b.build(); err != nil {
-				return nil, err
-			}
-		}
-
-		r := newCommand("lipo")
-		r.setDir(p.srcDir)
-		r.setEnv(os.Environ())
-		out, err := r.runOutput("-create", "-output", p.exe, p.exe+"-amd64", p.exe+"-arm64")
-		if err != nil {
-			return nil, fmt.Errorf("runner failed: %s", string(out))
-		}
-		return []string{p.exe}, nil
-	}
-
 	b := &Builder{
 		os:      p.os,
 		srcdir:  p.srcDir,
@@ -190,7 +163,27 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		appData: p.appData,
 	}
 
-	return []string{p.exe}, b.build()
+	if p.os != "darwin" {
+		return []string{p.exe}, b.build()
+	}
+
+	for _, arch := range []string{"amd64", "arm64"} {
+		b.os = p.os + "/" + arch
+		b.target = p.exe + "-" + arch
+		if err := b.build(); err != nil {
+			return nil, err
+		}
+	}
+
+	r := newCommand("lipo")
+	r.setDir(p.srcDir)
+	r.setEnv(os.Environ())
+	out, err := r.runOutput("-create", "-output", p.exe, p.exe+"-amd64", p.exe+"-arm64")
+	if err != nil {
+		return nil, fmt.Errorf("runner failed: %s", string(out))
+	}
+
+	return []string{p.exe}, nil
 }
 
 func (p *Packager) combinedVersion() string {
