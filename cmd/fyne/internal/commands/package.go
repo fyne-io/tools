@@ -178,12 +178,13 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 	r := newCommand("lipo")
 	r.setDir(p.srcDir)
 	r.setEnv(os.Environ())
-	out, err := r.runOutput("-create", "-output", p.exe, p.exe+"-amd64", p.exe+"-arm64")
+	rargs := []string{"-create", "-output", p.exe, p.exe + "-amd64", p.exe + "-arm64"}
+	out, err := r.runOutput(rargs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create universal binary: %s", string(out))
 	}
 
-	return []string{p.exe}, nil
+	return rargs[2:], nil
 }
 
 func (p *Packager) combinedVersion() string {
