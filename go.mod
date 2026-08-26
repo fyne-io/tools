@@ -26,7 +26,6 @@ require (
 	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fredbi/uri v1.1.1 // indirect
 	github.com/fyne-io/gl-js v0.2.1-0.20260315212741-029c47fd27e8 // indirect
 	github.com/fyne-io/oksvg v0.2.0 // indirect
 	github.com/go-gl/gl v0.0.0-20260331235117-4566fea9a276 // indirect
@@ -44,7 +43,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace fyne.io/fyne/v2 => C:\Users\lega\dev\websites\fyne
+replace fyne.io/fyne/v2 => github.com/LeoHalb/fyne/v2 v2.7.4-0.20260820180157-048008f06575
 
 retract (
 	v1.26.1 // Contains only retraction as v1.6.1 was ignored
