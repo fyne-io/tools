@@ -9,14 +9,18 @@ import (
 
 func Test_lookupDirWithGoModRelativeDir(t *testing.T) {
 	wd, err := lookupDirWithGoMod(".")
-	assert.Equal(t, "", wd)
-	assert.Equal(t, os.ErrNotExist, err)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "", wd)
 }
 
 func Test_lookupDirWithGoModInvalidDir(t *testing.T) {
 	wd, err := lookupDirWithGoMod("./any/thing/to/scan")
+	assert.ErrorIs(t, err, os.ErrNotExist)
 	assert.Equal(t, "", wd)
-	assert.Equal(t, os.ErrNotExist, err)
+
+	wd, err = lookupDirWithGoMod("../../any/thing/to/scan")
+	assert.ErrorIs(t, err, os.ErrNotExist)
+	assert.Equal(t, "", wd)
 }
 
 func Test_lookupDirWithGoModInToolsRepo(t *testing.T) {
@@ -30,6 +34,6 @@ func Test_lookupDirWithGoModInToolsRepo(t *testing.T) {
 
 func Test_lookupDirWithGoModHitRoot(t *testing.T) {
 	wd, err := lookupDirWithGoMod("/shouldnotexist123")
-	assert.Equal(t, os.ErrNotExist, err)
+	assert.ErrorIs(t, err, os.ErrNotExist)
 	assert.Equal(t, "", wd)
 }

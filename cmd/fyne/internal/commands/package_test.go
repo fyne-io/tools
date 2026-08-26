@@ -199,12 +199,6 @@ func Test_validateAppID(t *testing.T) {
 func Test_buildPackageWasm(t *testing.T) {
 	expected := []mockRunner{
 		{
-			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
-			mockReturn: mockReturn{
-				ret: []byte("{ \"Module\": { \"Path\": \"fyne.io/fyne/v2\"} }"),
-			},
-		},
-		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release"},
 				env:   []string{"GOARCH=wasm", "GOOS=js", "CGO_ENABLED=0"},
@@ -232,12 +226,6 @@ func Test_buildPackageWasm(t *testing.T) {
 
 func Test_PackageWasm(t *testing.T) {
 	expected := []mockRunner{
-		{
-			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
-			mockReturn: mockReturn{
-				ret: []byte("{ \"Module\": { \"Path\": \"fyne.io/fyne/v2\"} }"),
-			},
-		},
 		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-o", "myTest.wasm"},
