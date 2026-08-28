@@ -163,7 +163,28 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		appData: p.appData,
 	}
 
-	return []string{p.exe}, b.build()
+	if p.os != "darwin" {
+		return []string{p.exe}, b.build()
+	}
+
+	for _, arch := range []string{"amd64", "arm64"} {
+		b.os = p.os + "/" + arch
+		b.target = p.exe + "-" + arch
+		if err := b.build(); err != nil {
+			return nil, err
+		}
+	}
+
+	r := newCommand("lipo")
+	r.setDir(p.srcDir)
+	r.setEnv(os.Environ())
+	rargs := []string{"-create", "-output", p.exe, p.exe + "-amd64", p.exe + "-arm64"}
+	out, err := r.runOutput(rargs...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create universal binary: %s", string(out))
+	}
+
+	return rargs[2:], nil
 }
 
 func (p *Packager) combinedVersion() string {
@@ -215,7 +236,7 @@ func (p *Packager) doPackage(runner runner) error {
 	}
 
 	switch p.os {
-	case "darwin":
+	case "darwin", "darwin/amd64", "darwin/arm64":
 		return p.packageDarwin()
 	case "linux", "openbsd", "freebsd", "netbsd":
 		return p.packageUNIX()
