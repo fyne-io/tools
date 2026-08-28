@@ -150,6 +150,9 @@ func processMacOSIcon(in image.Image) image.Image {
 	return dc.Image()
 }
 
+// injectDarkIcon takes a dark image and buffer containing a regular image,
+// appends a dark icon header followed by the encoded dark icon, and
+// adjusts the size in the header of the buffer accordingly.
 func injectDarkIcon(darkImg image.Image, buf *bytes.Buffer) error {
 	buf2 := &bytes.Buffer{}
 	if err := icns.Encode(buf2, darkImg); err != nil {
