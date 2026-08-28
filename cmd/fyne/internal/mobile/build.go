@@ -108,10 +108,10 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 			return pkg, nil
 		}
+		// Target the same Android API level for debug+release.
+		// Debug APKs get a v2/v3/v4 signature after packaging,
+		// which targetSdkVersion >= 30 requires.
 		target := 36
-		if !buildRelease {
-			target = 29 // TODO once we have gomobile debug signing working for v2 android signs
-		}
 		nmpkgs, err = goAndroidBuild(pkg, buildBundleID, targetArchs, cmd.IconPath, cmd.AppName, cmd.Version, cmd.Build,
 			target, buildRelease, cmd.iconFG, cmd.iconBG, cmd.iconMono)
 		if err != nil {
