@@ -4,7 +4,8 @@
 	android:versionCode="{{.Build}}"
 	android:versionName="{{.Version}}">
 
-	<application android:label="{{.Name}}" android:debuggable="{{.Debug}}">
+	<application android:label="{{.Name}}" android:debuggable="{{.Debug}}"
+				 {{if .AdaptiveIcon}}android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"{{end}}>
 	<activity android:name="org.golang.app.GoNativeActivity"
 		android:label="{{.Name}}"
 		android:configChanges="orientation|keyboardHidden|uiMode"
@@ -16,6 +17,9 @@
 			<category android:name="android.intent.category.LAUNCHER" />
 		</intent-filter>
 	</activity>
+
+	<receiver android:name="org.golang.app.FyneNotificationReceiver"
+			  android:exported="false" />
 	</application>
 
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />

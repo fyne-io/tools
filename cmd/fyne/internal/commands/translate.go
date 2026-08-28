@@ -51,7 +51,8 @@ func Translate() *cli.Command {
 			}
 
 			usage := func() {
-				fmt.Fprintf(os.Stderr, "usage: %s %s [command options] %s\n",
+				fmt.Fprintf(
+					os.Stderr, "usage: %s %s [command options] %s\n",
 					ctx.App.Name,
 					ctx.Command.Name,
 					ctx.Command.ArgsUsage,
@@ -388,6 +389,39 @@ func translateKey(v *visitor, node ast.Node) stateFn {
 
 // Parse second argument and use as fallback, and finish
 func translateKeyFallback(v *visitor, node ast.Node) stateFn {
+	var vals []string
+
+	binExpr, binOk := node.(*ast.BinaryExpr)
+	for binOk && binExpr.Op == token.ADD {
+		if y, ok := binExpr.Y.(*ast.BasicLit); ok {
+			vals = append(vals, y.Value)
+		}
+
+		switch x := binExpr.X.(type) {
+		case *ast.BasicLit:
+			vals = append(vals, x.Value)
+			binOk = false
+		case *ast.BinaryExpr:
+			binExpr = x
+		default:
+			return nil
+		}
+	}
+
+	if len(vals) > 0 {
+		x := ""
+		for n := range vals {
+			val, err := strconv.Unquote(vals[len(vals)-1-n])
+			if err != nil {
+				return nil
+			}
+			x += val
+		}
+		v.fallback = x
+
+		return translateFinish(v)
+	}
+
 	basiclit, ok := node.(*ast.BasicLit)
 	if !ok {
 		return nil

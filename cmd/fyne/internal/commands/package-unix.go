@@ -13,17 +13,18 @@ import (
 )
 
 type unixData struct {
-	Name        string
-	AppID       string
-	Exec        string
-	Icon        string
-	Local       string
-	GenericName string
-	Categories  string
-	Comment     string
-	Keywords    string
-	ExecParams  string
-	MimeTypes   string
+	Name           string
+	AppID          string
+	Exec           string
+	Icon           string
+	Local          string
+	GenericName    string
+	Categories     string
+	Comment        string
+	Keywords       string
+	ExecParams     string
+	MimeTypes      string
+	StartupWMClass string
 
 	SourceRepo, SourceDir string
 }
@@ -54,8 +55,13 @@ func (p *Packager) packageUNIX() error {
 		return fmt.Errorf("failed to copy application binary file: %w", err)
 	}
 
+	appIDOrName := p.AppID
+	if appIDOrName == "" {
+		appIDOrName = p.Name
+	}
+
 	iconDir := util.EnsureSubDir(shareDir, "pixmaps")
-	iconName := p.AppID + filepath.Ext(p.icon)
+	iconName := appIDOrName + filepath.Ext(p.icon)
 	iconPath := filepath.Join(iconDir, iconName)
 	err = util.CopyFile(p.icon, iconPath)
 	if err != nil {
@@ -70,7 +76,7 @@ func (p *Packager) packageUNIX() error {
 	}
 
 	appsDir := util.EnsureSubDir(shareDir, "applications")
-	desktop := filepath.Join(appsDir, p.AppID+".desktop")
+	desktop := filepath.Join(appsDir, appIDOrName+".desktop")
 	deskFile, err := os.Create(desktop)
 	if err != nil {
 		return fmt.Errorf("failed to create desktop file: %w", err)
@@ -83,17 +89,18 @@ func (p *Packager) packageUNIX() error {
 		linuxBSD = *p.linuxAndBSDMetadata
 	}
 	tplData := unixData{
-		Name:        p.Name,
-		AppID:       p.AppID,
-		Exec:        filepath.Base(p.exe) + openWith,
-		Icon:        iconName,
-		Local:       local,
-		GenericName: linuxBSD.GenericName,
-		Keywords:    formatDesktopFileList(linuxBSD.Keywords),
-		Comment:     linuxBSD.Comment,
-		Categories:  formatDesktopFileList(linuxBSD.Categories),
-		ExecParams:  linuxBSD.ExecParams,
-		MimeTypes:   mimes,
+		Name:           p.Name,
+		AppID:          p.AppID,
+		Exec:           filepath.Base(p.exe) + openWith,
+		Icon:           appIDOrName,
+		Local:          local,
+		GenericName:    linuxBSD.GenericName,
+		Keywords:       formatDesktopFileList(linuxBSD.Keywords),
+		Comment:        linuxBSD.Comment,
+		Categories:     formatDesktopFileList(linuxBSD.Categories),
+		ExecParams:     linuxBSD.ExecParams,
+		MimeTypes:      mimes,
+		StartupWMClass: p.Name,
 	}
 
 	if p.sourceMetadata != nil {
@@ -106,28 +113,41 @@ func (p *Packager) packageUNIX() error {
 		return fmt.Errorf("failed to write desktop entry string: %w", err)
 	}
 
-	if !p.install {
-		parent := filepath.Dir(outDir)
-		defer os.RemoveAll(parent)
+	if p.install {
+		return nil
+	}
 
-		makefile, _ := os.Create(filepath.Join(outDir, "Makefile"))
-		err := templates.MakefileUNIX.Execute(makefile, tplData)
-		if err != nil {
-			return fmt.Errorf("failed to write Makefile string: %w", err)
-		}
+	parent := filepath.Dir(outDir)
+	defer os.RemoveAll(parent)
 
-		tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
-		if p.os == "openbsd" {
-			tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
-		}
+	makefile, _ := os.Create(filepath.Join(outDir, "Makefile"))
+	tplData.Icon += ".png"
+	err = templates.MakefileUNIX.Execute(makefile, tplData)
+	if err != nil {
+		return fmt.Errorf("failed to write Makefile string: %w", err)
+	}
+
+	tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
+	if p.os == "openbsd" {
+		tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
+	}
+
+	// Compatibility mode for old fyne-cross versions using images with new CLI
+	// versions resulting in a tar archive prefix of "./appname/" instead of "./".
+	// This is to allow producing a final set of compatible images before
+	// switching to a new namespace and merging fyne-cross into fyne-tools as
+	// one of the supported commands.
+	if fyneCrossCompat {
+		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr")
+	} else {
 		tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
+	}
 
-		var buf bytes.Buffer
-		tarCmd := exec.Command("tar", tarCmdArgs...)
-		tarCmd.Stderr = &buf
-		if err = tarCmd.Run(); err != nil {
-			return fmt.Errorf("failed to create archive with tar: %s - %w", buf.String(), err)
-		}
+	var buf bytes.Buffer
+	tarCmd := exec.Command("tar", tarCmdArgs...)
+	tarCmd.Stderr = &buf
+	if err = tarCmd.Run(); err != nil {
+		return fmt.Errorf("failed to create archive with tar: %s - %w", buf.String(), err)
 	}
 
 	return nil

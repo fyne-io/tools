@@ -5,7 +5,7 @@ LOCAL != test -d $(DESTDIR)/usr/local && echo -n "/local" || echo -n ""
 LOCAL ?= $(shell test -d $(DESTDIR)/usr/local && echo "/local" || echo "")
 PREFIX ?= /usr$(LOCAL)
 
-AppID := {{ .AppID | printf "%q" }}
+AppID := {{ or .AppID .Name | printf "%q" }}
 Exec := {{ .Exec | printf "%q" }}
 Icon := {{ .Icon | printf "%q" }}
 

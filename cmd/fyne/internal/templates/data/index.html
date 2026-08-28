@@ -79,8 +79,17 @@
 							action.innerHTML = "Downloading web assembly file.";
 
 							const go = new Go();
+
+							// Hide the loading screen when Fyne creates its canvas
+							var observer = new MutationObserver(function(mutations) {
+								if (document.querySelector("canvas")) {
+									main.style.display = "none";
+									observer.disconnect();
+								}
+							});
+							observer.observe(document.body, {childList: true, subtree: true});
 							WebAssembly.instantiateStreaming(fetch("{{.WasmFile}}"), go.importObject).then((result) => {
-								main.innerHTML = "";
+								action.innerHTML = "Starting application.";
 								go.run(result.instance);
 							});
 						})

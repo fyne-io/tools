@@ -16,4 +16,6 @@ type command struct {
 	IconPath, AppName      string
 	Version, Cert, Profile string
 	Build                  int
+
+	iconFG, iconBG, iconMono string
 }

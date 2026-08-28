@@ -144,7 +144,7 @@ func getPackageAndBranch(s string) (string, string) {
 }
 
 func getLatestTag(repo string) (string, error) {
-	cmd := exec.Command("git", "ls-remote", "-q", repo)
+	cmd := exec.Command("git", "ls-remote", "-q", "--sort", "v:refname", repo)
 	b, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -357,7 +357,8 @@ func (i *Installer) installToIOSSimulator(target string) error {
 	cmd := exec.Command(
 		"xcrun", "simctl", "install",
 		"booted", // Install to the booted simulator.
-		target)
+		target,
+	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("Install to a simulator error: %s%s", out, err)
 	}
