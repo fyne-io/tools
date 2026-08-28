@@ -21,11 +21,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go/format"
 	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"sort"
 )
 
@@ -50,64 +47,7 @@ func main() {
 }
 
 func gendex() error {
-	androidHome := os.Getenv("ANDROID_HOME")
-	if androidHome == "" {
-		return errors.New("ANDROID_HOME not set")
-	}
-	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", 0o775); err != nil {
-		return err
-	}
-	javaFiles, err := filepath.Glob("../../../../../fyne/internal/driver/mobile/app/*.java")
-	if err != nil {
-		return err
-	}
-	if len(javaFiles) == 0 {
-		return errors.New("could not find internal/driver/mobile/app/*.java files")
-	}
-	platform, err := findLast(androidHome + "/platforms")
-	if err != nil {
-		return err
-	}
-	cmd := exec.Command(
-		"javac",
-		"-source", "1.8",
-		"-target", "1.8",
-		"-bootclasspath", platform+"/android.jar",
-		"-d", tmpdir+"/work",
-	)
-	cmd.Args = append(cmd.Args, javaFiles...)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		fmt.Println(cmd.Args)
-		os.Stderr.Write(out)
-		return err
-	}
-
-	classFiles, err := filepath.Glob(tmpdir + "/work/org/golang/app/*.class")
-	if err != nil {
-		return err
-	}
-
-	// Strip the MethodParameters attribute from every method. javac emits this
-	// for `mandated` synthetic enclosing-instance parameters of inner classes
-	// with name_index=0; the AOSP-bundled R8 NPEs reading those entries. Since
-	// MethodParameters is purely metadata for reflection, dropping it is safe.
-	// Seems to be because of a compatibility issue between javac and d8
-	for _, f := range classFiles {
-		if err := stripMethodParameters(f); err != nil {
-			return fmt.Errorf("strip MethodParameters %s: %w", f, err)
-		}
-	}
-	buildTools, err := findLast(androidHome + "/build-tools")
-	if err != nil {
-		return err
-	}
-	cmd = exec.Command(buildTools+"/d8", append([]string{"--output", tmpdir},
-		classFiles...)...)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		os.Stderr.Write(out)
-		return err
-	}
-	src, err := os.ReadFile(tmpdir + "/classes.dex")
+	src, err := os.ReadFile("classes.dex")
 	if err != nil {
 		return err
 	}
@@ -115,6 +55,7 @@ func gendex() error {
 
 	buf := new(bytes.Buffer)
 	fmt.Fprint(buf, header)
+	fmt.Fprint(buf, "`")
 
 	var piece string
 	for len(data) > 0 {
@@ -123,10 +64,10 @@ func gendex() error {
 			l = len(data)
 		}
 		piece, data = data[:l], data[l:]
-		fmt.Fprintf(buf, "\t`%s` + \n", piece)
+		fmt.Fprintf(buf, "%s\n", piece)
 	}
-	fmt.Fprintf(buf, "\t``")
-	out, err := format.Source(buf.Bytes())
+	fmt.Fprintf(buf, "`\n")
+	out := buf.Bytes()
 	if err != nil {
 		buf.WriteTo(os.Stderr)
 		return err
