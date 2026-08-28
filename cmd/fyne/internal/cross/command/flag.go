@@ -1,0 +1,337 @@
+package command
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/urfave/cli/v2"
+
+	"fyne.io/tools/cmd/fyne/internal/cross/icon"
+	"fyne.io/tools/cmd/fyne/internal/cross/metadata"
+	"fyne.io/tools/cmd/fyne/internal/cross/volume"
+)
+
+// CommonFlags holds the flags shared between all commands
+type CommonFlags struct {
+	// AppBuild represents the build number, should be greater than 0 and
+	// incremented for each build
+	AppBuild int
+	// AppID represents the application ID used for distribution
+	AppID string
+	// AppVersion represents the version number in the form x, x.y or x.y.z semantic version
+	AppVersion string
+	// CacheDir is the directory used to share/cache sources and dependencies.
+	// Default to system cache directory (i.e. $HOME/.cache/fyne-cross)
+	CacheDir string
+	// DockerImage represents a custom docker image to use for build
+	DockerImage string
+	// Engine is the container engine to use
+	Engine engineFlag
+	// Namespace used by Kubernetes engine to run its pod in
+	Namespace string
+	// Base S3 directory to push and pull data from
+	S3Path string
+	// Container mount point size limits honored by Kubernetes only
+	SizeLimit string
+	// Env is the list of custom env variable to set. Specified as "KEY=VALUE"
+	Env envFlag
+	// Icon represents the application icon used for distribution
+	Icon string
+	// Ldflags represents the flags to pass to the external linker
+	Ldflags string
+	// Additional build tags
+	Tags tagsFlag
+	// Metadata contain custom metadata passed to fyne package
+	Metadata multiFlags
+	// NoCache if true will not use the go build cache
+	NoCache bool
+	// NoProjectUpload if true, the build will be done with the artifact already stored on S3
+	NoProjectUpload bool
+	// NoResultDownload if true, it will leave the result of the build on S3 and won't download it locally (engine: kubernetes)
+	NoResultDownload bool
+	// NoStripDebug if true will not strip debug information from binaries
+	NoStripDebug bool
+	// NoNetwork if true will not setup network inside the container
+	NoNetwork bool
+	// Name represents the application name
+	Name string
+	// Release represents if the package should be prepared for release (disable debug etc)
+	Release bool
+	// RootDir represents the project root directory
+	RootDir string
+	// Silent enables the silent mode
+	Silent bool
+	// Debug enables the debug mode
+	Debug bool
+	// Pull attempts to pull a newer version of the docker image
+	Pull bool
+	// DockerRegistry changes the pull/push docker registry (defualt docker.io)
+	DockerRegistry string
+}
+
+// newCommonFlags defines all the flags for the shared options
+func newCommonFlags() (*CommonFlags, []cli.Flag, error) {
+	name, err := defaultName()
+	if err != nil {
+		return nil, nil, err
+	}
+	rootDir, err := volume.DefaultWorkDirHost()
+	if err != nil {
+		return nil, nil, err
+	}
+	cacheDir, err := volume.DefaultCacheDirHost()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defaultIcon := icon.Default
+	appID := ""
+	appVersion := "1.0.0"
+	appBuild := 1
+
+	data, _ := metadata.LoadStandard(rootDir)
+	if data != nil {
+		if data.Details.Icon != "" {
+			defaultIcon = data.Details.Icon
+		}
+		if data.Details.Name != "" {
+			name = data.Details.Name
+		}
+		if data.Details.ID != "" {
+			appID = data.Details.ID
+		}
+		if data.Details.Version != "" {
+			appVersion = data.Details.Version
+		}
+		if data.Details.Build != 0 {
+			appBuild = data.Details.Build
+		}
+	}
+
+	flags := &CommonFlags{}
+	cliFlags := kubernetesFlags(flags)
+	cliFlags = append(
+		cliFlags,
+		&cli.IntFlag{
+			Name:        "app-build",
+			Usage:       "set build number, should be greater than 0 and incremented for each build",
+			Value:       appBuild,
+			Destination: &flags.AppBuild,
+		},
+		&cli.StringFlag{
+			Name:        "app-id",
+			Usage:       "set application ID used for distribution",
+			Value:       appID,
+			Destination: &flags.AppID,
+		},
+		&cli.StringFlag{
+			Name:        "app-version",
+			Usage:       "set version number in the form x, x.y or x.y.z semantic version",
+			Value:       appVersion,
+			Destination: &flags.AppVersion,
+		},
+		&cli.StringFlag{
+			Name:        "cache",
+			Usage:       "set directory used to share/cache sources and dependencies",
+			Value:       cacheDir,
+			Destination: &flags.CacheDir,
+		},
+		&cli.BoolFlag{
+			Name:        "no-cache",
+			Usage:       "set to not use the go build cache",
+			Destination: &flags.NoCache,
+		},
+		&cli.GenericFlag{
+			Name:        "engine",
+			Usage:       "set the container engine to use, supported engines: [docker, podman, kubernetes]",
+			DefaultText: "autodetect",
+			Destination: &flags.Engine,
+		},
+		&cli.GenericFlag{
+			Name:        "env",
+			Usage:       "set list of additional env variables specified as KEY=VALUE",
+			Destination: &flags.Env,
+		},
+		&cli.StringFlag{
+			Name:        "icon",
+			Usage:       "set application icon used for distribution",
+			Value:       defaultIcon,
+			Destination: &flags.Icon,
+		},
+		&cli.StringFlag{
+			Name:        "image",
+			Usage:       "set custom docker image to use for build",
+			Destination: &flags.DockerImage,
+		},
+		&cli.StringFlag{
+			Name:        "ldflags",
+			Usage:       "set additional flags to pass to the external linker",
+			Destination: &flags.Ldflags,
+		},
+		&cli.GenericFlag{
+			Name:        "tags",
+			Usage:       "set list of additional build tags separated by comma",
+			Destination: &flags.Tags,
+		},
+		&cli.GenericFlag{
+			Name:        "metadata",
+			Usage:       "set additional metadata `key=value` passed to fyne package",
+			Destination: &flags.Metadata,
+		},
+		&cli.BoolFlag{
+			Name:        "no-strip-debug",
+			Usage:       "set to not strip debug information from binaries",
+			Destination: &flags.NoStripDebug,
+		},
+		&cli.StringFlag{
+			Name:        "name",
+			Usage:       "set the name of the application",
+			Value:       name,
+			Destination: &flags.Name,
+		},
+		&cli.StringFlag{
+			Name:        "output",
+			Usage:       "set output file name. Deprecated in favour of 'name'",
+			Value:       name,
+			Destination: &flags.Name,
+		},
+		&cli.BoolFlag{
+			Name:        "release",
+			Usage:       "set release mode to prepare the application for public distribution",
+			Destination: &flags.Release,
+		},
+		&cli.StringFlag{
+			Name:        "dir",
+			Usage:       "set Fyne app root directory",
+			Value:       rootDir,
+			Destination: &flags.RootDir,
+		},
+		&cli.BoolFlag{
+			Name:        "silent",
+			Usage:       "enable silent mode",
+			Destination: &flags.Silent,
+		},
+		&cli.BoolFlag{
+			Name:        "debug",
+			Usage:       "enable debug mode",
+			Destination: &flags.Debug,
+		},
+		&cli.BoolFlag{
+			Name:        "pull",
+			Usage:       "attempt to pull a newer version of the docker image",
+			Destination: &flags.Pull,
+		},
+		&cli.StringFlag{
+			Name:        "docker-registry",
+			Usage:       "set the docker registry to be used instead of dockerhub (only used with defualt docker images)",
+			Value:       "docker.io",
+			Destination: &flags.DockerRegistry,
+		},
+		&cli.BoolFlag{
+			Name:        "no-network",
+			Usage:       "set to build without network access",
+			Destination: &flags.NoNetwork,
+		},
+	)
+
+	return flags, cliFlags, nil
+}
+
+func defaultName() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("cannot get the path for current directory %s", err)
+	}
+	_, output := filepath.Split(wd)
+	return output, nil
+}
+
+// engineFlag is a custom flag used to define custom engine variables
+type engineFlag struct {
+	Engine
+}
+
+// String is the method to format the flag's value, part of the flag.Value interface.
+// The String method's output will be used in diagnostics.
+func (ef *engineFlag) String() string {
+	return fmt.Sprint(*ef)
+}
+
+// Set is the method to set the flag value, part of the flag.Value interface.
+// Set's argument is a string to be parsed to set the flag.
+func (ef *engineFlag) Set(value string) error {
+	var err error
+	ef.Engine, err = MakeEngine(value)
+	return err
+}
+
+// envFlag is a custom flag used to define custom env variables
+type envFlag []string
+
+// String is the method to format the flag's value, part of the flag.Value interface.
+// The String method's output will be used in diagnostics.
+func (ef *envFlag) String() string {
+	return fmt.Sprint(*ef)
+}
+
+// Set is the method to set the flag value, part of the flag.Value interface.
+// Set's argument is a string to be parsed to set the flag.
+func (ef *envFlag) Set(value string) error {
+	if !strings.Contains(value, "=") {
+		return errors.New("env var must defined as KEY=VALUE or KEY=")
+	}
+	*ef = append(*ef, value)
+
+	return nil
+}
+
+// targetArchFlag is a custom flag used to define architectures
+type targetArchFlag []string
+
+// String is the method to format the flag's value, part of the flag.Value interface.
+// The String method's output will be used in diagnostics.
+func (af *targetArchFlag) String() string {
+	return fmt.Sprint(*af)
+}
+
+// Set is the method to set the flag value, part of the flag.Value interface.
+// Set's argument is a string to be parsed to set the flag.
+// It's a comma-separated list, so we split it.
+func (af *targetArchFlag) Set(value string) error {
+	*af = []string{}
+	if len(*af) > 1 {
+		return errors.New("flag already set")
+	}
+
+	for _, v := range strings.Split(value, ",") {
+		*af = append(*af, strings.TrimSpace(v))
+	}
+	return nil
+}
+
+// tagsFlag is a custom flag used to define build tags
+type tagsFlag []string
+
+// String is the method to format the flag's value, part of the flag.Value interface.
+// The String method's output will be used in diagnostics.
+func (tf *tagsFlag) String() string {
+	return fmt.Sprint(*tf)
+}
+
+// Set is the method to set the flag value, part of the flag.Value interface.
+// Set's argument is a string to be parsed to set the flag.
+// It's a comma-separated list, so we split it.
+func (tf *tagsFlag) Set(value string) error {
+	*tf = []string{}
+	if len(*tf) > 1 {
+		return errors.New("flag already set")
+	}
+
+	for _, v := range strings.Split(value, ",") {
+		*tf = append(*tf, strings.TrimSpace(v))
+	}
+	return nil
+}

@@ -1,0 +1,253 @@
+package command
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"runtime"
+
+	"github.com/urfave/cli/v2"
+
+	"fyne.io/tools/cmd/fyne/internal/cross/log"
+	"fyne.io/tools/cmd/fyne/internal/cross/volume"
+)
+
+const (
+	// darwinOS it the darwin OS name
+	darwinOS = "darwin"
+)
+
+var (
+	// darwinArchSupported defines the supported target architectures on darwin
+	darwinArchSupported = []Architecture{ArchAmd64, ArchArm64}
+	// darwinImage is the fyne-cross image for the Darwin OS
+	darwinImage = "fyneio/fyne-cross-images:darwin"
+)
+
+// Darwin build and package the fyne app for the darwin OS
+type darwin struct {
+	Images         []containerImage
+	defaultContext Context
+
+	localBuild bool
+}
+
+var _ platformBuilder = (*darwin)(nil)
+
+func Darwin() *cli.Command {
+	cmd := &darwin{}
+
+	commonFlags, cliFlags, err := newCommonFlags()
+	if err != nil {
+		return nil
+	}
+
+	flags := &darwinFlags{
+		CommonFlags: commonFlags,
+		TargetArch:  &targetArchFlag{runtime.GOARCH},
+	}
+
+	cliFlags = append(
+		cliFlags,
+		&cli.GenericFlag{
+			Name:        "arch",
+			Usage:       fmt.Sprintf("set list of target architectures to build separated by comma; supported: %s", darwinArchSupported),
+			Destination: flags.TargetArch,
+		},
+		&cli.StringFlag{
+			Name:        "category",
+			Usage:       "set the category of the app for store listing",
+			Destination: &flags.Category,
+		},
+		&cli.StringFlag{
+			Name:        "macosx-version-min",
+			Usage:       "specify the minimum version of the SDK used to create the Darwin image supports",
+			Destination: &flags.MacOSXVersionMin,
+		},
+	)
+
+	// Add flags to use only on darwin host
+	if runtime.GOOS == darwinOS {
+		cliFlags = append(cliFlags, &cli.BoolFlag{
+			Name:        "local",
+			Value:       true,
+			Usage:       "set to use the fyne CLI tool installed on the host in place of the docker images",
+			Destination: &cmd.localBuild,
+		})
+	} else {
+		cliFlags = append(cliFlags, &cli.StringFlag{
+			Name:        "macosx-sdk-path",
+			Usage:       "set path to macOS SDK (setting it to 'bundled' indicates that the sdk is expected to be in the container)",
+			Destination: &flags.MacOSXSDKPath,
+			Required:    true,
+		})
+	}
+
+	return &cli.Command{
+		Name:      "darwin",
+		Usage:     "Builds and packages a fyne application for the darwin OS",
+		Flags:     cliFlags,
+		Args:      true,
+		ArgsUsage: "[package]",
+		Action: func(ctx *cli.Context) error {
+			if err := cmd.setupContainerImages(flags, ctx.Args().Slice()); err != nil {
+				return err
+			}
+			return cmd.run()
+		},
+	}
+}
+
+func (cmd *darwin) run() error {
+	return commonRun(cmd.defaultContext, cmd.Images, cmd)
+}
+
+// Run runs the command
+func (cmd *darwin) Build(image containerImage) (string, error) {
+	err := prepareIcon(cmd.defaultContext, image)
+	if err != nil {
+		return "", err
+	}
+
+	//
+	// package
+	//
+	log.Info("[i] Packaging app...")
+
+	var packageName string
+	if cmd.defaultContext.Release {
+		if runtime.GOOS != darwinOS {
+			return "", fmt.Errorf("darwin release build is supported only on darwin hosts")
+		}
+
+		packageName, err = fyneReleaseHost(cmd.defaultContext, image)
+		if err != nil {
+			return "", fmt.Errorf("could not package the Fyne app: %v", err)
+		}
+
+	} else if cmd.localBuild {
+		packageName, err = fynePackageHost(cmd.defaultContext, image)
+		if err != nil {
+			return "", fmt.Errorf("could not package the Fyne app: %v", err)
+		}
+	} else {
+		packageName = fmt.Sprintf("%s.app", cmd.defaultContext.Name)
+
+		err = fynePackage(cmd.defaultContext, image)
+		if err != nil {
+			return "", fmt.Errorf("could not package the Fyne app: %v", err)
+		}
+	}
+
+	// move the dist package into the expected tmp/$ID/packageName location in the container
+	image.Run(cmd.defaultContext.Volume, options{}, []string{
+		"mv",
+		volume.JoinPathContainer(cmd.defaultContext.WorkDirContainer(), packageName),
+		volume.JoinPathContainer(cmd.defaultContext.TmpDirContainer(), image.ID(), packageName),
+	})
+
+	// copy the binary into the expected bin/$ID/packageName location in the container
+	image.Run(cmd.defaultContext.Volume, options{},
+		[]string{
+			"sh", "-c", fmt.Sprintf(
+				"cp %q/* %q",
+				volume.JoinPathContainer(cmd.defaultContext.TmpDirContainer(), image.ID(), packageName, "Contents", "MacOS"),
+				volume.JoinPathContainer(cmd.defaultContext.BinDirContainer(), image.ID()),
+			),
+		})
+
+	return packageName, nil
+}
+
+// darwinFlags defines the command-line flags for the darwin command
+type darwinFlags struct {
+	*CommonFlags
+
+	// Category represents the category of the app for store listing
+	Category string
+
+	// TargetArch represents a list of target architecture to build on separated by comma
+	TargetArch *targetArchFlag
+
+	// Specify MacOSX minimum version
+	MacOSXVersionMin string
+
+	// MacOSXSDKPath represents the MacOSX SDK path on host
+	MacOSXSDKPath string
+}
+
+// setupContainerImages returns the command context for a darwin target
+func (cmd *darwin) setupContainerImages(flags *darwinFlags, args []string) error {
+	targetArch, err := targetArchFromFlag(*flags.TargetArch, darwinArchSupported)
+	if err != nil {
+		return fmt.Errorf("could not make command context for %s OS: %s", darwinOS, err)
+	}
+
+	ctx, err := makeDefaultContext(flags.CommonFlags, args)
+	if err != nil {
+		return err
+	}
+
+	if ctx.AppID == "" {
+		return errors.New("appID is mandatory")
+	}
+
+	ctx.Category = flags.Category
+
+	// Following settings are needed to cross compile with zig
+	ctx.BuildMode = "pie"
+
+	cmd.defaultContext = ctx
+	runner, err := newContainerEngine(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, arch := range targetArch {
+		var image containerImage
+		var zigTarget string
+		switch arch {
+		case ArchAmd64:
+			minVer := "10.12"
+			if flags.MacOSXVersionMin != "unset" {
+				minVer = flags.MacOSXVersionMin
+			}
+			zigTarget = "x86_64-macos." + minVer
+			image = runner.createContainerImage(arch, darwinOS, overrideDockerImage(flags.CommonFlags, darwinImage))
+			image.SetEnv("GOARCH", "amd64")
+		case ArchArm64:
+			minVer := "11.1"
+			if flags.MacOSXVersionMin != "unset" {
+				minVer = flags.MacOSXVersionMin
+			}
+			zigTarget = "aarch64-macos." + minVer
+			image = runner.createContainerImage(arch, darwinOS, overrideDockerImage(flags.CommonFlags, darwinImage))
+			image.SetEnv("GOARCH", "arm64")
+		}
+		zigCC := fmt.Sprintf("zig cc -v -target %s -isysroot /sdk -iwithsysroot /usr/include -iframeworkwithsysroot /System/Library/Frameworks", zigTarget)
+		zigCXX := fmt.Sprintf("zig c++ -v -target %s -isysroot /sdk -iwithsysroot /usr/include -iframeworkwithsysroot /System/Library/Frameworks", zigTarget)
+		image.SetEnv("CC", zigCC)
+		image.SetEnv("CXX", zigCXX)
+		image.SetEnv("CGO_LDFLAGS", "--sysroot /sdk -F/System/Library/Frameworks -L/usr/lib")
+		image.SetEnv("GOOS", "darwin")
+
+		if !cmd.localBuild {
+			if flags.MacOSXSDKPath == "unset" {
+				// This is checking if the provided container image has the macOSX SDK installed
+				err := image.Run(ctx.Volume, options{}, []string{"sh", "-c", "ls /sdk/usr/include/stdlib.h  2>/dev/null >/dev/null"})
+				if err != nil {
+					return errors.New("macOSX SDK path is mandatory")
+				}
+			} else if flags.MacOSXSDKPath != "bundled" {
+				if _, err := os.Stat(flags.MacOSXSDKPath); os.IsNotExist(err) {
+					return errors.New("macOSX SDK path does not exists")
+				}
+				image.SetMount("sdk", flags.MacOSXSDKPath, "/sdk")
+			}
+		}
+
+		cmd.Images = append(cmd.Images, image)
+	}
+
+	return nil
+}
