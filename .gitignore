@@ -25,6 +25,7 @@ cmd/fyne/fyne
 # Go workspace file
 go.work
 
-# Editor temp files/configs
-.idea/
+# vim temp files
 *~
+.*.swp
+.*.swo
