@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func (p *Packager) packageAndroid(arch string, tags []string) error {
@@ -39,7 +40,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
     "author" : "xcode",
     "version" : 1
   }
-}`), 0o644)
+}`), util.FilePermDefault)
 	if err != nil {
 		fyne.LogError("Content err", err)
 	}

@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"github.com/urfave/cli/v2"
 )
@@ -211,7 +212,7 @@ func (r *Releaser) packageIOSRelease() error {
 	}
 
 	payload := filepath.Join(r.dir, "Payload")
-	_ = os.Mkdir(payload, 0o750)
+	_ = os.Mkdir(payload, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 	defer os.RemoveAll(payload)
 	appName := mobile.AppOutputName(r.os, r.Name, r.release)
 	payloadAppDir := filepath.Join(payload, appName)
@@ -274,7 +275,7 @@ func (r *Releaser) packageMacOSRelease() error {
 
 func (r *Releaser) packageWindowsRelease(outFile string) error {
 	payload := filepath.Join(r.dir, "Payload")
-	_ = os.Mkdir(payload, 0o750)
+	_ = os.Mkdir(payload, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 	defer os.RemoveAll(payload)
 
 	manifestPath := filepath.Join(payload, "appxmanifest.xml")

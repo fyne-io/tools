@@ -34,7 +34,7 @@ func generateAdaptiveIconXML(hasMonochrome bool) string {
 // writeAdaptiveIconResources creates all necessary resource files for adaptive icons
 func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath string) error {
 	xxxhdpiDir := filepath.Join(resDir, "mipmap-xxxhdpi")
-	if err := os.MkdirAll(xxxhdpiDir, 0o755); err != nil {
+	if err := os.MkdirAll(xxxhdpiDir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-xxxhdpi directory: %w", err)
 	}
 
@@ -57,16 +57,16 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 
 	// Create mipmap-anydpi-v26 metadata for adaptive icon XML
 	anydpiV26Dir := filepath.Join(resDir, "mipmap-anydpi-v26")
-	if err := os.MkdirAll(anydpiV26Dir, 0o755); err != nil {
+	if err := os.MkdirAll(anydpiV26Dir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-anydpi-v26 directory: %w", err)
 	}
 
 	adaptiveXML := generateAdaptiveIconXML(false) // v26 doesn't include monochrome
-	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher.xml"), []byte(adaptiveXML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher.xml"), []byte(adaptiveXML), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write ic_launcher.xml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher_round.xml"), []byte(adaptiveXML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher_round.xml"), []byte(adaptiveXML), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write ic_launcher_round.xml: %w", err)
 	}
 
@@ -75,16 +75,16 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 	}
 	// If monochrome provided, create v33 resources with monochrome support
 	anydpiV33Dir := filepath.Join(resDir, "mipmap-anydpi-v33")
-	if err := os.MkdirAll(anydpiV33Dir, 0o755); err != nil {
+	if err := os.MkdirAll(anydpiV33Dir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-anydpi-v33 directory: %w", err)
 	}
 
 	adaptiveXMLWithMono := generateAdaptiveIconXML(true)
-	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write v33 ic_launcher.xml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write v33 ic_launcher_round.xml: %w", err)
 	}
 	return nil
@@ -99,7 +99,7 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 	}
 
 	resDir = filepath.Join(tempDir, "res")
-	if err := os.MkdirAll(resDir, 0o755); err != nil {
+	if err := os.MkdirAll(resDir, util.DirPermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to create res directory: %w", err)
 	}
 
@@ -108,12 +108,12 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 	}
 
 	compiledDir := filepath.Join(tempDir, "compiled")
-	if err := os.MkdirAll(compiledDir, 0o755); err != nil {
+	if err := os.MkdirAll(compiledDir, util.DirPermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to create compiled directory: %w", err)
 	}
 
 	tempManifestPath := filepath.Join(tempDir, "AndroidManifest.xml")
-	if err := os.WriteFile(tempManifestPath, manifestData, 0o644); err != nil {
+	if err := os.WriteFile(tempManifestPath, manifestData, util.FilePermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to write AndroidManifest.xml: %w", err)
 	}
 
@@ -239,7 +239,7 @@ func extractDirFromZip(zipPath, prefix, destDir string) error {
 	}
 	defer r.Close()
 
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
+	if err := os.MkdirAll(destDir, util.DirPermDefault); err != nil {
 		return err
 	}
 
@@ -255,12 +255,12 @@ func extractDirFromZip(zipPath, prefix, destDir string) error {
 		destPath := filepath.Join(destDir, relPath)
 
 		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(destPath, 0o755); err != nil {
+			if err := os.MkdirAll(destPath, util.DirPermDefault); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(destPath), util.DirPermDefault); err != nil {
 			return err
 		}
 

@@ -11,6 +11,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"github.com/urfave/cli/v2"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const fileHeader = "// auto-generated\n" + // to exclude this file in goreportcard (it has to be first)
@@ -111,7 +113,7 @@ func (b *Bundler) Run(args []string) {
 			fileModes = os.O_RDWR | os.O_APPEND
 		}
 
-		f, err := os.OpenFile(b.out, fileModes, 0o666)
+		f, err := os.OpenFile(b.out, fileModes, util.FilePermDefault)
 		if err == nil {
 			outFile = f
 		} else {
@@ -235,7 +237,7 @@ func openOutputFile(filePath string, noheader bool) (file *os.File, close func()
 		fileModes = os.O_RDWR | os.O_APPEND
 	}
 
-	f, err := os.OpenFile(filePath, fileModes, 0o666)
+	f, err := os.OpenFile(filePath, fileModes, util.FilePermDefault)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			fyne.LogError("Unable to open output file", err)

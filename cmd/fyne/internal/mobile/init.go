@@ -11,6 +11,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func mkdir(dir string) error {
@@ -20,7 +22,7 @@ func mkdir(dir string) error {
 	if buildN {
 		return nil
 	}
-	return os.MkdirAll(dir, 0o750)
+	return os.MkdirAll(dir, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 }
 
 func removeAll(path string) error {

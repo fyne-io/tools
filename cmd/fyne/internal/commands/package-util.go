@@ -38,7 +38,7 @@ func (d defaultUtil) CopyExeFile(src, tgt string) error {
 }
 
 func (d defaultUtil) WriteFile(target string, data []byte) error {
-	return os.WriteFile(target, data, 0o644)
+	return os.WriteFile(target, data, util.FilePermDefault)
 }
 
 func (d defaultUtil) EnsureSubDir(parent, name string) string {
