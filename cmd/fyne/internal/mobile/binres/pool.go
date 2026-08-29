@@ -89,6 +89,7 @@ func (pl *Pool) IsUTF8() bool { return pl.flags&UTF8Flag == UTF8Flag }
 
 // UnmarshalBinary creates the pool from binary data
 func (pl *Pool) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&pl.chunkHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
@@ -170,10 +171,12 @@ func (pl *Pool) UnmarshalBinary(bin []byte) error {
 	_ = offstyle
 
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given pool
 func (pl *Pool) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	if pl.IsUTF8() {
 		return nil, errors.New("encode utf8 not supported")
 	}
@@ -247,6 +250,7 @@ func (pl *Pool) MarshalBinary() ([]byte, error) {
 	}
 
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Span marks a span of characters
@@ -258,6 +262,7 @@ type Span struct {
 
 // UnmarshalBinary creates the span from binary data
 func (spn *Span) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	const end = 0xFFFFFFFF
 	spn.name = PoolRef(btou32(bin))
 	if spn.name == end {
@@ -266,6 +271,7 @@ func (spn *Span) UnmarshalBinary(bin []byte) error {
 	spn.firstChar = btou32(bin[4:])
 	spn.lastChar = btou32(bin[8:])
 	return nil
+	//revive:enable:add-constant
 }
 
 // Map contains a uint32 slice mapping strings in the string
@@ -278,6 +284,7 @@ type Map struct {
 
 // UnmarshalBinary creates the map from binary data
 func (m *Map) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	err := (&m.chunkHeader).UnmarshalBinary(bin)
 	if err != nil {
 		return err
@@ -289,10 +296,12 @@ func (m *Map) UnmarshalBinary(bin []byte) error {
 		m.rs[i] = TableRef(btou32(buf[i*4:]))
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given map
 func (m *Map) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	m.typ = ResXMLResourceMap
 	m.headerByteSize = 8
 	m.byteSize = uint32(m.headerByteSize) + uint32(len(m.rs)*4)
@@ -306,4 +315,5 @@ func (m *Map) MarshalBinary() ([]byte, error) {
 		putu32(bin[8+i*4:], uint32(r))
 	}
 	return bin, nil
+	//revive:enable:add-constant
 }

@@ -126,6 +126,7 @@ type chunkHeader struct {
 func (hdr chunkHeader) size() int { return int(hdr.byteSize) }
 
 func (hdr *chunkHeader) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	hdr.typ = ResType(btou16(bin))
 	if !hdr.typ.IsSupported() {
 		return fmt.Errorf("%s not supported", hdr.typ)
@@ -136,9 +137,11 @@ func (hdr *chunkHeader) UnmarshalBinary(bin []byte) error {
 		return fmt.Errorf("too few bytes to unmarshal chunk body, have %v, need at-least %v", len(bin), hdr.byteSize)
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 func (hdr chunkHeader) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	if !hdr.typ.IsSupported() {
 		return nil, fmt.Errorf("%s not supported", hdr.typ)
 	}
@@ -148,6 +151,7 @@ func (hdr chunkHeader) MarshalBinary() ([]byte, error) {
 	putu16(bin[2:], hdr.headerByteSize)
 	putu32(bin[4:], hdr.byteSize)
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // XML represents an XML text file in memory
@@ -515,6 +519,7 @@ func resolveElements(elms []*Element, pool, bxPool *Pool) {
 
 // handleTokens encodes tkn, attaching it to the binary xml
 func handleTokens(tkn xml.Token, line int, pool *Pool, bx *XML, tbl *Table) error {
+	//revive:disable:add-constant
 	switch tkn := tkn.(type) {
 	case xml.StartElement:
 		el := &Element{
@@ -589,6 +594,7 @@ func handleTokens(tkn xml.Token, line int, pool *Pool, bx *XML, tbl *Table) erro
 		panic(fmt.Errorf("unhandled token type: %T %+v", tkn, tkn))
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 // addAttributes encodes the attributes of tkn and adds them to el.
@@ -650,6 +656,7 @@ func addAttributes(tkn xml.StartElement, bx *XML, line int, pool *Pool, el *Elem
 // The encoded value is stored in nattr.
 // If the value was not already present in pool, it is added.
 func addAttributeNamespace(attr xml.Attr, nattr *Attribute, tbl *Table, pool *Pool) error {
+	//revive:disable:add-constant
 	// get type spec and value data type
 	ref, err := tbl.RefByName("attr/" + attr.Name.Local)
 	if err != nil {
@@ -756,10 +763,12 @@ func addAttributeNamespace(attr xml.Attr, nattr *Attribute, tbl *Table, pool *Po
 		}
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 // UnmarshalBinary decodes all resource chunks in buf returning any error encountered.
 func (bx *XML) UnmarshalBinary(buf []byte) error {
+	//revive:disable:add-constant
 	if err := (&bx.chunkHeader).UnmarshalBinary(buf); err != nil {
 		return err
 	}
@@ -772,6 +781,7 @@ func (bx *XML) UnmarshalBinary(buf []byte) error {
 		buf = buf[k.size():]
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 // unmarshalBinaryKind decodes and stores the first resource chunk of bin.
@@ -854,6 +864,7 @@ func (bx *XML) kind(t ResType) (unmarshaler, error) {
 
 // MarshalBinary formats the XML in memory to its text appearance
 func (bx *XML) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bx.typ = ResXML
 	bx.headerByteSize = 8
 
@@ -899,6 +910,7 @@ func (bx *XML) MarshalBinary() ([]byte, error) {
 
 	putu32(bin[4:], uint32(len(bin)))
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 func marshalRecurse(el *Element, bin *[]byte) error {
