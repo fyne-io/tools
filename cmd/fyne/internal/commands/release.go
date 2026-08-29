@@ -145,11 +145,7 @@ func (r *Releaser) releaseAction(_ *cli.Context) error {
 		return err
 	}
 
-	if err := r.afterPackage(); err != nil {
-		return err
-	}
-
-	return nil
+	return r.afterPackage()
 }
 
 func (r *Releaser) afterPackage() error {
