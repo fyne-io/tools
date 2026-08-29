@@ -251,7 +251,7 @@ func ndkRoot() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no Android NDK found in $ANDROID_HOME/ndk-bundle nor in $ANDROID_NDK_HOME")
+	return "", errors.New("no Android NDK found in $ANDROID_HOME/ndk-bundle nor in $ANDROID_NDK_HOME")
 }
 
 func envClang(sdkName string) (clang, cflags string, err error) {
