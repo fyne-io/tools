@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -66,7 +67,7 @@ func Build() *cli.Command {
 			argCount := ctx.Args().Len()
 			if argCount > 0 {
 				if argCount != 1 {
-					return fmt.Errorf("incorrect amount of path provided")
+					return errors.New("incorrect amount of path provided")
 				}
 				b.goPackage = ctx.Args().First()
 			}
@@ -85,7 +86,7 @@ func (b *Builder) Build() error {
 			return err
 		}
 		if !dirStat.IsDir() {
-			return fmt.Errorf("specified source directory is not a valid directory")
+			return errors.New("specified source directory is not a valid directory")
 		}
 	}
 	if b.tagsToParse != "" {

@@ -5,6 +5,7 @@
 package binres
 
 import (
+	"errors"
 	"fmt"
 	"unicode/utf16"
 )
@@ -174,7 +175,7 @@ func (pl *Pool) UnmarshalBinary(bin []byte) error {
 // MarshalBinary outputs the binary format from a given pool
 func (pl *Pool) MarshalBinary() ([]byte, error) {
 	if pl.IsUTF8() {
-		return nil, fmt.Errorf("encode utf8 not supported")
+		return nil, errors.New("encode utf8 not supported")
 	}
 
 	var (

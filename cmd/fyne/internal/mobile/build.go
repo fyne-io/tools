@@ -9,6 +9,7 @@ package mobile
 import (
 	"bufio"
 	"flag"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -91,10 +92,10 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 	pkg := pkgs[0]
 
 	if pkg.Name != "main" && buildO != "" {
-		return nil, fmt.Errorf("cannot set -o when building non-main package")
+		return nil, errors.New("cannot set -o when building non-main package")
 	}
 	if buildBundleID == "" {
-		return nil, fmt.Errorf("value for -appID is required for a mobile package")
+		return nil, errors.New("value for -appID is required for a mobile package")
 	}
 
 	var nmpkgs map[string]bool
@@ -119,7 +120,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 		}
 	case "darwin":
 		if !xcodeAvailable() {
-			return nil, fmt.Errorf("-os=ios requires XCode")
+			return nil, errors.New("-os=ios requires XCode")
 		}
 		if buildRelease {
 			if len(allArchs["ios"]) > 2 {
@@ -340,7 +341,7 @@ func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...stri
 
 func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	if buildTarget == "" {
-		return "", nil, fmt.Errorf(`invalid target ""`)
+		return "", nil, errors.New(`invalid target ""`)
 	}
 
 	all := false
@@ -348,7 +349,7 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	for i, p := range strings.Split(buildTarget, ",") {
 		osarch := strings.SplitN(p, "/", 2) // len(osarch) > 0
 		if !util.IsAndroid(osarch[0]) && !util.IsIOS(osarch[0]) {
-			return "", nil, fmt.Errorf(`unsupported os`)
+			return "", nil, errors.New(`unsupported os`)
 		}
 		if osarch[0] == "iossimulator" {
 			osarch[0] = "ios"
@@ -359,7 +360,7 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 		}
 
 		if os != osarch[0] {
-			return "", nil, fmt.Errorf(`cannot target different OSes`)
+			return "", nil, errors.New(`cannot target different OSes`)
 		}
 
 		if len(osarch) == 1 {

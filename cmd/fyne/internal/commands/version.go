@@ -23,7 +23,7 @@ func getFyneGoModVersion(dir string) (string, error) {
 		return info["version"].(string), nil
 	}
 
-	return "", fmt.Errorf("fyne version not found")
+	return "", errors.New("fyne version not found")
 }
 
 // Version returns the cli command for the program version.

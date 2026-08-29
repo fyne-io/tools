@@ -279,7 +279,7 @@ func rtou(a []TableRef) []uint32 {
 func compareUint32s(t *testing.T, a, b []uint32) error {
 	var err error
 	if len(a) != len(b) {
-		err = fmt.Errorf("lengths do not match")
+		err = errors.New("lengths do not match")
 	}
 
 	n := len(a)
@@ -302,7 +302,7 @@ func compareUint32s(t *testing.T, a, b []uint32) error {
 			d = "__________ "
 		}
 		if err == nil && c != d {
-			err = fmt.Errorf("has missing/incorrect values")
+			err = errors.New("has missing/incorrect values")
 		}
 		buf.WriteString(c + " " + d + "\n")
 	}
@@ -317,7 +317,7 @@ func compareUint32s(t *testing.T, a, b []uint32) error {
 func compareStrings(t *testing.T, a, b []string) error {
 	var err error
 	if len(a) != len(b) {
-		err = fmt.Errorf("lengths do not match")
+		err = errors.New("lengths do not match")
 	}
 
 	buf := new(bytes.Buffer)
@@ -339,7 +339,7 @@ func compareStrings(t *testing.T, a, b []string) error {
 				// TODO this check has the potential to hide real errors but can be fixed once more
 				// of the xml document is unmarshalled and XML can be queried to assure this is related
 				// to platformBuildVersionName.
-				err = fmt.Errorf("has missing/incorrect values")
+				err = errors.New("has missing/incorrect values")
 			}
 		}
 		fmt.Fprintf(buf, "Pool(%2v, %s) %q\n", i, v, x)
