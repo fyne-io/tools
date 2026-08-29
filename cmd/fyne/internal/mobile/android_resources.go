@@ -194,6 +194,23 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 	return arscPath, extractedResDir, manifestPath, nil
 }
 
+func copyZipFileToPath(f *zip.File, destPath string) error {
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	dest, err := os.Create(destPath)
+	if err != nil {
+		return err
+	}
+	defer dest.Close()
+
+	_, err = io.Copy(dest, rc)
+	return err
+}
+
 // extractFileFromZip extracts a single file from a zip archive
 func extractFileFromZip(zipPath, fileName, destPath string) error {
 	r, err := zip.OpenReader(zipPath)
@@ -207,20 +224,9 @@ func extractFileFromZip(zipPath, fileName, destPath string) error {
 			continue
 		}
 
-		rc, err := f.Open()
-		if err != nil {
+		if err := copyZipFileToPath(f, destPath); err != nil {
 			return err
 		}
-		defer rc.Close()
-
-		dest, err := os.Create(destPath)
-		if err != nil {
-			return err
-		}
-		defer dest.Close()
-
-		_, err = io.Copy(dest, rc)
-		return err
 	}
 	return fmt.Errorf("file %s not found in zip", fileName)
 }
@@ -259,21 +265,7 @@ func extractDirFromZip(zipPath, prefix, destDir string) error {
 		}
 
 		// Extract file
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-
-		dest, err := os.Create(destPath)
-		if err != nil {
-			rc.Close()
-			return err
-		}
-
-		_, err = io.Copy(dest, rc)
-		rc.Close()
-		dest.Close()
-		if err != nil {
+		if err := copyZipFileToPath(f, destPath); err != nil {
 			return err
 		}
 	}
