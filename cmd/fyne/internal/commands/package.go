@@ -399,33 +399,33 @@ func (p *Packager) normaliseIcon(path string) (string, error) {
 
 func validateAppID(appID, os, name string, release bool) (string, error) {
 	// old darwin compatibility
-	if os == "darwin" {
-		if appID == "" {
-			return "com.example." + name, nil
+	if os == "darwin" && appID == "" {
+		return "com.example." + name, nil
+	} else if os != "ios" && !pkgUtil.IsAndroid(os) && !(os == "windows" && release) {
+		return appID, nil
+	}
+
+	// all mobile, and for windows when releasing, needs a unique id - usually reverse DNS style
+	if appID == "" {
+		return "", errors.New("missing app-id parameter for package")
+	} else if !strings.Contains(appID, ".") {
+		return "", errors.New("app-id must be globally unique and contain at least 1 '.'")
+	} else if pkgUtil.IsAndroid(os) {
+		if strings.Contains(appID, "-") {
+			return "", errors.New("app-id can not contain '-'")
 		}
-	} else if os == "ios" || pkgUtil.IsAndroid(os) || (os == "windows" && release) {
-		// all mobile, and for windows when releasing, needs a unique id - usually reverse DNS style
-		if appID == "" {
-			return "", errors.New("missing app-id parameter for package")
-		} else if !strings.Contains(appID, ".") {
-			return "", errors.New("app-id must be globally unique and contain at least 1 '.'")
-		} else if pkgUtil.IsAndroid(os) {
-			if strings.Contains(appID, "-") {
-				return "", errors.New("app-id can not contain '-'")
+
+		// appID package names can not start with '_' or a number
+		packageNames := strings.Split(appID, ".")
+		for _, name := range packageNames {
+			if len(name) == 0 {
+				continue
 			}
 
-			// appID package names can not start with '_' or a number
-			packageNames := strings.Split(appID, ".")
-			for _, name := range packageNames {
-				if len(name) == 0 {
-					continue
-				}
-
-				if name[0] == '_' {
-					return "", fmt.Errorf("app-id package names can not start with '_' (%s)", name)
-				} else if name[0] >= '0' && name[0] <= '9' {
-					return "", fmt.Errorf("app-id package names can not start with a number (%s)", name)
-				}
+			if name[0] == '_' {
+				return "", fmt.Errorf("app-id package names can not start with '_' (%s)", name)
+			} else if name[0] >= '0' && name[0] <= '9' {
+				return "", fmt.Errorf("app-id package names can not start with a number (%s)", name)
 			}
 		}
 	}
