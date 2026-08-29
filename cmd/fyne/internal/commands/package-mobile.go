@@ -52,20 +52,11 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 		return fmt.Errorf("failed to write xcassets content template: %w", err)
 	}
 
-	if err = copyResizeIcon(1024, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(180, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(120, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(76, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(152, iconDir, p.icon); err != nil {
-		return err
+	iconSizes := []int{76, 120, 152, 180, 1024}
+	for _, iconSize := range iconSizes {
+		if err = copyResizeIcon(iconSize, iconDir, p.icon); err != nil {
+			return err
+		}
 	}
 
 	appDir := filepath.Join(p.dir, mobile.AppOutputName(p.os, p.Name, p.release))
