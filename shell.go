@@ -77,19 +77,21 @@ func quoteString(s string) string {
 	return "\"" + s + "\""
 }
 
+const darwinShell = "zsh"
+
 func getDarwinShell() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "zsh"
+		return darwinShell
 	}
 	out, err := exec.Command("dscl", ".", "-read", home, "UserShell").Output()
 	if err != nil {
-		return "zsh"
+		return darwinShell
 	}
 
 	items := strings.Split(string(out), ":")
 	if len(items) < 2 {
-		return "zsh"
+		return darwinShell
 	}
 
 	return strings.TrimSpace(items[1])
