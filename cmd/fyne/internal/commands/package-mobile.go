@@ -15,10 +15,10 @@ import (
 
 func (p *Packager) packageAndroid(arch string, tags []string) error {
 	iconFG, iconBG, iconMono := "", "", ""
-	if p.appData.AdaptiveIcon != nil {
-		iconFG = p.appData.AdaptiveIcon.Foreground
-		iconBG = p.appData.AdaptiveIcon.Background
-		iconMono = p.appData.AdaptiveIcon.Monochrome
+	if p.AdaptiveIcon != nil {
+		iconFG = p.AdaptiveIcon.Foreground
+		iconBG = p.AdaptiveIcon.Background
+		iconMono = p.AdaptiveIcon.Monochrome
 	}
 
 	return mobile.RunNewBuild(arch, p.AppID, p.icon, p.Name, p.AppVersion, p.AppBuild, p.release, p.distribution,
