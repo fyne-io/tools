@@ -8,8 +8,8 @@ package mobile
 
 import (
 	"bufio"
-	"flag"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
