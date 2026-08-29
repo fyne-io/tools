@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -73,8 +74,7 @@ func quoteArgs(args ...string) []string {
 }
 
 func quoteString(s string) string {
-	s = strings.ReplaceAll(s, "\"", "\\\"")
-	return "\"" + s + "\""
+	return fmt.Sprintf("%q", s)
 }
 
 const darwinShell = "zsh"
