@@ -32,7 +32,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 		return err
 	}
 
-	assetDir := util.EnsureSubDir(p.dir, "Images.xcassets")
+	assetDir := pkgUtil.EnsureSubDir(p.dir, "Images.xcassets")
 	defer os.RemoveAll(assetDir)
 	err = os.WriteFile(filepath.Join(assetDir, "Contents.json"), []byte(`{
   "info" : {
@@ -44,7 +44,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 		fyne.LogError("Content err", err)
 	}
 
-	iconDir := util.EnsureSubDir(assetDir, "AppIcon.appiconset")
+	iconDir := pkgUtil.EnsureSubDir(assetDir, "AppIcon.appiconset")
 	contentFile, _ := os.Create(filepath.Join(iconDir, "Contents.json"))
 
 	err = templates.XCAssetsDarwin.Execute(contentFile, nil)

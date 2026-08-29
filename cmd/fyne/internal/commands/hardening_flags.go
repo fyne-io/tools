@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	intutil "fyne.io/tools/cmd/fyne/internal/util"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const (
@@ -42,7 +42,7 @@ func ccVersion() string {
 }
 
 func hardeningCFlagsLookup(out, goos, arch string) string {
-	info, err := intutil.DetectCompiler(out, goos)
+	info, err := util.DetectCompiler(out, goos)
 	if err != nil {
 		return ""
 	}

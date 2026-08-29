@@ -69,7 +69,7 @@ func (s *Server) serve() error {
 		return err
 	}
 
-	webDir := util.EnsureSubDir(s.dir, "wasm")
+	webDir := pkgUtil.EnsureSubDir(s.dir, "wasm")
 	fileServer := http.FileServer(http.Dir(webDir))
 
 	http.Handle("/", fileServer)

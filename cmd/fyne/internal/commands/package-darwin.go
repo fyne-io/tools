@@ -33,10 +33,10 @@ func darwinLangs(langs []string) []string {
 }
 
 func (p *Packager) packageDarwin() (err error) {
-	appDir := util.EnsureSubDir(p.dir, p.Name+".app")
+	appDir := pkgUtil.EnsureSubDir(p.dir, p.Name+".app")
 	exeName := filepath.Base(p.exe)
 
-	contentsDir := util.EnsureSubDir(appDir, "Contents")
+	contentsDir := pkgUtil.EnsureSubDir(appDir, "Contents")
 	info := filepath.Join(contentsDir, "Info.plist")
 	infoFile, err := os.Create(info)
 	if err != nil {
@@ -56,13 +56,13 @@ func (p *Packager) packageDarwin() (err error) {
 		return fmt.Errorf("failed to write plist template: %w", err)
 	}
 
-	macOSDir := util.EnsureSubDir(contentsDir, "MacOS")
+	macOSDir := pkgUtil.EnsureSubDir(contentsDir, "MacOS")
 	binName := filepath.Join(macOSDir, exeName)
-	if err := util.CopyExeFile(p.exe, binName); err != nil {
+	if err := pkgUtil.CopyExeFile(p.exe, binName); err != nil {
 		return fmt.Errorf("failed to copy executable: %w", err)
 	}
 
-	resDir := util.EnsureSubDir(contentsDir, "Resources")
+	resDir := pkgUtil.EnsureSubDir(contentsDir, "Resources")
 	icnsPath := filepath.Join(resDir, "icon.icns")
 
 	img, err := os.Open(p.icon)
