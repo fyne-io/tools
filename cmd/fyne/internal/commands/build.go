@@ -16,6 +16,7 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // Partly based on https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/blob/master/include/flags.yml?ref_type=heads.
@@ -167,7 +168,7 @@ func (b *Builder) build() error {
 		tags = append(tags, "migrated_fynedo")
 	}
 	if len(tags) > 0 {
-		args = append(args, "-tags", strings.Join(tags, ","))
+		args = append(args, "-tags", util.JoinComma(tags))
 	}
 
 	if b.goPackage != "" {
@@ -278,8 +279,8 @@ func (b *Builder) applyCAndLDFlags(env *[]string, os string) {
 		cflags = append(cflags, "-mbranch-protection=bti+pac-ret")
 	}
 
-	appendEnv(env, "CGO_CFLAGS", strings.Join(cflags, " "))
-	appendEnv(env, "CGO_LDFLAGS", strings.Join(ldflags, " "))
+	appendEnv(env, "CGO_CFLAGS", util.JoinSpace(cflags))
+	appendEnv(env, "CGO_LDFLAGS", util.JoinSpace(ldflags))
 }
 
 const maxIconSize = 512

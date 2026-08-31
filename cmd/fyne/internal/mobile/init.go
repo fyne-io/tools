@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
@@ -53,11 +54,7 @@ func runCmd(cmd *exec.Cmd) error {
 		if cmd.Dir != "" {
 			dir = "PWD=" + cmd.Dir + " "
 		}
-		env := strings.Join(cmd.Env, " ")
-		if env != "" {
-			env += " "
-		}
-		printcmd("%s%s%s", dir, env, strings.Join(cmd.Args, " "))
+		printcmd("%s%s%s", dir, util.JoinSpace(append(cmd.Env, "")), util.JoinSpace(cmd.Args))
 	}
 
 	buf := new(bytes.Buffer)
@@ -71,7 +68,7 @@ func runCmd(cmd *exec.Cmd) error {
 	}
 
 	if buildWork {
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == goos.Windows {
 			cmd.Env = append(cmd.Env, `TEMP=`+tmpdir, `TMP=`+tmpdir)
 		} else {
 			cmd.Env = append(cmd.Env, `TMPDIR=`+tmpdir)
@@ -81,7 +78,7 @@ func runCmd(cmd *exec.Cmd) error {
 	if !buildN {
 		cmd.Env = environ(cmd.Env)
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("%s failed: %v%s", strings.Join(cmd.Args, " "), err, buf)
+			return fmt.Errorf("%s failed: %v%s", util.JoinSpace(cmd.Args), err, buf)
 		}
 	}
 	return nil

@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/goos"
+	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -307,7 +308,7 @@ func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...stri
 		tags = append(tags, "release")
 	}
 	if len(tags) > 0 {
-		cmd.Args = append(cmd.Args, "-tags", strings.Join(tags, " "))
+		cmd.Args = append(cmd.Args, "-tags", util.JoinComma(tags))
 	}
 	if buildV {
 		cmd.Args = append(cmd.Args, "-v")

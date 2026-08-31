@@ -9,11 +9,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/tools/go/packages"
 
 	"fyne.io/tools/cmd/fyne/internal/goos"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // pkg, tmpdir in build.go
@@ -80,7 +80,7 @@ func packagesConfig(targetOS, targetArch string) *packages.Config {
 		tags = append(tags, "ios")
 	}
 	if len(tags) > 0 {
-		config.BuildFlags = []string{"-tags=" + strings.Join(tags, ",")}
+		config.BuildFlags = []string{"-tags=" + util.JoinComma(tags)}
 	}
 	return config
 }
