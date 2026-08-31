@@ -399,23 +399,15 @@ func extractLdFlags(goFlags string) (string, string) {
 	if goFlags == "" {
 		return "", ""
 	}
-
-	flags := strings.Fields(goFlags)
-	ldflags := ""
-	newGoFlags := ""
-
-	for _, flag := range flags {
+	var ldflags, newGoFlags []string
+	for _, flag := range strings.Fields(goFlags) {
 		if strings.HasPrefix(flag, "-ldflags=") {
-			ldflags += strings.TrimPrefix(flag, "-ldflags=") + " "
+			ldflags = append(ldflags, strings.TrimPrefix(flag, "-ldflags="))
 		} else {
-			newGoFlags += flag + " "
+			newGoFlags = append(newGoFlags, flag)
 		}
 	}
-
-	ldflags = strings.TrimSpace(ldflags)
-	newGoFlags = strings.TrimSpace(newGoFlags)
-
-	return ldflags, newGoFlags
+	return util.JoinSpace(ldflags), util.JoinSpace(newGoFlags)
 }
 
 func normaliseVersion(str string) string {
