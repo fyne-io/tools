@@ -54,6 +54,9 @@ func AppOutputName(os, name string, release bool) string {
 	return ""
 }
 
+const androidTargetRelease = 36
+const androidTargetDebug = 29
+
 // runBuildImpl builds a package for mobiles based on the given commands.
 // runBuildImpl returns a built package information and an error if exists.
 func runBuildImpl(cmd *command) (*packages.Package, error) {
@@ -108,9 +111,9 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 			return pkg, nil
 		}
-		target := 36
+		target := androidTargetRelease
 		if !buildRelease {
-			target = 29 // TODO once we have gomobile debug signing working for v2 android signs
+			target = androidTargetDebug // TODO once we have gomobile debug signing working for v2 android signs
 		}
 		nmpkgs, err = goAndroidBuild(pkg, buildBundleID, targetArchs, cmd.IconPath, cmd.AppName, cmd.Version, cmd.Build,
 			target, buildRelease, cmd.iconFG, cmd.iconBG, cmd.iconMono)
