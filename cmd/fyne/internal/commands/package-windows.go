@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"os"
@@ -77,7 +78,7 @@ func (p *Packager) packageWindows(tags []string) error {
 	vi.IconPath = icoPath
 	vi.ManifestPath = manifest
 	vi.StringFileInfo.ProductVersion = p.combinedVersion()
-	vi.StringFileInfo.FileDescription = p.Name
+	vi.FileDescription = p.Name
 	vi.FixedFileInfo.FileVersion = fixedVersionInfo(p.combinedVersion())
 
 	vi.Build()
@@ -121,7 +122,7 @@ func (p *Packager) packageWindows(tags []string) error {
 	if p.install {
 		wd, err := os.Getwd()
 		if err != nil {
-			return fmt.Errorf("failed to locate current working directory")
+			return errors.New("failed to locate current working directory")
 		}
 		appPath := filepath.Join(wd, appName)
 

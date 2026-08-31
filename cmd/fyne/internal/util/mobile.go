@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -55,7 +56,7 @@ func IsMobile(os string) bool {
 // This is currently deduced using ANDROID_HOME environment variable.
 func RequireAndroidSDK() error {
 	if env, ok := os.LookupEnv("ANDROID_HOME"); !ok || env == "" {
-		return fmt.Errorf("could not find android tools, missing ANDROID_HOME")
+		return errors.New("could not find android tools, missing ANDROID_HOME")
 	}
 
 	return nil

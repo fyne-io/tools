@@ -165,7 +165,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		if err != nil {
 			_, _ = fmt.Fprint(os.Stderr, "Required command 'bundletool' not found when building Android for release.\n")
 			_, _ = fmt.Fprint(os.Stderr, "For more information see https://developer.android.com/tools/bundletool.\n")
-			return nil, fmt.Errorf("bundletool: command not found")
+			return nil, errors.New("bundletool: command not found")
 		}
 		err = convertAPKToAAB(buildO)
 		if err != nil {

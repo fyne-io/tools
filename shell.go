@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -10,6 +11,8 @@ import (
 // stringLiteral is a type of string that cannot be passed as a variable.
 // This helps to avoid code injection by enforcing executable names to be hard coded.
 type stringLiteral string
+
+const newLine = "\n"
 
 // CommandInShell sets up a new command with the environment set up by user's environment.
 // In darwin or other Unix systems the shell will be loaded by running the terminal and accessing env command.
@@ -23,7 +26,7 @@ func CommandInShell(cmd stringLiteral, args ...string) *exec.Cmd {
 
 		if err == nil {
 			// parse lines as shell can output header
-			lines := strings.Split(string(data), "\n")
+			lines := strings.Split(string(data), newLine)
 			if len(lines) > 0 {
 				path = lines[len(lines)-1]
 
@@ -45,13 +48,13 @@ func runInShell(cmd string, args ...string) *exec.Cmd {
 		args = quoteArgs(args...)
 		data, err := exec.Command(getDarwinShell(), "-c", "-i", "env").Output()
 		if err == nil {
-			env = strings.Split(string(data), "\n")
+			env = strings.Split(string(data), newLine)
 		}
 	case "linux", "freebsd", "netbsd", "openbsd", "dragonflybsd": // unix environment may be set up in shell
 		args = quoteArgs(args...)
 		data, err := exec.Command(getUnixShell(), "-c", "env").Output()
 		if err == nil {
-			env = strings.Split(string(data), "\n")
+			env = strings.Split(string(data), newLine)
 		}
 	}
 
@@ -73,23 +76,24 @@ func quoteArgs(args ...string) []string {
 }
 
 func quoteString(s string) string {
-	s = strings.ReplaceAll(s, "\"", "\\\"")
-	return "\"" + s + "\""
+	return fmt.Sprintf("%q", s)
 }
+
+const darwinShell = "zsh"
 
 func getDarwinShell() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "zsh"
+		return darwinShell
 	}
 	out, err := exec.Command("dscl", ".", "-read", home, "UserShell").Output()
 	if err != nil {
-		return "zsh"
+		return darwinShell
 	}
 
 	items := strings.Split(string(out), ":")
 	if len(items) < 2 {
-		return "zsh"
+		return darwinShell
 	}
 
 	return strings.TrimSpace(items[1])
