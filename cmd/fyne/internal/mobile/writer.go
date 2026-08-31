@@ -132,13 +132,17 @@ func (w *Writer) create(name string) (io.Writer, error) {
 	return w.cur, nil
 }
 
+func fmtApkErr(err error) error {
+	return fmt.Errorf("apk: %v", err)
+}
+
 // Close finishes writing the APK. This includes writing the manifest and
 // signing the archive, and writing the ZIP central directory.
 //
 // It does not close the underlying writer.
 func (w *Writer) Close() error {
 	if err := w.clearCur(); err != nil {
-		return fmt.Errorf("apk: %v", err)
+		return fmtApkErr(err)
 	}
 
 	hasDex := false
@@ -195,7 +199,7 @@ func (w *Writer) Close() error {
 
 	rsa, err := signPKCS7(rand.Reader, w.priv, cert.Bytes())
 	if err != nil {
-		return fmt.Errorf("apk: %v", err)
+		return fmtApkErr(err)
 	}
 	rw, err := w.Create("META-INF/CERT.RSA")
 	if err != nil {
@@ -269,7 +273,7 @@ func (w *fileWriter) Write(p []byte) (n int, err error) {
 	}
 	n, err = w.w.Write(p)
 	if err != nil {
-		return 0, fmt.Errorf("apk: %v", err)
+		return 0, fmtApkErr(err)
 	}
 	return n, err
 }

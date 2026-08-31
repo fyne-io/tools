@@ -179,18 +179,22 @@ func extractPkgs(nm string, path string) (map[string]bool, error) {
 		errc <- s.Err()
 	}()
 
+	fmtErr := func(err error) error {
+		return fmt.Errorf("%s %s: %v", nm, path, err)
+	}
+
 	err := cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("%s %s: %v", nm, path, err)
+		return nil, fmtErr(err)
 	}
 
 	err = w.Close()
 	if err != nil {
-		return nil, fmt.Errorf("%s %s: %v", nm, path, err)
+		return nil, fmtErr(err)
 	}
 
 	if err := <-errc; err != nil {
-		return nil, fmt.Errorf("%s %s: %v", nm, path, err)
+		return nil, fmtErr(err)
 	}
 	return nmpkgs, nil
 }
