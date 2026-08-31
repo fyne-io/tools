@@ -93,23 +93,25 @@ func (p *Packager) packageDarwin() (err error) {
 	return nil
 }
 
-func processMacOSIcon(in image.Image) image.Image {
-	size := 1024
-	border := 100
-	radius := 185.4
+const (
+	macosIconSize   = 1024
+	macosIconBorder = 100.0
+	macosIconRadius = 185.4
+)
 
-	innerSize := int(float64(size) - float64(border*2)) // how many pixels inside border
+func processMacOSIcon(in image.Image) image.Image {
+	innerSize := float64(macosIconSize) - macosIconBorder*2 // how many pixels inside border
 	sized := resize.Resize(uint(innerSize), uint(innerSize), in, resize.Lanczos3)
 
-	dc := gg.NewContext(size, size)
-	dc.DrawRoundedRectangle(float64(border), float64(border), float64(innerSize), float64(innerSize), radius)
+	dc := gg.NewContext(macosIconSize, macosIconSize)
+	dc.DrawRoundedRectangle(macosIconBorder, macosIconBorder, innerSize, innerSize, macosIconRadius)
 	dc.SetColor(color.Black)
 	dc.Fill()
 	mask := dc.AsMask()
 
-	dc = gg.NewContext(size, size)
+	dc = gg.NewContext(macosIconSize, macosIconSize)
 	_ = dc.SetMask(mask) // ignore error if size was not equal, as it is
-	dc.DrawImage(sized, border, border)
+	dc.DrawImage(sized, int(macosIconBorder), int(macosIconBorder))
 
 	return dc.Image()
 }
