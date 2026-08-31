@@ -136,12 +136,12 @@ func (b *Bundler) Run(args []string) {
 	case os.IsNotExist(err):
 		fyne.LogError("Specified file could not be found", err)
 	case stat.IsDir():
-		b.dirBundle(args[0], outFile)
+		_ = b.dirBundle(args[0], outFile)
 	case b.name != "":
 		b.prefix = ""
 		fallthrough
 	default:
-		b.doBundle(args[0], outFile)
+		_ = b.doBundle(args[0], outFile)
 	}
 }
 
