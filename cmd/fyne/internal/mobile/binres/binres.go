@@ -201,8 +201,8 @@ func (bx *XML) RawValueByName(elname string, attrname xml.Name) (string, error) 
 }
 
 const (
-	androidSchema = "http://schemas.android.com/apk/res/android"
-	toolsSchema   = "http://schemas.android.com/tools"
+	androidSchema = "http://schemas.android.com/apk/res/android" //revive:disable-line:unsecure-url-scheme not used for requests
+	toolsSchema   = "http://schemas.android.com/tools"           //revive:disable-line:unsecure-url-scheme not used for requests
 )
 
 // skipSynthesize is set true for tests to avoid synthesis of additional nodes and attributes.
