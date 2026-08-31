@@ -181,7 +181,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	wd, _ := os.Getwd()
 	defer func() {
 		if wd != "" {
-			os.Chdir(wd)
+			_ = os.Chdir(wd)
 		}
 	}()
 
