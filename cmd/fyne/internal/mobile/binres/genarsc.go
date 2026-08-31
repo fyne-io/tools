@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const tmpl = `// Copyright 2016 The Go Authors.  All rights reserved.
