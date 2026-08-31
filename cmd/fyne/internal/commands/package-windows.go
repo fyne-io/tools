@@ -117,7 +117,9 @@ func (p *Packager) packageWindows(tags []string) error {
 		if filepath.Ext(p.Name) != ".exe" {
 			appName = appName + ".exe"
 		}
-		os.Rename(filepath.Base(p.exe), appName)
+		if err := os.Rename(filepath.Base(p.exe), appName); err != nil {
+			return err
+		}
 	}
 
 	if p.install {
