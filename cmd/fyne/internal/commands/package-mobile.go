@@ -53,7 +53,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 		return fmt.Errorf("failed to write xcassets content template: %w", err)
 	}
 
-	iconSizes := []int{76, 120, 152, 180, 1024}
+	iconSizes := []int{76, 120, 152, 180, 1024} //revive:disable-line:add-constant
 	for _, iconSize := range iconSizes {
 		if err = copyResizeIcon(iconSize, iconDir, p.icon); err != nil {
 			return err
