@@ -112,9 +112,9 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 		return "", "", "", fmt.Errorf("failed to create compiled directory: %w", err)
 	}
 
-	tempManifestPath := filepath.Join(tempDir, "AndroidManifest.xml")
+	tempManifestPath := filepath.Join(tempDir, fileAndroidManifestXML)
 	if err := os.WriteFile(tempManifestPath, manifestData, util.FilePermDefault); err != nil {
-		return "", "", "", fmt.Errorf("failed to write AndroidManifest.xml: %w", err)
+		return "", "", "", fmt.Errorf("failed to write %s: %w", fileAndroidManifestXML, err)
 	}
 
 	err = filepath.Walk(resDir, func(path string, info os.FileInfo, err error) error {
@@ -180,9 +180,9 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 	}
 
 	// Extract compiled AndroidManifest.xml from the output APK
-	manifestPath = filepath.Join(tempDir, "AndroidManifest.xml")
-	if err := extractFileFromZip(outputAPK, "AndroidManifest.xml", manifestPath); err != nil {
-		return "", "", "", fmt.Errorf("failed to extract AndroidManifest.xml: %w", err)
+	manifestPath = filepath.Join(tempDir, fileAndroidManifestXML)
+	if err := extractFileFromZip(outputAPK, fileAndroidManifestXML, manifestPath); err != nil {
+		return "", "", "", fmt.Errorf("failed to extract %s: %w", fileAndroidManifestXML, err)
 	}
 
 	// Extract res/ directory from the output APK

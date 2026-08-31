@@ -143,7 +143,7 @@ func (w *Writer) Close() error {
 
 	hasDex := false
 	for _, entry := range w.manifest {
-		if entry.name == "classes.dex" {
+		if entry.name == fileClassesDex {
 			hasDex = true
 			break
 		}
