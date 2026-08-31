@@ -188,7 +188,10 @@ func (p *Packager) doPackage(runner runner) error {
 	}
 	defer os.RemoveAll(p.tempDir)
 
-	tags := util.SplitComma(p.tags)
+	var tags []string
+	if p.tags != "" {
+		tags = util.SplitComma(p.tags)
+	}
 
 	if !pkgUtil.Exists(p.exe) && !pkgUtil.IsMobile(p.os) {
 		files, err := p.buildPackage(runner, tags)
