@@ -54,8 +54,10 @@ func AppOutputName(os, name string, release bool) string {
 	return ""
 }
 
-const androidTargetRelease = 36
-const androidTargetDebug = 29
+const (
+	androidTargetRelease = 36
+	androidTargetDebug   = 29
+)
 
 // runBuildImpl builds a package for mobiles based on the given commands.
 // runBuildImpl returns a built package information and an error if exists.
