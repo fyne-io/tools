@@ -57,6 +57,7 @@ func AppOutputName(os, name string, release bool) string {
 const (
 	androidTargetRelease = 36
 	androidTargetDebug   = 29
+	pkgMain              = "main"
 )
 
 // runBuildImpl builds a package for mobiles based on the given commands.
@@ -95,7 +96,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 
 	pkg := pkgs[0]
 
-	if pkg.Name != "main" && buildO != "" {
+	if pkg.Name != pkgMain && buildO != "" {
 		return nil, errors.New("cannot set -o when building non-main package")
 	}
 	if buildBundleID == "" {
@@ -105,7 +106,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 	var nmpkgs map[string]bool
 	switch targetOS {
 	case goos.Android:
-		if pkg.Name != "main" {
+		if pkg.Name != pkgMain {
 			for _, arch := range targetArchs {
 				if err := goBuild(pkg.PkgPath, androidEnv[arch]); err != nil {
 					return nil, err
@@ -134,7 +135,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 		}
 
-		if pkg.Name != "main" {
+		if pkg.Name != pkgMain {
 			for _, arch := range targetArchs {
 				if err := goBuild(pkg.PkgPath, darwinEnv[arch]); err != nil {
 					return nil, err
