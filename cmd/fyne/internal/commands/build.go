@@ -13,6 +13,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
@@ -98,14 +99,10 @@ func (b *Builder) Build() error {
 	return b.build()
 }
 
-func isWeb(goos string) bool {
-	return goos == "js" || goos == "wasm" || goos == "web"
-}
-
 func (b *Builder) build() error {
-	goos := b.os
-	if goos == "" {
-		goos = targetOS()
+	osTarget := b.os
+	if osTarget == "" {
+		osTarget = targetOS()
 	}
 
 	b.updateGoExecutable()
@@ -137,7 +134,7 @@ func (b *Builder) build() error {
 	env := os.Environ()
 
 	ldFlags := extractLdflagsFromGoFlags()
-	if goos == "windows" {
+	if osTarget == goos.Windows {
 		ldFlags += " -H=windowsgui"
 	}
 
@@ -154,9 +151,9 @@ func (b *Builder) build() error {
 		args = append(args, "-o", b.target)
 	}
 
-	if !isWeb(goos) {
+	if !goos.IsWeb(osTarget) {
 		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
-		b.applyCAndLDFlags(&env, goos)
+		b.applyCAndLDFlags(&env, osTarget)
 	} else {
 		env = append(env, "CGO_ENABLED=0") // CGO is not available in WebAssembly
 	}
@@ -177,9 +174,9 @@ func (b *Builder) build() error {
 		args = append(args, b.goPackage)
 	}
 
-	if goos != "ios" && goos != "android" && !isWeb(goos) {
-		env = append(env, "GOOS="+goos)
-	} else if goos == "web" || goos == "wasm" {
+	if osTarget != goos.IOS && osTarget != goos.Android && !goos.IsWeb(osTarget) {
+		env = append(env, "GOOS="+osTarget)
+	} else if goos.IsWASM(osTarget) {
 		env = append(env, "GOARCH=wasm")
 		env = append(env, "GOOS=js")
 	}
@@ -253,23 +250,23 @@ func (b *Builder) updateGoExecutable() {
 	b.runner = newCommand(goBin)
 }
 
-func (b *Builder) applyCAndLDFlags(env *[]string, goos string) {
+func (b *Builder) applyCAndLDFlags(env *[]string, os string) {
 	cflags := []string{baseCFLAGSRegular}
 	if b.release {
 		cflags[0] = baseCFLAGSRelease
 	}
 
 	arch := targetArch()
-	cflagsHardening := hardeningCFlagsLookup(ccVersion(), goos, arch)
+	cflagsHardening := hardeningCFlagsLookup(ccVersion(), os, arch)
 	if cflagsHardening != "" {
 		cflags = append(cflags, cflagsHardening)
 	}
 
 	ldflags := []string{}
-	switch goos {
-	case "linux":
+	switch os {
+	case goos.Linux:
 		ldflags = append(ldflags, hardeningLDFLAGSLinux)
-	case "darwin":
+	case goos.Darwin:
 		ldflags = append(ldflags, hardeningLDFLAGSDarwin)
 
 		cflags = append(cflags, "-mmacosx-version-min=10.13")

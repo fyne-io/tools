@@ -3,6 +3,7 @@ package commands
 import (
 	"os"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
@@ -62,15 +63,15 @@ func (d defaultUtil) AndroidBuildToolsPath() string {
 }
 
 func (d defaultUtil) IsAndroid(os string) bool {
-	return util.IsAndroid(os)
+	return goos.IsAndroid(os)
 }
 
 func (d defaultUtil) IsIOS(os string) bool {
-	return util.IsIOS(os)
+	return goos.IsIOS(os)
 }
 
 func (d defaultUtil) IsMobile(os string) bool {
-	return util.IsMobile(os)
+	return goos.IsMobile(os)
 }
 
 var pkgUtil packagerUtil

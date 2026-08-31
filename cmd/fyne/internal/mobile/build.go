@@ -18,7 +18,7 @@ import (
 	"runtime"
 	"strings"
 
-	"fyne.io/tools/cmd/fyne/internal/util"
+	"fyne.io/tools/cmd/fyne/internal/goos"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -41,17 +41,15 @@ func runBuild(cmd *command) error {
 
 // AppOutputName provides the name of a build resource for a given os - "ios" or "android".
 func AppOutputName(os, name string, release bool) string {
-	switch os {
-	case "android/arm", "android/arm64", "android/amd64", "android/386", "android":
+	if goos.IsAndroid(os) {
 		if release {
 			return androidPkgName(name) + ".aab"
-		} else {
-			return androidPkgName(name) + ".apk"
 		}
-	case "ios", "iossimulator":
+		return androidPkgName(name) + ".apk"
+	}
+	if goos.IsIOS(os) {
 		return rfc1034Label(name) + ".app"
 	}
-
 	return ""
 }
 
@@ -100,7 +98,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 
 	var nmpkgs map[string]bool
 	switch targetOS {
-	case "android":
+	case goos.Android:
 		if pkg.Name != "main" {
 			for _, arch := range targetArchs {
 				if err := goBuild(pkg.PkgPath, androidEnv[arch]); err != nil {
@@ -118,7 +116,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 		if err != nil {
 			return nil, err
 		}
-	case "darwin":
+	case goos.Darwin:
 		if !xcodeAvailable() {
 			return nil, errors.New("-os=ios requires XCode")
 		}
@@ -302,7 +300,7 @@ func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...stri
 	if err != nil {
 		return err
 	}
-	if targetOS == "darwin" {
+	if targetOS == goos.Darwin {
 		tags = append(tags, "ios")
 	}
 	if buildRelease {
@@ -348,11 +346,11 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	archNames := []string{}
 	for i, p := range strings.Split(buildTarget, ",") {
 		osarch := strings.SplitN(p, "/", 2) // len(osarch) > 0
-		if !util.IsAndroid(osarch[0]) && !util.IsIOS(osarch[0]) {
+		if !goos.IsAndroid(osarch[0]) && !goos.IsIOS(osarch[0]) {
 			return "", nil, errors.New(`unsupported os`)
 		}
 		if osarch[0] == "iossimulator" {
-			osarch[0] = "ios"
+			osarch[0] = goos.IOS
 		}
 
 		if i == 0 {
@@ -394,8 +392,8 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	}
 
 	targetOS := os
-	if os == "ios" {
-		targetOS = "darwin"
+	if os == goos.IOS {
+		targetOS = goos.Darwin
 	}
 
 	if buildTarget == "iossimulator" {
