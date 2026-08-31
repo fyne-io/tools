@@ -92,7 +92,7 @@ func (b *Builder) Build() error {
 		}
 	}
 	if b.tagsToParse != "" {
-		b.tags = strings.Split(b.tagsToParse, ",")
+		b.tags = util.SplitComma(b.tagsToParse)
 	}
 	b.Release = b.release
 	b.CustomMetadata = b.customMetadata.m

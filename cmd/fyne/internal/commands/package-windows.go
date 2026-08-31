@@ -13,6 +13,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 	"github.com/fyne-io/image/ico"
 	"github.com/josephspurrier/goversioninfo"
 )
@@ -168,7 +169,7 @@ func fixedVersionInfo(ver string) (ret goversioninfo.FileVersion) {
 		return ret
 	}
 	refs := []*int{&ret.Major, &ret.Minor, &ret.Patch, &ret.Build}
-	split := strings.Split(ver, ".")
+	split := util.SplitDot(ver)
 	for n, s := range split {
 		if n >= len(refs) {
 			break

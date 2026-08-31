@@ -24,6 +24,7 @@ import (
 
 	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const (
@@ -168,7 +169,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 }
 
 func (p *Packager) combinedVersion() string {
-	versions := strings.Split(p.AppVersion, ".")
+	versions := util.SplitDot(p.AppVersion)
 	for len(versions) < 3 {
 		versions = append(versions, "0")
 	}
@@ -187,10 +188,7 @@ func (p *Packager) doPackage(runner runner) error {
 	}
 	defer os.RemoveAll(p.tempDir)
 
-	var tags []string
-	if p.tags != "" {
-		tags = strings.Split(p.tags, ",")
-	}
+	tags := util.SplitComma(p.tags)
 
 	if !pkgUtil.Exists(p.exe) && !pkgUtil.IsMobile(p.os) {
 		files, err := p.buildPackage(runner, tags)
@@ -340,7 +338,7 @@ func calculateExeName(sourceDir, osys string) string {
 		modulePath := modfile.ModulePath(data)
 		moduleName, _, ok := module.SplitPathVersion(modulePath)
 		if ok {
-			paths := strings.Split(moduleName, "/")
+			paths := util.SplitSlash(moduleName)
 			name := paths[len(paths)-1]
 			if name != "" {
 				exeName = name
@@ -359,7 +357,7 @@ func isValidVersion(ver string) bool {
 	if semver.IsValid("v" + ver) {
 		return true
 	}
-	parts := strings.Split(ver, ".")
+	parts := util.SplitDot(ver)
 	if len(parts) < 1 || len(parts) > 2 {
 		return false
 	}
@@ -417,7 +415,7 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 		}
 
 		// appID package names can not start with '_' or a number
-		packageNames := strings.Split(appID, ".")
+		packageNames := util.SplitDot(appID)
 		for _, name := range packageNames {
 			if len(name) == 0 {
 				continue

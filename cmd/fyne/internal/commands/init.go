@@ -33,12 +33,12 @@ func Init() *cli.Command {
 }
 
 func getAppID(modpath string) string {
-	p := strings.Split(strings.ReplaceAll(modpath, "-", "_"), "/")
+	p := util.SplitSlash(strings.ReplaceAll(modpath, "-", "_"))
 	if len(p) == 0 {
 		return ""
 	}
 
-	d := strings.Split(p[0], ".")
+	d := util.SplitDot(p[0])
 	r := make([]string, len(p)+len(d)-1)
 	for n, e := range d {
 		r[len(d)-n-1] = e
@@ -54,7 +54,7 @@ func getAppID(modpath string) string {
 }
 
 func getAppName(modpath string) string {
-	p := strings.Split(modpath, "/")
+	p := util.SplitSlash(modpath)
 	if len(p) == 0 {
 		return ""
 	}
@@ -63,7 +63,7 @@ func getAppName(modpath string) string {
 		return p[len(p)-1]
 	}
 
-	d := strings.Split(p[0], ".")
+	d := util.SplitDot(p[0])
 
 	return d[0]
 }

@@ -192,7 +192,7 @@ func (r *Releaser) beforePackage() error {
 
 func (r *Releaser) nameFromCertInfo(info string) string {
 	// format should be "CN=Company, O=Company, L=City, S=State, C=Country"
-	parts := strings.Split(info, ",")
+	parts := util.SplitComma(info)
 	cn := parts[0]
 	pos := strings.Index(strings.ToUpper(cn), "CN=")
 	if pos == -1 {

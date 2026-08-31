@@ -348,7 +348,7 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 
 	all := false
 	archNames := []string{}
-	for i, p := range strings.Split(buildTarget, ",") {
+	for i, p := range util.SplitComma(buildTarget) {
 		osarch := strings.SplitN(p, "/", 2) // len(osarch) > 0
 		if !goos.IsAndroid(osarch[0]) && !goos.IsIOS(osarch[0]) {
 			return "", nil, errors.New(`unsupported os`)
