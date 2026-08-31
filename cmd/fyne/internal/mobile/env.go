@@ -368,8 +368,10 @@ func (tc *ndkToolchain) ClangPrefix(api int) string {
 	return fmt.Sprintf("%s%d", tc.clangPrefix, api)
 }
 
+const maxAndroidAPI = 99
+
 func (tc *ndkToolchain) Path(ndkRoot, toolName string) string {
-	for api := buildAndroidAPI; api < 99; api++ {
+	for api := buildAndroidAPI; api < maxAndroidAPI; api++ {
 		var pref string
 		switch toolName {
 		case "clang", "clang++":
