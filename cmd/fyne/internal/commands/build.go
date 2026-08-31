@@ -282,6 +282,8 @@ func (b *Builder) applyCAndLDFlags(env *[]string, os string) {
 	appendEnv(env, "CGO_LDFLAGS", strings.Join(ldflags, " "))
 }
 
+const maxIconSize = 512
+
 func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
 	data, err := metadata.LoadStandard(srcdir)
 	if err == nil {
@@ -308,7 +310,7 @@ func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
 			return func() { os.Remove(metadataInitFilePath) }, err
 		}
 
-		res = metadata.ScaleIcon(res, 512)
+		res = metadata.ScaleIcon(res, maxIconSize)
 
 		// The return type of fyne.LoadResourceFromPath is always a *fyne.StaticResource.
 		app.ResGoString = res.(*fyne.StaticResource).GoString()
