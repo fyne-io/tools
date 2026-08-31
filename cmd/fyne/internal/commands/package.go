@@ -124,7 +124,7 @@ func (p *Packager) Run(_ []string) {
 
 	err = p.doPackage(nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 }

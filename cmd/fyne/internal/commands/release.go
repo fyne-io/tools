@@ -116,17 +116,17 @@ func (r *Releaser) Run(params []string) {
 	r.release = true
 
 	if err := r.validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 
 	if err := r.beforePackage(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 	r.Packager.Run(params)
 	if err := r.afterPackage(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 	}
 }
 

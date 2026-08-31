@@ -186,7 +186,7 @@ func (b *Builder) build() error {
 	b.runner.setEnv(env)
 	out, err := b.runner.runOutput(args...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", string(out))
+		fmt.Fprintln(os.Stderr, string(out))
 	}
 	return err
 }
