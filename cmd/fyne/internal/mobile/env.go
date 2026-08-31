@@ -90,6 +90,12 @@ var (
 	before116 = false
 )
 
+const (
+	clangProg   = "clang"
+	clangPpProg = "clang++"
+	nmProg      = "nm"
+)
+
 func envInit() (err error) {
 	// Check the current Go version by go-list.
 	// An arbitrary standard package ('runtime' here) is given to go-list.
@@ -143,8 +149,8 @@ func envInit() (err error) {
 			return fmt.Errorf("gomobile requires Android API level >= %d", minAndroidAPI)
 		}
 		for arch, toolchain := range ndk {
-			clang := toolchain.Path(ndkRoot, "clang")
-			clangpp := toolchain.Path(ndkRoot, "clang++")
+			clang := toolchain.Path(ndkRoot, clangProg)
+			clangpp := toolchain.Path(ndkRoot, clangPpProg)
 			if !buildN {
 				tools := []string{clang, clangpp}
 				if runtime.GOOS == goos.Windows {
@@ -177,7 +183,7 @@ func envInit() (err error) {
 		return nil
 	}
 
-	darwinArmNM = "nm"
+	darwinArmNM = nmProg
 	darwinEnv = make(map[string][]string)
 	for _, arch := range allArchs[buildTarget] {
 		var env []string
@@ -259,7 +265,7 @@ func envClang(sdkName string) (clang, cflags string, err error) {
 	if buildN {
 		return sdkName + "-clang", "-isysroot=" + sdkName, nil
 	}
-	cmd := exec.Command("xcrun", "--sdk", sdkName, "--find", "clang")
+	cmd := exec.Command("xcrun", "--sdk", sdkName, "--find", clangProg)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", "", fmt.Errorf("xcrun --find: %v\n%s", err, out)
@@ -374,9 +380,9 @@ func (tc *ndkToolchain) Path(ndkRoot, toolName string) string {
 	for api := buildAndroidAPI; api < maxAndroidAPI; api++ {
 		var pref string
 		switch toolName {
-		case "clang", "clang++":
+		case clangProg, clangPpProg:
 			pref = tc.ClangPrefix(api)
-		case "nm":
+		case nmProg:
 			pref = "llvm"
 		default:
 			pref = tc.toolPrefix
