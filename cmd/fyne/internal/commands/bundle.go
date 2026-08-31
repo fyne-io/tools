@@ -141,7 +141,7 @@ func (b *Bundler) Run(args []string) {
 		b.prefix = ""
 		fallthrough
 	default:
-		_ = b.doBundle(args[0], outFile)
+		b.doBundle(args[0], outFile)
 	}
 }
 
@@ -220,7 +220,9 @@ func (b *Bundler) dirBundle(dirpath string, out *os.File) error {
 // should only be output once per file.
 func (b *Bundler) doBundle(path string, out *os.File) {
 	if !b.noheader {
-		writeHeader(b.pkg, out)
+		if err := writeHeader(b.pkg, out); err != nil {
+			fyne.LogError("failed to write header", err)
+		}
 		b.noheader = true
 	}
 
@@ -262,14 +264,21 @@ func sanitiseName(file, prefix string) string {
 	return prefix + name
 }
 
-func writeHeader(pkg string, out *os.File) {
-	out.WriteString(fileHeader)
-	out.WriteString("\n\npackage ")
-	out.WriteString(pkg)
-	out.WriteString("\n\nimport (\n")
-	out.WriteString("\t_ \"embed\"\n\n")
-	out.WriteString("\t\"fyne.io/fyne/v2\"\n")
-	out.WriteString(")\n")
+func writeHeader(pkg string, out *os.File) error {
+	for _, s := range []string{
+		fileHeader,
+		"\n\npackage ",
+		pkg,
+		"\n\nimport (\n",
+		"\t_ \"embed\"\n\n",
+		"\t\"fyne.io/fyne/v2\"\n",
+		")\n",
+	} {
+		if _, err := out.WriteString(s); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func writeResource(file, name string, f *os.File) {

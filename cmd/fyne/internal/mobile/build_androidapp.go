@@ -488,7 +488,9 @@ func convertAPKToAAB(aabPath string) error {
 	if err != nil {
 		return err
 	}
-	defer removeAll(tmpPath)
+	defer func() {
+		_ = removeAll(tmpPath)
+	}()
 
 	aapt2, err := util.Aapt2Path()
 	if err != nil {

@@ -294,8 +294,12 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		return errors.New("failed to write application manifest template")
 	}
 
-	pkgUtil.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
-	pkgUtil.CopyFile(r.Name, filepath.Join(payload, r.Name))
+	if err := pkgUtil.CopyFile(r.icon, filepath.Join(payload, "Icon.png")); err != nil {
+		return err
+	}
+	if err := pkgUtil.CopyFile(r.Name, filepath.Join(payload, r.Name)); err != nil {
+		return err
+	}
 
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
