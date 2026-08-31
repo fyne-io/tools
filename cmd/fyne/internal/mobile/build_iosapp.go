@@ -19,6 +19,8 @@ import (
 	"text/template"
 
 	"golang.org/x/tools/go/packages"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
@@ -78,7 +80,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 			printcmd("echo \"%s\" > %s", file.contents, file.name)
 		}
 		if !buildN {
-			if err := os.WriteFile(file.name, file.contents, 0o600); err != nil {
+			if err := os.WriteFile(file.name, file.contents, util.PermUserRead|util.PermUserWrite); err != nil {
 				return nil, err
 			}
 		}

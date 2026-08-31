@@ -27,6 +27,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 var outfile = flag.String("o", "dex.go", "result will be written file")
@@ -54,7 +56,7 @@ func gendex() error {
 	if androidHome == "" {
 		return errors.New("ANDROID_HOME not set")
 	}
-	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", 0o775); err != nil {
+	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", util.DirPermDefault|util.PermGroupWrite); err != nil {
 		return err
 	}
 	javaFiles, err := filepath.Glob("../../../../../fyne/internal/driver/mobile/app/*.java")
@@ -227,7 +229,7 @@ func stripMethodParameters(path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, out.Bytes(), 0o644)
+	return os.WriteFile(path, out.Bytes(), util.FilePermDefault)
 }
 
 func rewriteAttributes(r *classReader, out *bytes.Buffer, dropName uint16) error {

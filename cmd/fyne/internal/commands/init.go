@@ -12,6 +12,7 @@ import (
 
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func Init() *cli.Command {
@@ -152,7 +153,7 @@ func initAction(ctx *cli.Context) error {
 		return fmt.Errorf("failed to run command: %v", err)
 	}
 
-	if err := os.Mkdir("translations", 0o755); err != nil {
+	if err := os.Mkdir("translations", util.DirPermDefault); err != nil {
 		return err
 	}
 

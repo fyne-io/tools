@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"github.com/urfave/cli/v2"
 )
@@ -144,15 +145,11 @@ func (r *Releaser) releaseAction(_ *cli.Context) error {
 		return err
 	}
 
-	if err := r.afterPackage(); err != nil {
-		return err
-	}
-
-	return nil
+	return r.afterPackage()
 }
 
 func (r *Releaser) afterPackage() error {
-	if util.IsAndroid(r.os) {
+	if pkgUtil.IsAndroid(r.os) {
 		target := mobile.AppOutputName(r.os, r.Name, r.release)
 		apk := filepath.Join(r.dir, target)
 		if err := r.zipAlign(apk); err != nil {
@@ -183,8 +180,8 @@ func (r *Releaser) afterPackage() error {
 }
 
 func (r *Releaser) beforePackage() error {
-	if util.IsAndroid(r.os) {
-		if err := util.RequireAndroidSDK(); err != nil {
+	if pkgUtil.IsAndroid(r.os) {
+		if err := pkgUtil.RequireAndroidSDK(); err != nil {
 			return err
 		}
 	}
@@ -211,7 +208,7 @@ func (r *Releaser) packageIOSRelease() error {
 	}
 
 	payload := filepath.Join(r.dir, "Payload")
-	_ = os.Mkdir(payload, 0o750)
+	_ = os.Mkdir(payload, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 	defer os.RemoveAll(payload)
 	appName := mobile.AppOutputName(r.os, r.Name, r.release)
 	payloadAppDir := filepath.Join(payload, appName)
@@ -274,7 +271,7 @@ func (r *Releaser) packageMacOSRelease() error {
 
 func (r *Releaser) packageWindowsRelease(outFile string) error {
 	payload := filepath.Join(r.dir, "Payload")
-	_ = os.Mkdir(payload, 0o750)
+	_ = os.Mkdir(payload, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 	defer os.RemoveAll(payload)
 
 	manifestPath := filepath.Join(payload, "appxmanifest.xml")
@@ -296,8 +293,8 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		return errors.New("failed to write application manifest template")
 	}
 
-	util.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
-	util.CopyFile(r.Name, filepath.Join(payload, r.Name))
+	pkgUtil.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
+	pkgUtil.CopyFile(r.Name, filepath.Join(payload, r.Name))
 
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
@@ -317,7 +314,7 @@ func (r *Releaser) signAndroid(path string) error {
 	if r.release {
 		args = []string{"-keystore", r.keyStore}
 	} else {
-		signer = filepath.Join(util.AndroidBuildToolsPath(), "/apksigner")
+		signer = filepath.Join(pkgUtil.AndroidBuildToolsPath(), "/apksigner")
 		args = []string{"sign", "--ks", r.keyStore}
 	}
 
@@ -373,7 +370,7 @@ func (r *Releaser) validate() error {
 		return err
 	}
 
-	if util.IsMobile(r.os) || r.os == "windows" {
+	if pkgUtil.IsMobile(r.os) || r.os == "windows" {
 		if r.AppVersion == "" { // Here it is required, if provided then package validate will check format
 			return errors.New("missing required --app-version parameter")
 		}
@@ -393,7 +390,7 @@ func (r *Releaser) validate() error {
 			return errors.New("missing required --password parameter for windows release")
 		}
 	}
-	if util.IsAndroid(r.os) {
+	if pkgUtil.IsAndroid(r.os) {
 		if r.keyStore == "" {
 			return errors.New("missing required --keystore parameter for android release")
 		}
@@ -448,7 +445,7 @@ func (r *Releaser) zipAlign(path string) error {
 		return nil
 	}
 
-	cmd := filepath.Join(util.AndroidBuildToolsPath(), "zipalign")
+	cmd := filepath.Join(pkgUtil.AndroidBuildToolsPath(), "zipalign")
 	err = exec.Command(cmd, "16", unaligned, path).Run()
 	if err != nil {
 		_ = os.Rename(path, unaligned) // ignore error, return previous

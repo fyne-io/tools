@@ -227,7 +227,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 
 	path := getInstallBaseDir(temp, pkg, repo.Root)
 
-	if !util.Exists(path) { // the error above may be ignorable, unless the path was not found
+	if !pkgUtil.Exists(path) { // the error above may be ignorable, unless the path was not found
 		return fmt.Errorf("path doesn't exist: %v", err)
 	}
 
@@ -253,7 +253,7 @@ func (i *Installer) install() error {
 	p := i.Packager
 
 	if i.os != "" {
-		if util.IsIOS(i.os) {
+		if pkgUtil.IsIOS(i.os) {
 			return i.installIOS()
 		} else if strings.Index(i.os, "android") == 0 {
 			return i.installAndroid()

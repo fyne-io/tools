@@ -479,7 +479,7 @@ func convertAPKToAAB(aabPath string) error {
 	apkPath := buildO[:len(aabPath)-3] + "apk"
 	apkProtoPath := buildO[:len(aabPath)-3] + "apk-proto"
 	tmpPath := filepath.Join(filepath.Dir(aabPath), "tmpbundle")
-	err := os.MkdirAll(tmpPath, 0o755)
+	err := os.MkdirAll(tmpPath, util.DirPermDefault)
 	if err != nil {
 		return err
 	}
@@ -507,8 +507,8 @@ func convertAPKToAAB(aabPath string) error {
 	}
 	_ = os.Remove(apkProtoPath)
 
-	_ = os.MkdirAll(filepath.Join(tmpPath, "dex"), 0o755)
-	_ = os.MkdirAll(filepath.Join(tmpPath, "manifest"), 0o755)
+	_ = os.MkdirAll(filepath.Join(tmpPath, "dex"), util.DirPermDefault)
+	_ = os.MkdirAll(filepath.Join(tmpPath, "manifest"), util.DirPermDefault)
 	_ = os.Rename(filepath.Join(tmpPath, "AndroidManifest.xml"), filepath.Join(tmpPath, "manifest", "AndroidManifest.xml"))
 	_ = os.Rename(filepath.Join(tmpPath, "classes.dex"), filepath.Join(tmpPath, "dex", "classes.dex"))
 

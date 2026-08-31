@@ -3,7 +3,7 @@ package commands
 import (
 	"os"
 
-	realUtil "fyne.io/tools/cmd/fyne/internal/util"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 type packagerUtil interface {
@@ -26,55 +26,55 @@ type packagerUtil interface {
 type defaultUtil struct{}
 
 func (d defaultUtil) Exists(path string) bool {
-	return realUtil.Exists(path)
+	return util.Exists(path)
 }
 
 func (d defaultUtil) CopyFile(source string, target string) error {
-	return realUtil.CopyFile(source, target)
+	return util.CopyFile(source, target)
 }
 
 func (d defaultUtil) CopyExeFile(src, tgt string) error {
-	return realUtil.CopyExeFile(src, tgt)
+	return util.CopyExeFile(src, tgt)
 }
 
 func (d defaultUtil) WriteFile(target string, data []byte) error {
-	return os.WriteFile(target, data, 0o644)
+	return os.WriteFile(target, data, util.FilePermDefault)
 }
 
 func (d defaultUtil) EnsureSubDir(parent, name string) string {
-	return realUtil.EnsureSubDir(parent, name)
+	return util.EnsureSubDir(parent, name)
 }
 
 func (d defaultUtil) EnsureAbsPath(path string) string {
-	return realUtil.EnsureAbsPath(path)
+	return util.EnsureAbsPath(path)
 }
 
 func (d defaultUtil) MakePathRelativeTo(root, path string) string {
-	return realUtil.MakePathRelativeTo(root, path)
+	return util.MakePathRelativeTo(root, path)
 }
 
 func (d defaultUtil) RequireAndroidSDK() error {
-	return realUtil.RequireAndroidSDK()
+	return util.RequireAndroidSDK()
 }
 
 func (d defaultUtil) AndroidBuildToolsPath() string {
-	return realUtil.AndroidBuildToolsPath()
+	return util.AndroidBuildToolsPath()
 }
 
 func (d defaultUtil) IsAndroid(os string) bool {
-	return realUtil.IsAndroid(os)
+	return util.IsAndroid(os)
 }
 
 func (d defaultUtil) IsIOS(os string) bool {
-	return realUtil.IsIOS(os)
+	return util.IsIOS(os)
 }
 
 func (d defaultUtil) IsMobile(os string) bool {
-	return realUtil.IsMobile(os)
+	return util.IsMobile(os)
 }
 
-var util packagerUtil
+var pkgUtil packagerUtil
 
 func init() {
-	util = defaultUtil{}
+	pkgUtil = defaultUtil{}
 }

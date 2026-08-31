@@ -3,6 +3,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -68,7 +69,7 @@ func (s *Server) serve() error {
 		return err
 	}
 
-	webDir := util.EnsureSubDir(s.dir, "wasm")
+	webDir := pkgUtil.EnsureSubDir(s.dir, "wasm")
 	fileServer := http.FileServer(http.Dir(webDir))
 
 	http.Handle("/", fileServer)
@@ -88,11 +89,13 @@ func (s *Server) Server(ctx *cli.Context) error {
 	return s.serve()
 }
 
+const defaultServerPort = 8080
+
 func (s *Server) validate() error {
 	if s.port == 0 {
-		s.port = 8080
+		s.port = defaultServerPort
 	}
-	if s.port < 0 || s.port > 65535 {
+	if s.port < 0 || s.port > math.MaxUint16 {
 		return fmt.Errorf("the port must be a strictly positive number and be strictly smaller than 65536 (Got %v)", s.port)
 	}
 	return nil

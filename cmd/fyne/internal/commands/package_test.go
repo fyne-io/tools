@@ -251,7 +251,7 @@ func Test_PackageWasm(t *testing.T) {
 	}
 	wasmBuildTest := &testCommandRuns{runs: expected, t: t}
 
-	util = mockUtil{}
+	pkgUtil = mockUtil{}
 
 	utilIsMobileMock = func(_ string) bool {
 		return false

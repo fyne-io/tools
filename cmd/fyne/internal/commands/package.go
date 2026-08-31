@@ -191,13 +191,13 @@ func (p *Packager) doPackage(runner runner) error {
 		tags = strings.Split(p.tags, ",")
 	}
 
-	if !util.Exists(p.exe) && !util.IsMobile(p.os) {
+	if !pkgUtil.Exists(p.exe) && !pkgUtil.IsMobile(p.os) {
 		files, err := p.buildPackage(runner, tags)
 		if err != nil {
 			return fmt.Errorf("error building application: %w", err)
 		}
 		for _, file := range files {
-			if p.os != "web" && !util.Exists(file) {
+			if p.os != "web" && !pkgUtil.Exists(file) {
 				return fmt.Errorf("unable to build directory to expected executable, %s", file)
 			}
 		}
@@ -205,7 +205,7 @@ func (p *Packager) doPackage(runner runner) error {
 			defer p.removeBuild(files)
 		}
 	}
-	if util.IsMobile(p.os) { // we don't use the normal build command for mobile so inject before gomobile...
+	if pkgUtil.IsMobile(p.os) { // we don't use the normal build command for mobile so inject before gomobile...
 		close, err := injectMetadataIfPossible(p.dir, p.appData, createMetadataInitFile)
 		if err != nil {
 			fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
@@ -266,7 +266,7 @@ func (p *Packager) validate() (err error) {
 			return errors.New("parameter --source-dir is currently not supported for mobile builds. " +
 				"Change directory to the main package and try again")
 		}
-		p.srcDir = util.EnsureAbsPath(p.srcDir)
+		p.srcDir = pkgUtil.EnsureAbsPath(p.srcDir)
 	}
 	if err := os.Chdir(p.srcDir); err != nil {
 		return err
@@ -282,7 +282,7 @@ func (p *Packager) validate() (err error) {
 	if err == nil {
 		// When icon path specified in metadata file, we should make it relative to metadata file
 		if data.Details.Icon != "" {
-			data.Details.Icon = util.MakePathRelativeTo(p.srcDir, data.Details.Icon)
+			data.Details.Icon = pkgUtil.MakePathRelativeTo(p.srcDir, data.Details.Icon)
 		}
 
 		p.mergeMetadata(data)
@@ -297,7 +297,7 @@ func (p *Packager) validate() (err error) {
 	if p.exe == "" {
 		p.exe = filepath.Join(p.srcDir, exeName)
 
-		if util.Exists(p.exe) { // the exe was not specified, assume stale
+		if pkgUtil.Exists(p.exe) { // the exe was not specified, assume stale
 			p.removeBuild([]string{p.exe})
 		}
 	} else if p.os == "ios" || p.os == "android" {
@@ -310,7 +310,7 @@ func (p *Packager) validate() (err error) {
 	if p.icon == "" || p.icon == "Icon.png" {
 		p.icon = filepath.Join(p.srcDir, "Icon.png")
 	}
-	if !util.Exists(p.icon) {
+	if !pkgUtil.Exists(p.icon) {
 		return errors.New("Missing application icon at \"" + p.icon + "\"")
 	}
 	if strings.ToLower(filepath.Ext(p.icon)) != ".png" {
@@ -399,33 +399,33 @@ func (p *Packager) normaliseIcon(path string) (string, error) {
 
 func validateAppID(appID, os, name string, release bool) (string, error) {
 	// old darwin compatibility
-	if os == "darwin" {
-		if appID == "" {
-			return "com.example." + name, nil
+	if os == "darwin" && appID == "" {
+		return "com.example." + name, nil
+	} else if os != "ios" && !pkgUtil.IsAndroid(os) && !(os == "windows" && release) {
+		return appID, nil
+	}
+
+	// all mobile, and for windows when releasing, needs a unique id - usually reverse DNS style
+	if appID == "" {
+		return "", errors.New("missing app-id parameter for package")
+	} else if !strings.Contains(appID, ".") {
+		return "", errors.New("app-id must be globally unique and contain at least 1 '.'")
+	} else if pkgUtil.IsAndroid(os) {
+		if strings.Contains(appID, "-") {
+			return "", errors.New("app-id can not contain '-'")
 		}
-	} else if os == "ios" || util.IsAndroid(os) || (os == "windows" && release) {
-		// all mobile, and for windows when releasing, needs a unique id - usually reverse DNS style
-		if appID == "" {
-			return "", errors.New("missing app-id parameter for package")
-		} else if !strings.Contains(appID, ".") {
-			return "", errors.New("app-id must be globally unique and contain at least 1 '.'")
-		} else if util.IsAndroid(os) {
-			if strings.Contains(appID, "-") {
-				return "", errors.New("app-id can not contain '-'")
+
+		// appID package names can not start with '_' or a number
+		packageNames := strings.Split(appID, ".")
+		for _, name := range packageNames {
+			if len(name) == 0 {
+				continue
 			}
 
-			// appID package names can not start with '_' or a number
-			packageNames := strings.Split(appID, ".")
-			for _, name := range packageNames {
-				if len(name) == 0 {
-					continue
-				}
-
-				if name[0] == '_' {
-					return "", fmt.Errorf("app-id package names can not start with '_' (%s)", name)
-				} else if name[0] >= '0' && name[0] <= '9' {
-					return "", fmt.Errorf("app-id package names can not start with a number (%s)", name)
-				}
+			if name[0] == '_' {
+				return "", fmt.Errorf("app-id package names can not start with '_' (%s)", name)
+			} else if name[0] >= '0' && name[0] <= '9' {
+				return "", fmt.Errorf("app-id package names can not start with a number (%s)", name)
 			}
 		}
 	}
