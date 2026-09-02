@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -115,17 +116,17 @@ func (r *Releaser) Run(params []string) {
 	r.release = true
 
 	if err := r.validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 
 	if err := r.beforePackage(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 	r.Packager.Run(params)
 	if err := r.afterPackage(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 	}
 }
 
@@ -191,7 +192,7 @@ func (r *Releaser) beforePackage() error {
 
 func (r *Releaser) nameFromCertInfo(info string) string {
 	// format should be "CN=Company, O=Company, L=City, S=State, C=Country"
-	parts := strings.Split(info, ",")
+	parts := util.SplitComma(info)
 	cn := parts[0]
 	pos := strings.Index(strings.ToUpper(cn), "CN=")
 	if pos == -1 {
@@ -370,7 +371,7 @@ func (r *Releaser) validate() error {
 		return err
 	}
 
-	if pkgUtil.IsMobile(r.os) || r.os == "windows" {
+	if pkgUtil.IsMobile(r.os) || r.os == goos.Windows {
 		if r.AppVersion == "" { // Here it is required, if provided then package validate will check format
 			return errors.New("missing required --app-version parameter")
 		}
@@ -378,7 +379,7 @@ func (r *Releaser) validate() error {
 			return errors.New("missing required --app-build parameter")
 		}
 	}
-	if r.os == "windows" {
+	if r.os == goos.Windows {
 		if r.developer == "" {
 			return errors.New("missing required --developer parameter for windows release,\n" +
 				"use data from Partner Portal, format \"CN=Company, O=Company, L=City, S=State, C=Country\"")
@@ -394,7 +395,7 @@ func (r *Releaser) validate() error {
 		if r.keyStore == "" {
 			return errors.New("missing required --keystore parameter for android release")
 		}
-	} else if r.os == "darwin" {
+	} else if r.os == goos.Darwin {
 		if r.certificate == "" {
 			r.certificate = "3rd Party Mac Developer Application"
 		}
@@ -407,7 +408,7 @@ func (r *Releaser) validate() error {
 			return errors.New("category does not match one of the supported list: " +
 				strings.Join(macAppStoreCategories, ", "))
 		}
-	} else if r.os == "ios" {
+	} else if r.os == goos.IOS {
 		if r.certificate == "" {
 			r.certificate = "Apple Distribution"
 		}

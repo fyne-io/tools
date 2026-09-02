@@ -36,6 +36,11 @@ type manifestTmplData struct {
 	AdaptiveIcon bool
 }
 
+const (
+	fileAndroidManifestXML = "AndroidManifest.xml"
+	fileClassesDex         = "classes.dex"
+)
+
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
 ) (map[string]bool, error) {
@@ -54,7 +59,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	// Fix this to work with other Go tools.
 	dir := filepath.Dir(pkg.GoFiles[0])
 
-	manifestPath := filepath.Join(dir, "AndroidManifest.xml")
+	manifestPath := filepath.Join(dir, fileAndroidManifestXML)
 	manifestData, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -80,7 +85,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		}
 		manifestData = buf.Bytes()
 		if buildV {
-			fmt.Fprintf(os.Stderr, "generated AndroidManifest.xml:\n%s\n", manifestData)
+			fmt.Fprintf(os.Stderr, "generated %s:\n%s\n", fileAndroidManifestXML, manifestData)
 		}
 	} else {
 		libName, err = manifestLibName(manifestData)
@@ -311,7 +316,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		return fmt.Errorf("failed to write res directory: %w", err)
 	}
 
-	return apkwWriteFile("AndroidManifest.xml", compiledManifestPath, apkw)
+	return apkwWriteFile(fileAndroidManifestXML, compiledManifestPath, apkw)
 }
 
 func legacyAddAssets(apkw *Writer, manifestData []byte, iconPath string, target int) error {
@@ -344,7 +349,7 @@ func legacyAddAssets(apkw *Writer, manifestData []byte, iconPath string, target 
 		}
 	}
 
-	w, err := apkwCreate("AndroidManifest.xml", apkw)
+	w, err := apkwCreate(fileAndroidManifestXML, apkw)
 	if err != nil {
 		return err
 	}
@@ -373,7 +378,7 @@ func buildAPK(out io.Writer, nmpkgs map[string]map[string]bool, libFiles []strin
 		apkw = NewWriter(out, privKey)
 	}
 
-	w, err := apkwCreate("classes.dex", apkw)
+	w, err := apkwCreate(fileClassesDex, apkw)
 	if err != nil {
 		return nil, err
 	}
@@ -509,8 +514,8 @@ func convertAPKToAAB(aabPath string) error {
 
 	_ = os.MkdirAll(filepath.Join(tmpPath, "dex"), util.DirPermDefault)
 	_ = os.MkdirAll(filepath.Join(tmpPath, "manifest"), util.DirPermDefault)
-	_ = os.Rename(filepath.Join(tmpPath, "AndroidManifest.xml"), filepath.Join(tmpPath, "manifest", "AndroidManifest.xml"))
-	_ = os.Rename(filepath.Join(tmpPath, "classes.dex"), filepath.Join(tmpPath, "dex", "classes.dex"))
+	_ = os.Rename(filepath.Join(tmpPath, fileAndroidManifestXML), filepath.Join(tmpPath, "manifest", fileAndroidManifestXML))
+	_ = os.Rename(filepath.Join(tmpPath, fileClassesDex), filepath.Join(tmpPath, "dex", fileClassesDex))
 
 	cmd = exec.Command("zip", "../base.zip", "-r", ".")
 	cmd.Dir = tmpPath

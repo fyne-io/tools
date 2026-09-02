@@ -12,6 +12,8 @@ import (
 	"io"
 	"strings"
 	"unicode/utf16"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // NoEntry marks a key with no value in the table
@@ -136,7 +138,7 @@ func OpenTable() (*Table, error) {
 // Both locate the spec by name "style".
 func (tbl *Table) SpecByName(name string) (int, *Package, int, *TypeSpec, error) {
 	n := strings.TrimPrefix(name, "@android:")
-	n = strings.Split(n, "/")[0]
+	n = util.SplitSlash(n)[0]
 	for pp, pkg := range tbl.pkgs {
 		for tt, spec := range pkg.specs {
 			if n == pkg.typePool.strings[spec.id-1] {
@@ -155,7 +157,7 @@ func (tbl *Table) RefByName(name string) (TableRef, error) {
 		return 0, err
 	}
 
-	q := strings.Split(name, "/")
+	q := util.SplitSlash(name)
 	if len(q) != 2 {
 		return 0, fmt.Errorf("invalid entry format, missing forward-slash: %q", name)
 	}

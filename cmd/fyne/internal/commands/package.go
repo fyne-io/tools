@@ -22,7 +22,9 @@ import (
 
 	"fyne.io/fyne/v2"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const (
@@ -122,7 +124,7 @@ func (p *Packager) Run(_ []string) {
 
 	err = p.doPackage(nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 }
@@ -167,7 +169,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 }
 
 func (p *Packager) combinedVersion() string {
-	versions := strings.Split(p.AppVersion, ".")
+	versions := util.SplitDot(p.AppVersion)
 	for len(versions) < 3 {
 		versions = append(versions, "0")
 	}
@@ -188,7 +190,7 @@ func (p *Packager) doPackage(runner runner) error {
 
 	var tags []string
 	if p.tags != "" {
-		tags = strings.Split(p.tags, ",")
+		tags = util.SplitComma(p.tags)
 	}
 
 	if !pkgUtil.Exists(p.exe) && !pkgUtil.IsMobile(p.os) {
@@ -201,7 +203,7 @@ func (p *Packager) doPackage(runner runner) error {
 				return fmt.Errorf("unable to build directory to expected executable, %s", file)
 			}
 		}
-		if p.os != "windows" {
+		if p.os != goos.Windows {
 			defer p.removeBuild(files)
 		}
 	}
@@ -214,18 +216,18 @@ func (p *Packager) doPackage(runner runner) error {
 		}
 	}
 
-	switch p.os {
-	case "darwin":
+	switch {
+	case goos.Darwin == p.os:
 		return p.packageDarwin()
-	case "linux", "openbsd", "freebsd", "netbsd":
+	case goos.IsBSD(p.os) || goos.Linux == p.os:
 		return p.packageUNIX()
-	case "windows":
+	case goos.Windows == p.os:
 		return p.packageWindows(tags)
-	case "android/arm", "android/arm64", "android/amd64", "android/386", "android":
+	case goos.IsAndroid(p.os):
 		return p.packageAndroid(p.os, tags)
-	case "ios", "iossimulator":
+	case goos.IsIOS(p.os):
 		return p.packageIOS(p.os, tags)
-	case "web", "wasm":
+	case goos.IsWASM(p.os):
 		return p.packageWasm()
 	default:
 		return fmt.Errorf("unsupported target operating system \"%s\"", p.os)
@@ -339,7 +341,7 @@ func calculateExeName(sourceDir, osys string) string {
 		modulePath := modfile.ModulePath(data)
 		moduleName, _, ok := module.SplitPathVersion(modulePath)
 		if ok {
-			paths := strings.Split(moduleName, "/")
+			paths := util.SplitSlash(moduleName)
 			name := paths[len(paths)-1]
 			if name != "" {
 				exeName = name
@@ -347,7 +349,7 @@ func calculateExeName(sourceDir, osys string) string {
 		}
 	}
 
-	if osys == "windows" {
+	if osys == goos.Windows {
 		exeName = exeName + ".exe"
 	}
 
@@ -358,7 +360,7 @@ func isValidVersion(ver string) bool {
 	if semver.IsValid("v" + ver) {
 		return true
 	}
-	parts := strings.Split(ver, ".")
+	parts := util.SplitDot(ver)
 	if len(parts) < 1 || len(parts) > 2 {
 		return false
 	}
@@ -401,7 +403,7 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 	// old darwin compatibility
 	if os == "darwin" && appID == "" {
 		return "com.example." + name, nil
-	} else if os != "ios" && !pkgUtil.IsAndroid(os) && !(os == "windows" && release) {
+	} else if os != goos.IOS && !pkgUtil.IsAndroid(os) && (os != goos.Windows || !release) {
 		return appID, nil
 	}
 
@@ -416,7 +418,7 @@ func validateAppID(appID, os, name string, release bool) (string, error) {
 		}
 
 		// appID package names can not start with '_' or a number
-		packageNames := strings.Split(appID, ".")
+		packageNames := util.SplitDot(appID)
 		for _, name := range packageNames {
 			if len(name) == 0 {
 				continue
