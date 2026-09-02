@@ -46,7 +46,7 @@ func runInShell(cmd string, args ...string) *exec.Cmd {
 	switch runtime.GOOS {
 	case "darwin": // darwin apps don't run in the user shell environment
 		args = quoteArgs(args...)
-		data, err := exec.Command(getDarwinShell(), "-c", "-i", "env").Output() //gosec:disable G204 - using valied user shell or default
+		data, err := exec.Command(getDarwinShell(), "-c", "-i", "env").Output() //gosec:disable G204 - using validated user shell or default
 		if err == nil {
 			env = strings.Split(string(data), newLine)
 		}
