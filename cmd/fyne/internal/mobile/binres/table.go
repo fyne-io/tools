@@ -60,6 +60,11 @@ type Table struct {
 	pkgs []*Package
 }
 
+const (
+	mipmapScreenTypeDensity = 640
+	mipmapVersionSDK        = 4
+)
+
 // NewMipmapTable returns a resource table initialized for a single xxxhdpi mipmap resource
 // and the path to write resource data to.
 func NewMipmapTable(pkgname string) (*Table, string) {
@@ -71,8 +76,8 @@ func NewMipmapTable(pkgname string) (*Table, string) {
 
 	nt := &Entry{values: []*Value{{data: &Data{Type: DataString}}}}
 	typ := &Type{id: 2, indices: []uint32{0}, entries: []*Entry{nt}}
-	typ.config.screenType.density = 640
-	typ.config.version.sdk = 4
+	typ.config.screenType.density = mipmapScreenTypeDensity
+	typ.config.version.sdk = mipmapVersionSDK
 
 	pkg.specs = append(pkg.specs,
 		&TypeSpec{
