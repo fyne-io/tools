@@ -514,10 +514,21 @@ func convertAPKToAAB(aabPath string) error {
 	}
 	_ = os.Remove(apkProtoPath)
 
-	_ = os.MkdirAll(filepath.Join(tmpPath, "dex"), util.DirPermDefault)
-	_ = os.MkdirAll(filepath.Join(tmpPath, "manifest"), util.DirPermDefault)
-	_ = os.Rename(filepath.Join(tmpPath, fileAndroidManifestXML), filepath.Join(tmpPath, "manifest", fileAndroidManifestXML))
-	_ = os.Rename(filepath.Join(tmpPath, fileClassesDex), filepath.Join(tmpPath, "dex", fileClassesDex))
+	tmpPathDex := filepath.Join(tmpPath, "dex")
+	tmpPathManifest := filepath.Join(tmpPath, "manifest")
+
+	if err := os.MkdirAll(tmpPathDex, util.DirPermDefault); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := os.MkdirAll(tmpPathManifest, util.DirPermDefault); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := os.Rename(filepath.Join(tmpPath, fileAndroidManifestXML), filepath.Join(tmpPathManifest, fileAndroidManifestXML)); err != nil {
+		return err
+	}
+	if err := os.Rename(filepath.Join(tmpPath, fileClassesDex), filepath.Join(tmpPathDex, fileClassesDex)); err != nil {
+		return err
+	}
 
 	cmd = exec.Command("zip", "../base.zip", "-r", ".")
 	cmd.Dir = tmpPath
