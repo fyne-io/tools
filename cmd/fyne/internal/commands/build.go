@@ -382,14 +382,16 @@ func appendEnv(env *[]string, varName, value string) {
 	*env = append(*env, varName+"="+value)
 }
 
+const goflagsEnvKey = "GOFLAGS"
+
 func extractLdflagsFromGoFlags() string {
-	goFlags := os.Getenv("GOFLAGS")
+	goFlags := os.Getenv(goflagsEnvKey)
 
 	ldFlags, goFlags := extractLdFlags(goFlags)
 	if goFlags != "" {
-		os.Setenv("GOFLAGS", goFlags)
+		os.Setenv(goflagsEnvKey, goFlags)
 	} else {
-		os.Unsetenv("GOFLAGS")
+		os.Unsetenv(goflagsEnvKey)
 	}
 
 	return ldFlags
