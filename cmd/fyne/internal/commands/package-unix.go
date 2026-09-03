@@ -40,11 +40,12 @@ func (p *Packager) packageUNIX() error {
 		outDir = pkgUtil.EnsureSubDir(pkgUtil.EnsureSubDir(p.dir, "tmp-pkg"), dirName)
 	}
 
+	outDirUsr := pkgUtil.EnsureSubDir(outDir, "usr")
 	if _, err := os.Stat(filepath.Join("/", "usr", "local")); os.IsNotExist(err) {
-		prefixDir = pkgUtil.EnsureSubDir(outDir, "usr")
+		prefixDir = outDirUsr
 		local = ""
 	} else {
-		prefixDir = pkgUtil.EnsureSubDir(pkgUtil.EnsureSubDir(outDir, "usr"), "local")
+		prefixDir = pkgUtil.EnsureSubDir(outDirUsr, "local")
 	}
 
 	shareDir := pkgUtil.EnsureSubDir(prefixDir, "share")
