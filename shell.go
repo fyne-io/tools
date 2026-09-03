@@ -46,13 +46,13 @@ func runInShell(cmd string, args ...string) *exec.Cmd {
 	switch runtime.GOOS {
 	case "darwin": // darwin apps don't run in the user shell environment
 		args = quoteArgs(args...)
-		data, err := exec.Command(getDarwinShell(), "-c", "-i", "env").Output()
+		data, err := exec.Command(getDarwinShell(), "-c", "-i", "env").Output() //gosec:disable G204 - using validated user shell or default
 		if err == nil {
 			env = strings.Split(string(data), newLine)
 		}
 	case "linux", "freebsd", "netbsd", "openbsd", "dragonflybsd": // unix environment may be set up in shell
 		args = quoteArgs(args...)
-		data, err := exec.Command(getUnixShell(), "-c", "env").Output()
+		data, err := exec.Command(getUnixShell(), "-c", "env").Output() //gosec:disable G204 - using validated user $SHELL or default
 		if err == nil {
 			env = strings.Split(string(data), newLine)
 		}
@@ -79,7 +79,10 @@ func quoteString(s string) string {
 	return fmt.Sprintf("%q", s)
 }
 
-const darwinShell = "zsh"
+const (
+	darwinShell = "zsh"
+	unixShell   = "/bin/sh"
+)
 
 func getDarwinShell() string {
 	home, err := os.UserHomeDir()
@@ -96,14 +99,20 @@ func getDarwinShell() string {
 		return darwinShell
 	}
 
-	return strings.TrimSpace(items[1])
+	shell := strings.TrimSpace(items[1])
+	if _, err := os.Stat(shell); err != nil {
+		return darwinShell
+	}
+	return shell
 }
 
 func getUnixShell() string {
 	shell, ok := os.LookupEnv("SHELL")
 	if !ok || shell == "" {
-		return "/bin/sh"
+		return unixShell
 	}
-
+	if _, err := os.Stat(shell); err != nil {
+		return unixShell
+	}
 	return shell
 }

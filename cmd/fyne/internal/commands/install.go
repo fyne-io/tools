@@ -181,7 +181,7 @@ func (i *Installer) installRemote(ctx *cli.Context) error {
 	wd, _ := os.Getwd()
 	defer func() {
 		if wd != "" {
-			os.Chdir(wd)
+			_ = os.Chdir(wd)
 		}
 	}()
 
@@ -363,8 +363,7 @@ func (i *Installer) installToIOSSimulator(target string) error {
 		return fmt.Errorf("Install to a simulator error: %s%s", out, err)
 	}
 
-	i.runInIOSSimulator()
-	return nil
+	return i.runInIOSSimulator()
 }
 
 func (i *Installer) runInIOSSimulator() error {

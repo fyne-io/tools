@@ -130,7 +130,7 @@ func gendex() error {
 	fmt.Fprintf(buf, "\t``")
 	out, err := format.Source(buf.Bytes())
 	if err != nil {
-		buf.WriteTo(os.Stderr)
+		_, _ = buf.WriteTo(os.Stderr)
 		return err
 	}
 
@@ -208,7 +208,9 @@ func stripMethodParameters(path string) error {
 
 	rewriteMembers := func() error {
 		count := int(r.u2())
-		binary.Write(&out, binary.BigEndian, uint16(count))
+		if err := binary.Write(&out, binary.BigEndian, uint16(count)); err != nil {
+			return nil
+		}
 		for i := 0; i < count; i++ {
 			// access_flags(2) + name_index(2) + descriptor_index(2)
 			out.Write(r.bytes(6))
@@ -250,9 +252,13 @@ func rewriteAttributes(r *classReader, out *bytes.Buffer, dropName uint16) error
 		entry = append(entry, body...)
 		kept = append(kept, entry)
 	}
-	binary.Write(out, binary.BigEndian, uint16(len(kept)))
+	if err := binary.Write(out, binary.BigEndian, uint16(len(kept))); err != nil {
+		return err
+	}
 	for _, e := range kept {
-		out.Write(e)
+		if _, err := out.Write(e); err != nil {
+			return err
+		}
 	}
 	return nil
 }
