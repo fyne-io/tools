@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
@@ -128,7 +129,7 @@ func (p *Packager) packageUNIX() error {
 	}
 
 	tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
-	if p.os == "openbsd" {
+	if p.os == goos.OpenBSD {
 		tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
 	}
 
