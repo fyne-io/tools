@@ -61,6 +61,7 @@ type Table struct {
 }
 
 const (
+	mipmapPackageID         = 127
 	mipmapScreenTypeDensity = 640
 	mipmapVersionSDK        = 4
 )
@@ -68,7 +69,7 @@ const (
 // NewMipmapTable returns a resource table initialized for a single xxxhdpi mipmap resource
 // and the path to write resource data to.
 func NewMipmapTable(pkgname string) (*Table, string) {
-	pkg := &Package{id: 127, name: pkgname, typePool: &Pool{}, keyPool: &Pool{}}
+	pkg := &Package{id: mipmapPackageID, name: pkgname, typePool: &Pool{}, keyPool: &Pool{}}
 
 	attr := pkg.typePool.ref("attr")
 	mipmap := pkg.typePool.ref("mipmap")
