@@ -26,11 +26,13 @@ var (
 
 	darwinArmNM string
 
+	//revive:disable:add-constant
 	allArchs = map[string][]string{
 		"android":      {"arm", "arm64", "386", "amd64"},
 		"ios":          {"arm64"},
 		"iossimulator": {"arm64", "amd64"},
 	}
+	//revive:enable:add-constant
 
 	bitcodeEnabled bool
 )
@@ -97,6 +99,7 @@ const (
 )
 
 func envInit() (err error) {
+	//revive:disable:add-constant
 	// Check the current Go version by go-list.
 	// An arbitrary standard package ('runtime' here) is given to go-list.
 	// This is because go-list tries to analyze the module at the current directory if no packages are given,
@@ -234,6 +237,7 @@ func envInit() (err error) {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 func ndkRoot() (string, error) {
@@ -282,6 +286,7 @@ func envClang(sdkName string) (clang, cflags string, err error) {
 }
 
 func archClang(goarch string) string {
+	//revive:disable:add-constant
 	switch goarch {
 	case "arm":
 		return "armv7"
@@ -294,6 +299,7 @@ func archClang(goarch string) string {
 	default:
 		panic(fmt.Sprintf("unknown GOARCH: %q", goarch))
 	}
+	//revive:enable:add-constant
 }
 
 // environ merges os.Environ and the given "key=value" pairs.
@@ -333,6 +339,7 @@ func environ(kv []string) []string {
 }
 
 func archNDK() string {
+	//revive:disable:add-constant
 	if runtime.GOOS == goos.Windows && runtime.GOARCH == "386" {
 		return "windows"
 	}
@@ -357,6 +364,7 @@ func archNDK() string {
 		panic("unsupported GOARCH: " + runtime.GOARCH)
 	}
 	return runtime.GOOS + "-" + arch
+	//revive:enable:add-constant
 }
 
 type ndkToolchain struct {
@@ -413,6 +421,7 @@ func (nc ndkConfig) Toolchain(arch string) ndkToolchain {
 }
 
 var ndk = ndkConfig{
+	//revive:disable:add-constant
 	"arm": {
 		arch:        "arm",
 		abi:         "armeabi-v7a",
@@ -442,6 +451,7 @@ var ndk = ndkConfig{
 		toolPrefix:  "x86_64-linux-android",
 		clangPrefix: "x86_64-linux-android",
 	},
+	//revive:enable:add-constant
 }
 
 func xcodeAvailable() bool {
