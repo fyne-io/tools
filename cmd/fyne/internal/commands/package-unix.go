@@ -140,7 +140,7 @@ func (p *Packager) packageUNIX() error {
 	// switching to a new namespace and merging fyne-cross into fyne-tools as
 	// one of the supported commands.
 	if fyneCrossCompat {
-		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr")
+		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr") //revive:disable-line:add-constant
 	} else {
 		tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
 	}
