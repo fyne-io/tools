@@ -355,7 +355,7 @@ func (i *Installer) validate() error {
 
 func (i *Installer) installToIOSSimulator(target string) error {
 	cmd := exec.Command(
-		"xcrun", "simctl", "install",
+		"xcrun", "simctl", "install", //revive:disable-line:add-constant
 		"booted", // Install to the booted simulator.
 		target,
 	)
@@ -367,7 +367,7 @@ func (i *Installer) installToIOSSimulator(target string) error {
 }
 
 func (i *Installer) runInIOSSimulator() error {
-	cmd := exec.Command("xcrun", "simctl", "launch", "booted", i.Packager.AppID)
+	cmd := exec.Command("xcrun", "simctl", "launch", "booted", i.Packager.AppID) //revive:disable-line:add-constant
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		os.Stderr.Write(out)

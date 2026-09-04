@@ -202,6 +202,8 @@ func (r *Releaser) nameFromCertInfo(info string) string {
 	return cn[pos+3:]
 }
 
+const fileEntitlementsPlist = "entitlements.plist"
+
 func (r *Releaser) packageIOSRelease() error {
 	team, err := mobile.DetectIOSTeamID(r.certificate)
 	if err != nil {
@@ -227,7 +229,7 @@ func (r *Releaser) packageIOSRelease() error {
 	defer cleanup()
 
 	cmd := exec.Command("codesign", "-f", "-vv", "-s", r.certificate, "--entitlements",
-		"entitlements.plist", "Payload/"+appName+"/")
+		fileEntitlementsPlist, "Payload/"+appName+"/")
 	if err := cmd.Run(); err != nil {
 		fyne.LogError("Codesign failed", err)
 		return errors.New("unable to codesign application bundle")
@@ -250,7 +252,7 @@ func (r *Releaser) packageMacOSRelease() error {
 	}
 	defer cleanup()
 
-	cmd := exec.Command("codesign", "-vfs", appCert, "--entitlement", "entitlements.plist", r.Name+".app")
+	cmd := exec.Command("codesign", "-vfs", appCert, "--entitlement", fileEntitlementsPlist, r.Name+".app")
 	err = cmd.Run()
 	if err != nil {
 		fyne.LogError("Codesign failed", err)
@@ -424,7 +426,7 @@ func (r *Releaser) validate() error {
 }
 
 func (r *Releaser) writeEntitlements(tmpl *template.Template, entitlementData any) (cleanup func(), err error) {
-	entitlementPath := filepath.Join(r.dir, "entitlements.plist")
+	entitlementPath := filepath.Join(r.dir, fileEntitlementsPlist)
 	entitlements, err := os.Create(entitlementPath)
 	if err != nil {
 		return nil, err

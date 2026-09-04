@@ -213,6 +213,13 @@ type ltoken struct {
 	line int
 }
 
+const (
+	attrNameAndroid = "android"
+	attrNameIcon    = "icon"
+	attrNameUsesSDK = "uses-sdk"
+	attrNameXmlns   = "xmlns"
+)
+
 // UnmarshalXML decodes an AndroidManifest.xml document returning type XML
 // containing decoded resources.
 func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
@@ -237,7 +244,7 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 			switch tkn.Name.Local {
 			default:
 				q = append(q, ltoken{tkn, line})
-			case "uses-sdk":
+			case attrNameUsesSDK:
 				return nil, errors.New("manual declaration of uses-sdk in AndroidManifest.xml not supported")
 			case "manifest":
 				// synthesize additional attributes and nodes for use during encode.
@@ -263,7 +270,7 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 					s := xml.StartElement{
 						Name: xml.Name{
 							Space: "",
-							Local: "uses-sdk",
+							Local: attrNameUsesSDK,
 						},
 						Attr: []xml.Attr{
 							{
@@ -282,14 +289,14 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 							},
 						},
 					}
-					e := xml.EndElement{Name: xml.Name{Local: "uses-sdk"}}
+					e := xml.EndElement{Name: xml.Name{Local: attrNameUsesSDK}}
 
 					q = append(q, ltoken{s, line}, ltoken{e, line})
 				}
 			case "application":
 				if !skipSynthesize {
 					for _, attr := range tkn.Attr {
-						if attr.Name.Space == androidSchema && attr.Name.Local == "icon" {
+						if attr.Name.Space == androidSchema && attr.Name.Local == attrNameIcon {
 							return nil, errors.New("manual declaration of android:icon in AndroidManifest.xml not supported")
 						}
 					}
@@ -298,7 +305,7 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 							xml.Attr{
 								Name: xml.Name{
 									Space: androidSchema,
-									Local: "icon",
+									Local: attrNameIcon,
 								},
 								Value: "@mipmap/icon",
 							})
@@ -601,11 +608,11 @@ func handleTokens(tkn xml.Token, line int, pool *Pool, bx *XML, tbl *Table) erro
 // Any attributes which were not already present in Pool are added to it.
 func addAttributes(tkn xml.StartElement, bx *XML, line int, pool *Pool, el *Element, tbl *Table) error {
 	for _, attr := range tkn.Attr {
-		if (attr.Name.Space == "xmlns" && attr.Name.Local == "tools") || attr.Name.Space == toolsSchema {
+		if (attr.Name.Space == attrNameXmlns && attr.Name.Local == "tools") || attr.Name.Space == toolsSchema {
 			continue // TODO can tbl be queried for schemas to determine validity instead?
 		}
 
-		if attr.Name.Space == "xmlns" && attr.Name.Local == "android" {
+		if attr.Name.Space == attrNameXmlns && attr.Name.Local == attrNameAndroid {
 			if bx.Namespace != nil {
 				return errors.New("multiple declarations of xmlns:android encountered")
 			}
