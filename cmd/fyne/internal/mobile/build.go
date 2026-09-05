@@ -8,6 +8,7 @@ package mobile
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"runtime"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"golang.org/x/tools/go/packages"
@@ -40,19 +42,23 @@ func runBuild(cmd *command) error {
 
 // AppOutputName provides the name of a build resource for a given os - "ios" or "android".
 func AppOutputName(os, name string, release bool) string {
-	switch os {
-	case "android/arm", "android/arm64", "android/amd64", "android/386", "android":
+	if goos.IsAndroid(os) {
 		if release {
 			return androidPkgName(name) + ".aab"
-		} else {
-			return androidPkgName(name) + ".apk"
 		}
-	case "ios", "iossimulator":
+		return androidPkgName(name) + ".apk"
+	}
+	if goos.IsIOS(os) {
 		return rfc1034Label(name) + ".app"
 	}
-
 	return ""
 }
+
+const (
+	androidTargetRelease = 36
+	androidTargetDebug   = 29
+	pkgMain              = "main"
+)
 
 // runBuildImpl builds a package for mobiles based on the given commands.
 // runBuildImpl returns a built package information and an error if exists.
@@ -90,17 +96,17 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 
 	pkg := pkgs[0]
 
-	if pkg.Name != "main" && buildO != "" {
-		return nil, fmt.Errorf("cannot set -o when building non-main package")
+	if pkg.Name != pkgMain && buildO != "" {
+		return nil, errors.New("cannot set -o when building non-main package")
 	}
 	if buildBundleID == "" {
-		return nil, fmt.Errorf("value for -appID is required for a mobile package")
+		return nil, errors.New("value for -appID is required for a mobile package")
 	}
 
 	var nmpkgs map[string]bool
 	switch targetOS {
-	case "android":
-		if pkg.Name != "main" {
+	case goos.Android:
+		if pkg.Name != pkgMain {
 			for _, arch := range targetArchs {
 				if err := goBuild(pkg.PkgPath, androidEnv[arch]); err != nil {
 					return nil, err
@@ -108,18 +114,18 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 			return pkg, nil
 		}
-		target := 36
+		target := androidTargetRelease
 		if !buildRelease {
-			target = 29 // TODO once we have gomobile debug signing working for v2 android signs
+			target = androidTargetDebug // TODO once we have gomobile debug signing working for v2 android signs
 		}
 		nmpkgs, err = goAndroidBuild(pkg, buildBundleID, targetArchs, cmd.IconPath, cmd.AppName, cmd.Version, cmd.Build,
 			target, buildRelease, cmd.iconFG, cmd.iconBG, cmd.iconMono)
 		if err != nil {
 			return nil, err
 		}
-	case "darwin":
+	case goos.Darwin:
 		if !xcodeAvailable() {
-			return nil, fmt.Errorf("-os=ios requires XCode")
+			return nil, errors.New("-os=ios requires XCode")
 		}
 		if buildRelease {
 			if len(allArchs["ios"]) > 2 {
@@ -129,7 +135,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 		}
 
-		if pkg.Name != "main" {
+		if pkg.Name != pkgMain {
 			for _, arch := range targetArchs {
 				if err := goBuild(pkg.PkgPath, darwinEnv[arch]); err != nil {
 					return nil, err
@@ -173,18 +179,22 @@ func extractPkgs(nm string, path string) (map[string]bool, error) {
 		errc <- s.Err()
 	}()
 
+	fmtErr := func(err error) error {
+		return fmt.Errorf("%s %s: %v", nm, path, err)
+	}
+
 	err := cmd.Run()
 	if err != nil {
-		return nil, fmt.Errorf("%s %s: %v", nm, path, err)
+		return nil, fmtErr(err)
 	}
 
 	err = w.Close()
 	if err != nil {
-		return nil, fmt.Errorf("%s %s: %v", nm, path, err)
+		return nil, fmtErr(err)
 	}
 
 	if err := <-errc; err != nil {
-		return nil, fmt.Errorf("%s %s: %v", nm, path, err)
+		return nil, fmtErr(err)
 	}
 	return nmpkgs, nil
 }
@@ -194,19 +204,19 @@ var xout io.Writer = os.Stderr
 func printcmd(format string, args ...any) {
 	cmd := fmt.Sprintf(format+"\n", args...)
 	if tmpdir != "" {
-		cmd = strings.Replace(cmd, tmpdir, "$WORK", -1)
+		cmd = strings.ReplaceAll(cmd, tmpdir, "$WORK")
 	}
 	if androidHome := os.Getenv("ANDROID_HOME"); androidHome != "" {
-		cmd = strings.Replace(cmd, androidHome, "$ANDROID_HOME", -1)
+		cmd = strings.ReplaceAll(cmd, androidHome, "$ANDROID_HOME")
 	}
 	if gomobilepath != "" {
-		cmd = strings.Replace(cmd, gomobilepath, "$GOMOBILE", -1)
+		cmd = strings.ReplaceAll(cmd, gomobilepath, "$GOMOBILE")
 	}
 	if gopath := goEnv("GOPATH"); gopath != "" {
-		cmd = strings.Replace(cmd, gopath, "$GOPATH", -1)
+		cmd = strings.ReplaceAll(cmd, gopath, "$GOPATH")
 	}
 	if env := os.Getenv("HOMEPATH"); env != "" {
-		cmd = strings.Replace(cmd, env, "$HOMEPATH", -1)
+		cmd = strings.ReplaceAll(cmd, env, "$HOMEPATH")
 	}
 	fmt.Fprint(xout, cmd)
 }
@@ -301,14 +311,14 @@ func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...stri
 	if err != nil {
 		return err
 	}
-	if targetOS == "darwin" {
+	if targetOS == goos.Darwin {
 		tags = append(tags, "ios")
 	}
 	if buildRelease {
 		tags = append(tags, "release")
 	}
 	if len(tags) > 0 {
-		cmd.Args = append(cmd.Args, "-tags", strings.Join(tags, " "))
+		cmd.Args = append(cmd.Args, "-tags", util.JoinComma(tags))
 	}
 	if buildV {
 		cmd.Args = append(cmd.Args, "-v")
@@ -340,18 +350,18 @@ func goCmdAt(at string, subcmd string, srcs []string, env []string, args ...stri
 
 func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	if buildTarget == "" {
-		return "", nil, fmt.Errorf(`invalid target ""`)
+		return "", nil, errors.New(`invalid target ""`)
 	}
 
 	all := false
 	archNames := []string{}
-	for i, p := range strings.Split(buildTarget, ",") {
+	for i, p := range util.SplitComma(buildTarget) {
 		osarch := strings.SplitN(p, "/", 2) // len(osarch) > 0
-		if !util.IsAndroid(osarch[0]) && !util.IsIOS(osarch[0]) {
-			return "", nil, fmt.Errorf(`unsupported os`)
+		if !goos.IsAndroid(osarch[0]) && !goos.IsIOS(osarch[0]) {
+			return "", nil, errors.New(`unsupported os`)
 		}
 		if osarch[0] == "iossimulator" {
-			osarch[0] = "ios"
+			osarch[0] = goos.IOS
 		}
 
 		if i == 0 {
@@ -359,7 +369,7 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 		}
 
 		if os != osarch[0] {
-			return "", nil, fmt.Errorf(`cannot target different OSes`)
+			return "", nil, errors.New(`cannot target different OSes`)
 		}
 
 		if len(osarch) == 1 {
@@ -393,8 +403,8 @@ func parseBuildTarget(buildTarget string) (os string, archs []string, _ error) {
 	}
 
 	targetOS := os
-	if os == "ios" {
-		targetOS = "darwin"
+	if os == goos.IOS {
+		targetOS = goos.Darwin
 	}
 
 	if buildTarget == "iossimulator" {

@@ -148,7 +148,7 @@ func Test_MergeMetadata(t *testing.T) {
 		},
 	}
 
-	p.appData.mergeMetadata(data)
+	p.mergeMetadata(data)
 	assert.Equal(t, "v0.1", p.AppVersion)
 	assert.Equal(t, 3, p.AppBuild)
 	assert.Equal(t, "test.png", p.icon)
@@ -199,12 +199,6 @@ func Test_validateAppID(t *testing.T) {
 func Test_buildPackageWasm(t *testing.T) {
 	expected := []mockRunner{
 		{
-			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
-			mockReturn: mockReturn{
-				ret: []byte("{ \"Module\": { \"Path\": \"fyne.io/fyne/v2\"} }"),
-			},
-		},
-		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-trimpath", "-ldflags", "-s -w", "-tags", "release"},
 				env:   []string{"GOARCH=wasm", "GOOS=js", "CGO_ENABLED=0"},
@@ -233,12 +227,6 @@ func Test_buildPackageWasm(t *testing.T) {
 func Test_PackageWasm(t *testing.T) {
 	expected := []mockRunner{
 		{
-			expectedValue: expectedValue{args: []string{"mod", "edit", "-json"}},
-			mockReturn: mockReturn{
-				ret: []byte("{ \"Module\": { \"Path\": \"fyne.io/fyne/v2\"} }"),
-			},
-		},
-		{
 			expectedValue: expectedValue{
 				args:  []string{"build", "-o", "myTest.wasm"},
 				env:   []string{"GOARCH=wasm", "GOOS=js", "CGO_ENABLED=0"},
@@ -263,7 +251,7 @@ func Test_PackageWasm(t *testing.T) {
 	}
 	wasmBuildTest := &testCommandRuns{runs: expected, t: t}
 
-	util = mockUtil{}
+	pkgUtil = mockUtil{}
 
 	utilIsMobileMock = func(_ string) bool {
 		return false

@@ -10,7 +10,7 @@ import (
 )
 
 func (p *Packager) packageWasm() error {
-	appDir := util.EnsureSubDir(p.dir, "wasm")
+	appDir := pkgUtil.EnsureSubDir(p.dir, "wasm")
 
 	tpl := webData{
 		AppName:    p.Name,
@@ -29,6 +29,8 @@ type webData struct {
 	IsReleased bool
 }
 
+const fileWasmExecJs = "wasm_exec.js"
+
 func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon string, release bool) error {
 	var tpl bytes.Buffer
 	err := templates.IndexHTML.Execute(&tpl, w)
@@ -37,37 +39,37 @@ func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon strin
 	}
 
 	index := filepath.Join(appDir, "index.html")
-	err = util.WriteFile(index, tpl.Bytes())
+	err = pkgUtil.WriteFile(index, tpl.Bytes())
 	if err != nil {
 		return err
 	}
 
 	iconDst := filepath.Join(appDir, "icon.png")
-	err = util.CopyFile(icon, iconDst)
+	err = pkgUtil.CopyFile(icon, iconDst)
 	if err != nil {
 		return err
 	}
 
 	spinnerLightFile := filepath.Join(appDir, "spinner_light.gif")
-	err = util.WriteFile(spinnerLightFile, templates.SpinnerLight)
+	err = pkgUtil.WriteFile(spinnerLightFile, templates.SpinnerLight)
 	if err != nil {
 		return err
 	}
 
 	spinnerDarkFile := filepath.Join(appDir, "spinner_dark.gif")
-	err = util.WriteFile(spinnerDarkFile, templates.SpinnerDark)
+	err = pkgUtil.WriteFile(spinnerDarkFile, templates.SpinnerDark)
 	if err != nil {
 		return err
 	}
 
 	lightCSSFile := filepath.Join(appDir, "light.css")
-	err = util.WriteFile(lightCSSFile, templates.CSSLight)
+	err = pkgUtil.WriteFile(lightCSSFile, templates.CSSLight)
 	if err != nil {
 		return err
 	}
 
 	darkCSSFile := filepath.Join(appDir, "dark.css")
-	err = util.WriteFile(darkCSSFile, templates.CSSDark)
+	err = pkgUtil.WriteFile(darkCSSFile, templates.CSSDark)
 	if err != nil {
 		return err
 	}
@@ -77,19 +79,20 @@ func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon strin
 		return err
 	}
 
-	wasmExecSrc := filepath.Join(goroot, "lib", "wasm", "wasm_exec.js")
-	if !util.Exists(wasmExecSrc) { // Fallback for Go < 1.24:
-		wasmExecSrc = filepath.Join(goroot, "misc", "wasm", "wasm_exec.js")
+	wasmFileWasmExecJs := filepath.Join("wasm", fileWasmExecJs)
+	wasmExecSrc := filepath.Join(goroot, "lib", wasmFileWasmExecJs)
+	if !pkgUtil.Exists(wasmExecSrc) { // Fallback for Go < 1.24:
+		wasmExecSrc = filepath.Join(goroot, "misc", wasmFileWasmExecJs)
 	}
 
-	wasmExecDst := filepath.Join(appDir, "wasm_exec.js")
-	err = util.CopyFile(wasmExecSrc, wasmExecDst)
+	wasmExecDst := filepath.Join(appDir, fileWasmExecJs)
+	err = pkgUtil.CopyFile(wasmExecSrc, wasmExecDst)
 	if err != nil {
 		return err
 	}
 
 	exeWasmDst := filepath.Join(appDir, w.WasmFile)
-	err = util.CopyFile(exeWasmSrc, exeWasmDst)
+	err = pkgUtil.CopyFile(exeWasmSrc, exeWasmDst)
 	if err != nil {
 		return err
 	}
@@ -97,7 +100,7 @@ func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon strin
 	// Download webgl-debug.js directly from the KhronosGroup repository when needed
 	if !release {
 		webglDebugFile := filepath.Join(appDir, "webgl-debug.js")
-		err := util.WriteFile(webglDebugFile, templates.WebGLDebugJs)
+		err := pkgUtil.WriteFile(webglDebugFile, templates.WebGLDebugJs)
 		if err != nil {
 			return err
 		}

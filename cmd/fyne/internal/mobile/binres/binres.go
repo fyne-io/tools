@@ -49,6 +49,7 @@ import (
 	"encoding"
 	"encoding/binary"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -172,6 +173,7 @@ type chunkHeader struct {
 func (hdr chunkHeader) size() int { return int(hdr.byteSize) }
 
 func (hdr *chunkHeader) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	hdr.typ = ResType(btou16(bin))
 	if !hdr.typ.IsSupported() {
 		return fmt.Errorf("%s not supported", hdr.typ)
@@ -182,9 +184,11 @@ func (hdr *chunkHeader) UnmarshalBinary(bin []byte) error {
 		return fmt.Errorf("too few bytes to unmarshal chunk body, have %v, need at-least %v", len(bin), hdr.byteSize)
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 func (hdr chunkHeader) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	if !hdr.typ.IsSupported() {
 		return nil, fmt.Errorf("%s not supported", hdr.typ)
 	}
@@ -194,6 +198,7 @@ func (hdr chunkHeader) MarshalBinary() ([]byte, error) {
 	putu16(bin[2:], hdr.headerByteSize)
 	putu32(bin[4:], hdr.byteSize)
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // XML represents an XML text file in memory
@@ -243,8 +248,8 @@ func (bx *XML) RawValueByName(elname string, attrname xml.Name) (string, error) 
 }
 
 const (
-	androidSchema = "http://schemas.android.com/apk/res/android"
-	toolsSchema   = "http://schemas.android.com/tools"
+	androidSchema = "http://schemas.android.com/apk/res/android" //revive:disable-line:unsecure-url-scheme not used for requests
+	toolsSchema   = "http://schemas.android.com/tools"           //revive:disable-line:unsecure-url-scheme not used for requests
 )
 
 // skipSynthesize is set true for tests to avoid synthesis of additional nodes and attributes.
@@ -254,6 +259,13 @@ type ltoken struct {
 	xml.Token
 	line int
 }
+
+const (
+	attrNameAndroid = "android"
+	attrNameIcon    = "icon"
+	attrNameUsesSDK = "uses-sdk"
+	attrNameXmlns   = "xmlns"
+)
 
 // UnmarshalXML decodes an AndroidManifest.xml document returning type XML
 // containing decoded resources.
@@ -279,8 +291,8 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 			switch tkn.Name.Local {
 			default:
 				q = append(q, ltoken{tkn, line})
-			case "uses-sdk":
-				return nil, fmt.Errorf("manual declaration of uses-sdk in AndroidManifest.xml not supported")
+			case attrNameUsesSDK:
+				return nil, errors.New("manual declaration of uses-sdk in AndroidManifest.xml not supported")
 			case "manifest":
 				// synthesize additional attributes and nodes for use during encode.
 				tkn.Attr = append(tkn.Attr,
@@ -305,7 +317,7 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 					s := xml.StartElement{
 						Name: xml.Name{
 							Space: "",
-							Local: "uses-sdk",
+							Local: attrNameUsesSDK,
 						},
 						Attr: []xml.Attr{
 							{
@@ -324,15 +336,15 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 							},
 						},
 					}
-					e := xml.EndElement{Name: xml.Name{Local: "uses-sdk"}}
+					e := xml.EndElement{Name: xml.Name{Local: attrNameUsesSDK}}
 
 					q = append(q, ltoken{s, line}, ltoken{e, line})
 				}
 			case "application":
 				if !skipSynthesize {
 					for _, attr := range tkn.Attr {
-						if attr.Name.Space == androidSchema && attr.Name.Local == "icon" {
-							return nil, fmt.Errorf("manual declaration of android:icon in AndroidManifest.xml not supported")
+						if attr.Name.Space == androidSchema && attr.Name.Local == attrNameIcon {
+							return nil, errors.New("manual declaration of android:icon in AndroidManifest.xml not supported")
 						}
 					}
 					if withIcon {
@@ -340,7 +352,7 @@ func UnmarshalXML(r io.Reader, withIcon bool, targetSDK int) (*XML, error) {
 							xml.Attr{
 								Name: xml.Name{
 									Space: androidSchema,
-									Local: "icon",
+									Local: attrNameIcon,
 								},
 								Value: "@mipmap/icon",
 							})
@@ -565,6 +577,7 @@ func resolveElements(elms []*Element, pool, bxPool *Pool) {
 
 // handleTokens encodes tkn, attaching it to the binary xml
 func handleTokens(tkn xml.Token, line int, pool *Pool, bx *XML, tbl *Table) error {
+	//revive:disable:add-constant
 	switch tkn := tkn.(type) {
 	case xml.StartElement:
 		el := &Element{
@@ -605,7 +618,7 @@ func handleTokens(tkn xml.Token, line int, pool *Pool, bx *XML, tbl *Table) erro
 			} else if el.tail == nil {
 				el.tail = cdt
 			} else {
-				return fmt.Errorf("element head and tail already contain chardata")
+				return errors.New("element head and tail already contain chardata")
 			}
 		}
 	case xml.EndElement:
@@ -623,7 +636,7 @@ func handleTokens(tkn xml.Token, line int, pool *Pool, bx *XML, tbl *Table) erro
 		var el *Element
 		el, bx.stack = bx.stack[n-1], bx.stack[:n-1]
 		if el.end != nil {
-			return fmt.Errorf("element end already exists")
+			return errors.New("element end already exists")
 		}
 		el.end = &ElementEnd{
 			NodeHeader: NodeHeader{
@@ -639,19 +652,20 @@ func handleTokens(tkn xml.Token, line int, pool *Pool, bx *XML, tbl *Table) erro
 		panic(fmt.Errorf("unhandled token type: %T %+v", tkn, tkn))
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 // addAttributes encodes the attributes of tkn and adds them to el.
 // Any attributes which were not already present in Pool are added to it.
 func addAttributes(tkn xml.StartElement, bx *XML, line int, pool *Pool, el *Element, tbl *Table) error {
 	for _, attr := range tkn.Attr {
-		if (attr.Name.Space == "xmlns" && attr.Name.Local == "tools") || attr.Name.Space == toolsSchema {
+		if (attr.Name.Space == attrNameXmlns && attr.Name.Local == "tools") || attr.Name.Space == toolsSchema {
 			continue // TODO can tbl be queried for schemas to determine validity instead?
 		}
 
-		if attr.Name.Space == "xmlns" && attr.Name.Local == "android" {
+		if attr.Name.Space == attrNameXmlns && attr.Name.Local == attrNameAndroid {
 			if bx.Namespace != nil {
-				return fmt.Errorf("multiple declarations of xmlns:android encountered")
+				return errors.New("multiple declarations of xmlns:android encountered")
 			}
 			bx.Namespace = &Namespace{
 				NodeHeader: NodeHeader{
@@ -704,6 +718,7 @@ func addAttributeNamespace(attr xml.Attr, nattr *Attribute, tbl *Table, pool *Po
 		return addLaterAttribute(attr, nattr)
 	}
 
+	//revive:disable:add-constant
 	// get type spec and value data type
 	ref, err := tbl.RefByName("attr/" + attr.Name.Local)
 	if err != nil {
@@ -810,10 +825,12 @@ func addAttributeNamespace(attr xml.Attr, nattr *Attribute, tbl *Table, pool *Po
 		}
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 // UnmarshalBinary decodes all resource chunks in buf returning any error encountered.
 func (bx *XML) UnmarshalBinary(buf []byte) error {
+	//revive:disable:add-constant
 	if err := (&bx.chunkHeader).UnmarshalBinary(buf); err != nil {
 		return err
 	}
@@ -826,6 +843,7 @@ func (bx *XML) UnmarshalBinary(buf []byte) error {
 		buf = buf[k.size():]
 	}
 	return nil
+	//revive:enable:add-constant
 }
 
 // unmarshalBinaryKind decodes and stores the first resource chunk of bin.
@@ -846,25 +864,25 @@ func (bx *XML) kind(t ResType) (unmarshaler, error) {
 	switch t {
 	case ResStringPool:
 		if bx.Pool != nil {
-			return nil, fmt.Errorf("pool already exists")
+			return nil, errors.New("pool already exists")
 		}
 		bx.Pool = new(Pool)
 		return bx.Pool, nil
 	case ResXMLResourceMap:
 		if bx.Map != nil {
-			return nil, fmt.Errorf("resource map already exists")
+			return nil, errors.New("resource map already exists")
 		}
 		bx.Map = new(Map)
 		return bx.Map, nil
 	case ResXMLStartNamespace:
 		if bx.Namespace != nil {
-			return nil, fmt.Errorf("namespace start already exists")
+			return nil, errors.New("namespace start already exists")
 		}
 		bx.Namespace = new(Namespace)
 		return bx.Namespace, nil
 	case ResXMLEndNamespace:
 		if bx.Namespace.end != nil {
-			return nil, fmt.Errorf("namespace end already exists")
+			return nil, errors.New("namespace end already exists")
 		}
 		bx.Namespace.end = new(Namespace)
 		return bx.Namespace.end, nil
@@ -886,7 +904,7 @@ func (bx *XML) kind(t ResType) (unmarshaler, error) {
 		var el *Element
 		el, bx.stack = bx.stack[n-1], bx.stack[:n-1]
 		if el.end != nil {
-			return nil, fmt.Errorf("element end already exists")
+			return nil, errors.New("element end already exists")
 		}
 		el.end = new(ElementEnd)
 		return el.end, nil
@@ -898,7 +916,7 @@ func (bx *XML) kind(t ResType) (unmarshaler, error) {
 		} else if el.tail == nil {
 			el.tail = cdt
 		} else {
-			return nil, fmt.Errorf("element head and tail already contain chardata")
+			return nil, errors.New("element head and tail already contain chardata")
 		}
 		return cdt, nil
 	default:
@@ -908,6 +926,7 @@ func (bx *XML) kind(t ResType) (unmarshaler, error) {
 
 // MarshalBinary formats the XML in memory to its text appearance
 func (bx *XML) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bx.typ = ResXML
 	bx.headerByteSize = 8
 
@@ -953,6 +972,7 @@ func (bx *XML) MarshalBinary() ([]byte, error) {
 
 	putu32(bin[4:], uint32(len(bin)))
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 func marshalRecurse(el *Element, bin *[]byte) error {

@@ -27,6 +27,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 var outfile = flag.String("o", "dex.go", "result will be written file")
@@ -54,7 +56,7 @@ func gendex() error {
 	if androidHome == "" {
 		return errors.New("ANDROID_HOME not set")
 	}
-	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", 0o775); err != nil {
+	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", util.DirPermDefault|util.PermGroupWrite); err != nil {
 		return err
 	}
 	javaFiles, err := filepath.Glob("../../../../../fyne/internal/driver/mobile/app/*.java")
@@ -128,7 +130,7 @@ func gendex() error {
 	fmt.Fprintf(buf, "\t``")
 	out, err := format.Source(buf.Bytes())
 	if err != nil {
-		buf.WriteTo(os.Stderr)
+		_, _ = buf.WriteTo(os.Stderr)
 		return err
 	}
 
@@ -206,7 +208,9 @@ func stripMethodParameters(path string) error {
 
 	rewriteMembers := func() error {
 		count := int(r.u2())
-		binary.Write(&out, binary.BigEndian, uint16(count))
+		if err := binary.Write(&out, binary.BigEndian, uint16(count)); err != nil {
+			return nil
+		}
 		for i := 0; i < count; i++ {
 			// access_flags(2) + name_index(2) + descriptor_index(2)
 			out.Write(r.bytes(6))
@@ -227,7 +231,7 @@ func stripMethodParameters(path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, out.Bytes(), 0o644)
+	return os.WriteFile(path, out.Bytes(), util.FilePermDefault)
 }
 
 func rewriteAttributes(r *classReader, out *bytes.Buffer, dropName uint16) error {
@@ -248,9 +252,13 @@ func rewriteAttributes(r *classReader, out *bytes.Buffer, dropName uint16) error
 		entry = append(entry, body...)
 		kept = append(kept, entry)
 	}
-	binary.Write(out, binary.BigEndian, uint16(len(kept)))
+	if err := binary.Write(out, binary.BigEndian, uint16(len(kept))); err != nil {
+		return err
+	}
 	for _, e := range kept {
-		out.Write(e)
+		if _, err := out.Write(e); err != nil {
+			return err
+		}
 	}
 	return nil
 }
