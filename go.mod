@@ -43,6 +43,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+replace fyne.io/fyne/v2 => github.com/LeoHalb/fyne/v2 v2.7.4-0.20260820180157-048008f06575
+
 retract (
 	v1.26.1 // Contains only retraction as v1.6.1 was ignored
 	v1.26.0 // Published accidentally.
