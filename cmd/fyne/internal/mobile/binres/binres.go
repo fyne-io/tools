@@ -62,52 +62,13 @@ func errWrongType(have ResType, want ...ResType) error {
 	return fmt.Errorf("wrong resource type %s, want one of %v", have, want)
 }
 
-// laterAttrRefs maps android attribute names that were added to the platform
-// after the API level of the embedded resource table (see MinSDK) to their
-// public framework resource IDs. Framework resource IDs are stable public
-// ABI, so they may be listed here without a corresponding table entry.
-var laterAttrRefs = map[string]TableRef{
-	"foregroundServiceType": 0x01010599, // added in API 29
-}
-
-// foregroundServiceTypes describes every value accepted by
-// android:foregroundServiceType, which an app declares on its service element
-// when it supplies its own AndroidManifest.xml. The flag is the value the
-// attribute encodes to, as defined by attrs_manifest.xml and
-// android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_*.
-var foregroundServiceTypes = map[string]uint32{
-	"none":            0x00000000,
-	"dataSync":        0x00000001,
-	"mediaPlayback":   0x00000002,
-	"phoneCall":       0x00000004,
-	"location":        0x00000008,
-	"connectedDevice": 0x00000010,
-	"mediaProjection": 0x00000020,
-	"camera":          0x00000040,
-	"microphone":      0x00000080,
-	"health":          0x00000100,
-	"remoteMessaging": 0x00000200,
-	"systemExempted":  0x00000400,
-	"shortService":    0x00000800,
-	"mediaProcessing": 0x00002000,
-	"specialUse":      0x40000000,
-}
-
-// addLaterAttribute encodes attributes listed in laterAttrRefs, which cannot
-// be resolved against the embedded resource table. Only foregroundServiceType
-// is currently supported; it is a flags attribute, encoded as the OR of its
-// |-separated flag names.
-func addLaterAttribute(attr xml.Attr, nattr *Attribute) error {
-	nattr.TypedValue.Type = DataIntHex
-	for _, x := range strings.Split(attr.Value, "|") {
-		flag, ok := foregroundServiceTypes[strings.TrimSpace(x)]
-		if !ok {
-			return fmt.Errorf("unknown %s value %q", attr.Name.Local, strings.TrimSpace(x))
-		}
-		nattr.TypedValue.Value |= flag
-	}
-	return nil
-}
+// Values carried by the ATTR_TYPE entry of an attribute's resource map, see
+// android.content.res.ResTable_map in the platform's ResourceTypes.h.
+const (
+	attrTypeMarker TableRef = 0x01000000 // name of the ATTR_TYPE map entry
+	attrTypeEnum   uint32   = 0x00010000 // remaining entries are enum symbols
+	attrTypeFlags  uint32   = 0x00020000 // remaining entries are flag symbols
+)
 
 // ResType is the type of a resource
 type ResType uint16
@@ -470,11 +431,7 @@ func buildXML(q []ltoken) (*XML, error) {
 	for _, s := range bx.Pool.strings {
 		ref, err := tbl.RefByName("attr/" + s)
 		if err != nil {
-			lref, ok := laterAttrRefs[s]
-			if !ok {
-				break // break after first non-ref as all strings after are also non-refs.
-			}
-			ref = lref
+			break // break after first non-ref as all strings after are also non-refs.
 		}
 		bx.Map.rs = append(bx.Map.rs, ref)
 	}
@@ -714,10 +671,6 @@ func addAttributes(tkn xml.StartElement, bx *XML, line int, pool *Pool, el *Elem
 // The encoded value is stored in nattr.
 // If the value was not already present in pool, it is added.
 func addAttributeNamespace(attr xml.Attr, nattr *Attribute, tbl *Table, pool *Pool) error {
-	if _, ok := laterAttrRefs[attr.Name.Local]; ok {
-		return addLaterAttribute(attr, nattr)
-	}
-
 	//revive:disable:add-constant
 	// get type spec and value data type
 	ref, err := tbl.RefByName("attr/" + attr.Name.Local)
@@ -785,9 +738,24 @@ func addAttributeNamespace(attr xml.Attr, nattr *Attribute, tbl *Table, pool *Po
 			return fmt.Errorf("unhandled data type %0#2x: %s", uint8(t), t)
 		}
 	} else {
-		// 0x01000000 is an unknown ref that doesn't point to anything, typically
-		// located at the start of entry value lists, peek at last value to determine type.
+		// The value named 0x01000000 (ATTR_TYPE) carries the attribute's format
+		// bits, which say whether the remaining values are enum or flag symbols.
+		// Tables built by the original aapt also encoded flag symbols as hex and
+		// enum symbols as decimal, which aapt2 no longer does, so the last value's
+		// type only serves as a fallback for tables without the marker.
 		t := nt.values[len(nt.values)-1].data.Type
+		for _, val := range nt.values {
+			if val.name != attrTypeMarker {
+				continue
+			}
+			switch {
+			case val.data.Value&attrTypeFlags != 0:
+				t = DataIntHex
+			case val.data.Value&attrTypeEnum != 0:
+				t = DataIntDec
+			}
+			break
+		}
 		switch t {
 		case DataIntDec:
 			for _, val := range nt.values {

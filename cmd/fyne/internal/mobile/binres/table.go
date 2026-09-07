@@ -335,7 +335,15 @@ func (pkg *Package) UnmarshalBinary(bin []byte) error {
 			last.types = append(last.types, typ)
 			buf = buf[typ.byteSize:]
 		default:
-			return errWrongType(t, ResTableTypeSpec, ResTableType)
+			// Newer platform tables append chunks this package does not model,
+			// such as RES_TABLE_LIBRARY_TYPE, RES_TABLE_OVERLAYABLE_TYPE and
+			// RES_TABLE_STAGED_ALIAS_TYPE. They carry nothing needed for manifest
+			// encoding, so skip them.
+			size := btou32(buf[4:])
+			if size == 0 || int(size) > len(buf) {
+				return fmt.Errorf("invalid chunk size %d for type %s", size, t)
+			}
+			buf = buf[size:]
 		}
 	}
 
@@ -409,7 +417,7 @@ type TypeSpec struct {
 	chunkHeader
 	id         uint8  // id-1 is name index in Package.typePool
 	res0       uint8  // must be 0
-	res1       uint16 // must be 0
+	res1       uint16 // number of Type chunks that follow
 	entryCount uint32 // number of uint32 entry configuration masks that follow
 
 	entries []uint32 // entry configuration masks
@@ -467,13 +475,23 @@ func (spec *TypeSpec) MarshalBinary() ([]byte, error) {
 	//revive:enable:add-constant
 }
 
+// Type chunk flags, stored in the byte following the type id.
+const (
+	// typeFlagSparse marks a type whose entry index is a sorted list of
+	// (entry id, offset/4) uint32 pairs holding only present entries.
+	typeFlagSparse uint8 = 0x01
+	// typeFlagOffset16 marks a type whose entry index is a list of uint16
+	// offsets, each in units of 4 bytes, with 0xffff meaning no entry.
+	typeFlagOffset16 uint8 = 0x02
+)
+
 // Type provides a collection of entries for a specific device configuration.
 type Type struct {
 	chunkHeader
 	id           uint8
-	res0         uint8  // must be 0
+	flags        uint8  // combination of typeFlag* values
 	res1         uint16 // must be 0
-	entryCount   uint32 // number of uint32 entry configuration masks that follow
+	entryCount   uint32 // number of entry index values that follow
 	entriesStart uint32 // offset from header where Entry data starts
 
 	// configuration this collection of entries is designed for
@@ -532,13 +550,16 @@ func (typ *Type) UnmarshalBinary(bin []byte) error {
 	}
 
 	typ.id = bin[8]
-	typ.res0 = bin[9]
+	typ.flags = bin[9]
 	typ.res1 = btou16(bin[10:])
 	typ.entryCount = btou32(bin[12:])
 	typ.entriesStart = btou32(bin[16:])
 
-	if typ.res0 != 0 || typ.res1 != 0 {
-		return errors.New("res0 res1 not zero")
+	if typ.flags&^(typeFlagSparse|typeFlagOffset16) != 0 {
+		return fmt.Errorf("unsupported type flags %#02x", typ.flags)
+	}
+	if typ.res1 != 0 {
+		return errors.New("res1 not zero")
 	}
 
 	typ.config.size = btou32(bin[20:])
@@ -565,16 +586,44 @@ func (typ *Type) UnmarshalBinary(bin []byte) error {
 
 	// fmt.Println("language/country:", u16tos(typ.config.locale.language), u16tos(typ.config.locale.country))
 
+	// Decode the entry index into dense uint32 byte offsets regardless of the
+	// on-disk encoding; MarshalBinary always writes the dense form.
 	buf := bin[typ.headerByteSize:typ.entriesStart]
-	for len(buf) > 0 {
-		typ.indices = append(typ.indices, btou32(buf))
-		buf = buf[4:]
+	switch {
+	case typ.flags&typeFlagSparse != 0:
+		if len(buf) < int(typ.entryCount)*4 {
+			return fmt.Errorf("sparse index too short for entryCount[%v]", typ.entryCount)
+		}
+		for i := 0; i < int(typ.entryCount); i++ {
+			x := btou32(buf[i*4:])
+			idx := int(x & 0xffff)
+			for len(typ.indices) <= idx {
+				typ.indices = append(typ.indices, NoEntry)
+			}
+			typ.indices[idx] = (x >> 16) * 4
+		}
+	case typ.flags&typeFlagOffset16 != 0:
+		if len(buf) < int(typ.entryCount)*2 {
+			return fmt.Errorf("offset16 index too short for entryCount[%v]", typ.entryCount)
+		}
+		for i := 0; i < int(typ.entryCount); i++ {
+			x := btou16(buf[i*2:])
+			if x == 0xffff {
+				typ.indices = append(typ.indices, NoEntry)
+			} else {
+				typ.indices = append(typ.indices, uint32(x)*4)
+			}
+		}
+	default:
+		for len(buf) > 0 {
+			typ.indices = append(typ.indices, btou32(buf))
+			buf = buf[4:]
+		}
+		if len(typ.indices) != int(typ.entryCount) {
+			return fmt.Errorf("indices len[%v] doesn't match entryCount[%v]", len(typ.indices), typ.entryCount)
+		}
 	}
-
-	if len(typ.indices) != int(typ.entryCount) {
-		return fmt.Errorf("indices len[%v] doesn't match entryCount[%v]", len(typ.indices), typ.entryCount)
-	}
-	typ.entries = make([]*Entry, typ.entryCount)
+	typ.entries = make([]*Entry, len(typ.indices))
 
 	for i, x := range typ.indices {
 		if x == NoEntry {
@@ -649,6 +698,11 @@ func (typ *Type) MarshalBinary() ([]byte, error) {
 	//revive:enable:add-constant
 }
 
+// entryFlagCompact marks a compact entry, introduced in API 34: the key is
+// stored as uint16 in place of size, the data type in the high byte of flags,
+// and the 4 byte data value follows directly.
+const entryFlagCompact uint16 = 0x0008
+
 // Entry is a resource key typically followed by a value or resource map.
 type Entry struct {
 	size  uint16
@@ -665,8 +719,23 @@ type Entry struct {
 // UnmarshalBinary creates an entry from binary data
 func (nt *Entry) UnmarshalBinary(bin []byte) error {
 	//revive:disable:add-constant
+	flags := btou16(bin[2:])
+	if flags&entryFlagCompact != 0 {
+		// Expand to the classic 8 byte header plus Res_value form so that
+		// MarshalBinary and all consumers see a single representation.
+		nt.size = 8
+		nt.flags = flags & 0x00ff &^ entryFlagCompact
+		nt.key = PoolRef(btou16(bin))
+		nt.values = append(nt.values, &Value{0, &Data{
+			ByteSize: 8,
+			Type:     DataType(flags >> 8),
+			Value:    btou32(bin[4:]),
+		}})
+		return nil
+	}
+
 	nt.size = btou16(bin)
-	nt.flags = btou16(bin[2:])
+	nt.flags = flags
 	nt.key = PoolRef(btou32(bin[4:]))
 
 	if nt.size == 16 {
