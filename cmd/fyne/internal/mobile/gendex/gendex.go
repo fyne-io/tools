@@ -140,7 +140,7 @@ func lookupFyneDir(file string) (string, error) {
 
 const javaFilesGlob = "internal/driver/mobile/app/*.java"
 
-func gendex(indir, tmpdir, outfile string, verbose bool) error {
+func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 	androidHome := os.Getenv("ANDROID_HOME")
 	if androidHome == "" {
 		return errors.New("ANDROID_HOME not set")
@@ -155,10 +155,10 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 	}
 	androidJar := filepath.Join(platform, "android.jar")
 
-	if err := os.MkdirAll(filepath.Join(tmpdir, "work/org/golang/app"), util.DirPermDefault|util.PermGroupWrite); err != nil {
+	if err := os.MkdirAll(filepath.Join(buildDir, "work/org/golang/app"), util.DirPermDefault|util.PermGroupWrite); err != nil {
 		return err
 	}
-	javaFiles, err := filepath.Glob(filepath.Join(indir, javaFilesGlob))
+	javaFiles, err := filepath.Glob(filepath.Join(fyneSourceDir, javaFilesGlob))
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 		"-source", "1.8",
 		"-target", "1.8",
 		"-bootclasspath", androidJar,
-		"-d", filepath.Join(tmpdir, "work"),
+		"-d", filepath.Join(buildDir, "work"),
 	)
 	cmd.Args = append(cmd.Args, javaFiles...)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -183,7 +183,7 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 		return err
 	}
 
-	classFiles, err := filepath.Glob(filepath.Join(tmpdir, "work/org/golang/app/*.class"))
+	classFiles, err := filepath.Glob(filepath.Join(buildDir, "work/org/golang/app/*.class"))
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 	cmd = exec.Command(
 		filepath.Join(buildTools, "d8"),
 		append(
-			[]string{"--output", tmpdir},
+			[]string{"--output", buildDir},
 			classFiles...,
 		)...,
 	)
@@ -213,7 +213,7 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 		os.Stderr.Write(out)
 		return err
 	}
-	src, err := os.ReadFile(filepath.Join(tmpdir, "classes.dex"))
+	src, err := os.ReadFile(filepath.Join(buildDir, "classes.dex"))
 	if err != nil {
 		return err
 	}
