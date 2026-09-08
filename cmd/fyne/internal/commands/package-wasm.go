@@ -29,6 +29,8 @@ type webData struct {
 	IsReleased bool
 }
 
+const fileWasmExecJs = "wasm_exec.js"
+
 func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon string, release bool) error {
 	var tpl bytes.Buffer
 	err := templates.IndexHTML.Execute(&tpl, w)
@@ -77,12 +79,13 @@ func (w webData) packageWebInternal(appDir string, exeWasmSrc string, icon strin
 		return err
 	}
 
-	wasmExecSrc := filepath.Join(goroot, "lib", "wasm", "wasm_exec.js")
+	wasmFileWasmExecJs := filepath.Join("wasm", fileWasmExecJs)
+	wasmExecSrc := filepath.Join(goroot, "lib", wasmFileWasmExecJs)
 	if !pkgUtil.Exists(wasmExecSrc) { // Fallback for Go < 1.24:
-		wasmExecSrc = filepath.Join(goroot, "misc", "wasm", "wasm_exec.js")
+		wasmExecSrc = filepath.Join(goroot, "misc", wasmFileWasmExecJs)
 	}
 
-	wasmExecDst := filepath.Join(appDir, "wasm_exec.js")
+	wasmExecDst := filepath.Join(appDir, fileWasmExecJs)
 	err = pkgUtil.CopyFile(wasmExecSrc, wasmExecDst)
 	if err != nil {
 		return err

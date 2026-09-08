@@ -164,16 +164,19 @@ func (b *Bundler) bundleAction(ctx *cli.Context) (err error) {
 		outFile = file
 	}
 
+	logFileNotFound := func(err error) {
+		fyne.LogError("Specified file could not be found", err)
+	}
 	for _, arg := range ctx.Args().Slice() {
 		files, err := filepath.Glob(arg)
 		if err != nil {
-			fyne.LogError("Specified file could not be found", err)
+			logFileNotFound(err)
 			return err
 		}
 		for _, file := range files {
 			switch stat, err := os.Stat(file); {
 			case os.IsNotExist(err):
-				fyne.LogError("Specified file could not be found", err)
+				logFileNotFound(err)
 				return err
 			case stat.IsDir():
 				return b.dirBundle(file, outFile)

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
@@ -39,11 +40,12 @@ func (p *Packager) packageUNIX() error {
 		outDir = pkgUtil.EnsureSubDir(pkgUtil.EnsureSubDir(p.dir, "tmp-pkg"), dirName)
 	}
 
+	outDirUsr := pkgUtil.EnsureSubDir(outDir, "usr")
 	if _, err := os.Stat(filepath.Join("/", "usr", "local")); os.IsNotExist(err) {
-		prefixDir = pkgUtil.EnsureSubDir(outDir, "usr")
+		prefixDir = outDirUsr
 		local = ""
 	} else {
-		prefixDir = pkgUtil.EnsureSubDir(pkgUtil.EnsureSubDir(outDir, "usr"), "local")
+		prefixDir = pkgUtil.EnsureSubDir(outDirUsr, "local")
 	}
 
 	shareDir := pkgUtil.EnsureSubDir(prefixDir, "share")
@@ -128,7 +130,7 @@ func (p *Packager) packageUNIX() error {
 	}
 
 	tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
-	if p.os == "openbsd" {
+	if p.os == goos.OpenBSD {
 		tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
 	}
 
@@ -138,7 +140,7 @@ func (p *Packager) packageUNIX() error {
 	// switching to a new namespace and merging fyne-cross into fyne-tools as
 	// one of the supported commands.
 	if fyneCrossCompat {
-		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr")
+		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr") //revive:disable-line:add-constant
 	} else {
 		tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
 	}
