@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
-	"flag"
 	"fmt"
 	"go/format"
 	"log"
@@ -27,31 +26,121 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/util"
+	"github.com/urfave/cli/v2"
+	"golang.org/x/mod/modfile"
 )
 
-var outfile = flag.String("o", "dex.go", "result will be written file")
-
-var tmpdir string
-
 func main() {
-	flag.Parse()
-
-	var err error
-	tmpdir, err = os.MkdirTemp("", "gendex-")
-	if err != nil {
-		log.Fatal(err)
+	app := &cli.App{
+		Name:  "gendex",
+		Usage: "A Fyne tools command line helper to generate dex.go file.",
+		Flags: []cli.Flag{
+			&cli.PathFlag{
+				Name:    "outfile",
+				Aliases: []string{"o"},
+				Usage:   "result will be written file",
+				Value:   "dex.go",
+			},
+			&cli.PathFlag{
+				Name:        "source-dir",
+				Aliases:     []string{"i"},
+				Usage:       "directory with Fyne source code",
+				DefaultText: "fyne path in go.mod cache",
+			},
+			&cli.PathFlag{
+				Name:        "work-dir",
+				Aliases:     []string{"d"},
+				Usage:       "working directory for the build process",
+				DefaultText: "temporary directory",
+			},
+			&cli.BoolFlag{
+				Name:    "keep-work",
+				Aliases: []string{"k"},
+				Usage:   "keep working directory of the build process",
+			},
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+				Usage:   "verbose build output",
+			},
+		},
+		Action: doAction,
 	}
-
-	err = gendex()
-	os.RemoveAll(tmpdir)
-	if err != nil {
+	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func gendex() error {
+func doAction(c *cli.Context) error {
+	tmpdir := c.Path("work-dir")
+	if tmpdir == "" {
+		dir, err := os.MkdirTemp("", "gendex-")
+		if err != nil {
+			log.Fatal(err)
+		}
+		tmpdir = dir
+	}
+
+	if !c.Bool("keep-work") {
+		defer func() {
+			if err := os.RemoveAll(tmpdir); err != nil {
+				log.Print(err)
+			}
+		}()
+	}
+
+	if c.Bool("verbose") {
+		log.Printf("working directory: %s", tmpdir)
+	}
+
+	fynedir := c.Path("source-dir")
+	if fynedir == "" {
+		dir, err := util.LookupDirWithGoMod(".")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fynedir, err = lookupFyneDir(filepath.Join(dir, "go.mod"))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return gendex(fynedir, tmpdir, c.Path("outfile"), c.Bool("verbose"))
+}
+
+func lookupFyneDir(file string) (string, error) {
+	var mod *modfile.File
+	if data, err := os.ReadFile(file); err != nil {
+		return "", err
+	} else if mod, err = modfile.Parse(file, data, nil); err != nil {
+		return "", err
+	}
+
+	for _, req := range mod.Require {
+		if req.Mod.Path != "fyne.io/fyne/v2" {
+			continue
+		}
+		out, err := exec.Command("go", "env", "GOPATH").CombinedOutput()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(
+			strings.TrimSpace(string(out)),
+			"pkg",
+			"mod",
+			req.Mod.Path+"@"+req.Mod.Version,
+		), nil
+	}
+	return "", fmt.Errorf("failed to find fyne source path")
+}
+
+const javaFilesGlob = "internal/driver/mobile/app/*.java"
+
+func gendex(indir, tmpdir, outfile string, verbose bool) error {
 	androidHome := os.Getenv("ANDROID_HOME")
 	if androidHome == "" {
 		return errors.New("ANDROID_HOME not set")
@@ -59,12 +148,15 @@ func gendex() error {
 	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", util.DirPermDefault|util.PermGroupWrite); err != nil {
 		return err
 	}
-	javaFiles, err := filepath.Glob("../../../../../fyne/internal/driver/mobile/app/*.java")
+	javaFiles, err := filepath.Glob(filepath.Join(indir, javaFilesGlob))
 	if err != nil {
 		return err
 	}
 	if len(javaFiles) == 0 {
-		return errors.New("could not find internal/driver/mobile/app/*.java files")
+		return errors.New("could not find files: " + javaFilesGlob)
+	}
+	if verbose {
+		log.Printf("java files: %v", javaFiles)
 	}
 	platform, err := findLast(androidHome + "/platforms")
 	if err != nil {
@@ -89,6 +181,10 @@ func gendex() error {
 		return err
 	}
 
+	if verbose {
+		log.Printf("class files: %v", classFiles)
+	}
+
 	// Strip the MethodParameters attribute from every method. javac emits this
 	// for `mandated` synthetic enclosing-instance parameters of inner classes
 	// with name_index=0; the AOSP-bundled R8 NPEs reading those entries. Since
@@ -103,8 +199,13 @@ func gendex() error {
 	if err != nil {
 		return err
 	}
-	cmd = exec.Command(buildTools+"/d8", append([]string{"--output", tmpdir},
-		classFiles...)...)
+	cmd = exec.Command(
+		buildTools+"/d8",
+		append(
+			[]string{"--output", tmpdir},
+			classFiles...,
+		)...,
+	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		os.Stderr.Write(out)
 		return err
@@ -134,7 +235,7 @@ func gendex() error {
 		return err
 	}
 
-	w, err := os.Create(*outfile)
+	w, err := os.Create(outfile)
 	if err != nil {
 		return err
 	}
