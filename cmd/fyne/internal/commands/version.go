@@ -11,7 +11,7 @@ import (
 )
 
 func getFyneGoModVersion(dir string) (string, error) {
-	wd, err := lookupDirWithGoMod(dir)
+	wd, err := util.LookupDirWithGoMod(dir)
 	if err != nil {
 		return "", err
 	}
