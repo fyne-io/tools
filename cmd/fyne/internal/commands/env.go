@@ -1,13 +1,12 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 
 	"fyne.io/tools/cmd/fyne/internal/util"
+
 	"github.com/lucor/goinfo"
 	"github.com/lucor/goinfo/format"
 	"github.com/lucor/goinfo/report"

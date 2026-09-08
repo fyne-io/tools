@@ -6,6 +6,8 @@ import (
 	"os"
 	"runtime/debug"
 
+	"fyne.io/tools/cmd/fyne/internal/util"
+
 	"github.com/lucor/goinfo/report"
 	"github.com/urfave/cli/v2"
 )
