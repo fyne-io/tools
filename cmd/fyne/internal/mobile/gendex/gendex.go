@@ -39,32 +39,32 @@ func main() {
 		Usage: "A Fyne tools command line helper to generate dex.go file.",
 		Flags: []cli.Flag{
 			&cli.PathFlag{
-				Name:    "outfile",
+				Name:    "output",
 				Aliases: []string{"o"},
-				Usage:   "result will be written file",
+				Usage:   "set output file",
 				Value:   "dex.go",
 			},
 			&cli.PathFlag{
 				Name:        "source-dir",
-				Aliases:     []string{"i"},
-				Usage:       "directory with Fyne source code",
+				Aliases:     []string{"s"},
+				Usage:       "set Fyne source directory",
 				DefaultText: "fyne path in go.mod cache",
 			},
 			&cli.PathFlag{
-				Name:        "work-dir",
-				Aliases:     []string{"d"},
-				Usage:       "working directory for the build process",
+				Name:        "build-dir",
+				Aliases:     []string{"b"},
+				Usage:       "set working directory for the build process",
 				DefaultText: "temporary directory",
 			},
 			&cli.BoolFlag{
-				Name:    "keep-work",
+				Name:    "keep-build",
 				Aliases: []string{"k"},
-				Usage:   "keep working directory of the build process",
+				Usage:   "set to prevent cleanup of build directory",
 			},
 			&cli.BoolFlag{
 				Name:    "verbose",
 				Aliases: []string{"v"},
-				Usage:   "verbose build output",
+				Usage:   "enable verbose output",
 			},
 		},
 		Action: doAction,
@@ -75,41 +75,41 @@ func main() {
 }
 
 func doAction(c *cli.Context) error {
-	tmpdir := c.Path("work-dir")
-	if tmpdir == "" {
+	buildDir := c.Path("build-dir")
+	if buildDir == "" {
 		dir, err := os.MkdirTemp("", "gendex-")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		tmpdir = dir
+		buildDir = dir
 	}
 
-	if !c.Bool("keep-work") {
+	if !c.Bool("keep-build") {
 		defer func() {
-			if err := os.RemoveAll(tmpdir); err != nil {
+			if err := os.RemoveAll(buildDir); err != nil {
 				log.Print(err)
 			}
 		}()
 	}
 
 	if c.Bool("verbose") {
-		log.Printf("working directory: %s", tmpdir)
+		log.Printf("using build directory: %s", buildDir)
 	}
 
-	fynedir := c.Path("source-dir")
-	if fynedir == "" {
+	fyneSourceDir := c.Path("source-dir")
+	if fyneSourceDir == "" {
 		dir, err := util.LookupDirWithGoMod(".")
 		if err != nil {
 			return err
 		}
 
-		fynedir, err = lookupFyneDir(filepath.Join(dir, "go.mod"))
+		fyneSourceDir, err = lookupFyneDir(filepath.Join(dir, "go.mod"))
 		if err != nil {
 			return err
 		}
 	}
 
-	return gendex(fynedir, tmpdir, c.Path("outfile"), c.Bool("verbose"))
+	return gendex(fyneSourceDir, buildDir, c.Path("output"), c.Bool("verbose"))
 }
 
 func lookupFyneDir(file string) (string, error) {
