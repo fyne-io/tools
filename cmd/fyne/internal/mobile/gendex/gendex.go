@@ -100,12 +100,12 @@ func doAction(c *cli.Context) error {
 	if fynedir == "" {
 		dir, err := util.LookupDirWithGoMod(".")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		fynedir, err = lookupFyneDir(filepath.Join(dir, "go.mod"))
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
@@ -145,7 +145,17 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 	if androidHome == "" {
 		return errors.New("ANDROID_HOME not set")
 	}
-	if err := os.MkdirAll(tmpdir+"/work/org/golang/app", util.DirPermDefault|util.PermGroupWrite); err != nil {
+	buildTools, err := findLast(filepath.Join(androidHome, "build-tools"))
+	if err != nil {
+		return err
+	}
+	platform, err := findLast(filepath.Join(androidHome, "platforms"))
+	if err != nil {
+		return err
+	}
+	androidJar := filepath.Join(platform, "android.jar")
+
+	if err := os.MkdirAll(filepath.Join(tmpdir, "work/org/golang/app"), util.DirPermDefault|util.PermGroupWrite); err != nil {
 		return err
 	}
 	javaFiles, err := filepath.Glob(filepath.Join(indir, javaFilesGlob))
@@ -158,16 +168,13 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 	if verbose {
 		log.Printf("java files: %v", javaFiles)
 	}
-	platform, err := findLast(androidHome + "/platforms")
-	if err != nil {
-		return err
-	}
+
 	cmd := exec.Command(
 		"javac",
 		"-source", "1.8",
 		"-target", "1.8",
-		"-bootclasspath", platform+"/android.jar",
-		"-d", tmpdir+"/work",
+		"-bootclasspath", androidJar,
+		"-d", filepath.Join(tmpdir, "work"),
 	)
 	cmd.Args = append(cmd.Args, javaFiles...)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -176,7 +183,7 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 		return err
 	}
 
-	classFiles, err := filepath.Glob(tmpdir + "/work/org/golang/app/*.class")
+	classFiles, err := filepath.Glob(filepath.Join(tmpdir, "work/org/golang/app/*.class"))
 	if err != nil {
 		return err
 	}
@@ -195,12 +202,8 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 			return fmt.Errorf("strip MethodParameters %s: %w", f, err)
 		}
 	}
-	buildTools, err := findLast(androidHome + "/build-tools")
-	if err != nil {
-		return err
-	}
 	cmd = exec.Command(
-		buildTools+"/d8",
+		filepath.Join(buildTools, "d8"),
 		append(
 			[]string{"--output", tmpdir},
 			classFiles...,
@@ -210,14 +213,15 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 		os.Stderr.Write(out)
 		return err
 	}
-	src, err := os.ReadFile(tmpdir + "/classes.dex")
+	src, err := os.ReadFile(filepath.Join(tmpdir, "classes.dex"))
 	if err != nil {
 		return err
 	}
 	data := base64.StdEncoding.EncodeToString(src)
 
 	buf := new(bytes.Buffer)
-	fmt.Fprint(buf, header)
+	buf.WriteString(header)
+	buf.WriteRune('`')
 
 	var piece string
 	for len(data) > 0 {
@@ -226,9 +230,12 @@ func gendex(indir, tmpdir, outfile string, verbose bool) error {
 			l = len(data)
 		}
 		piece, data = data[:l], data[l:]
-		fmt.Fprintf(buf, "\t`%s` + \n", piece)
+		buf.WriteString(piece)
+		buf.WriteRune('\n')
 	}
-	fmt.Fprintf(buf, "\t``")
+	buf.Bytes()[buf.Len()-1] = '`'
+	buf.WriteRune('\n')
+
 	out, err := format.Source(buf.Bytes())
 	if err != nil {
 		_, _ = buf.WriteTo(os.Stderr)
