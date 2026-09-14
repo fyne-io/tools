@@ -16,12 +16,15 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"go/format"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +35,14 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/modfile"
 )
+
+const androidRepo = "https://dl.google.com/android/maven2/"
+
+var androidDeps = []string{
+	"androidx/annotation/annotation/1.3.0/annotation-1.3.0.jar",
+	"androidx/camera/camera-core/1.6.2/camera-core-1.6.2.aar",
+	"androidx/core/core/1.19.0/core-1.19.0.aar",
+}
 
 func main() {
 	app := &cli.App{
@@ -153,7 +164,6 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 	if err != nil {
 		return err
 	}
-	androidJar := filepath.Join(platform, "android.jar")
 
 	if err := os.MkdirAll(filepath.Join(buildDir, "work/org/golang/app"), util.DirPermDefault|util.PermGroupWrite); err != nil {
 		return err
@@ -166,7 +176,39 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 		return errors.New("could not find files: " + javaFilesGlob)
 	}
 	if verbose {
-		log.Printf("java files: %v", javaFiles)
+		log.Printf("found java files: %v", javaFiles)
+	}
+
+	// get version from platform
+	androidVer := append(strings.Split(filepath.Base(platform), "android-"), "")[1]
+	if verbose {
+		log.Printf("found android version: %v", androidVer)
+	}
+
+	androidJar := filepath.Join(platform, "android.jar")
+	if f, err := os.Open(androidJar); err != nil {
+		return err
+	} else {
+		androidJar = filepath.Join(buildDir, "android-"+androidVer+".jar")
+		g, err := os.Create(androidJar)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(g, f); err != nil {
+			_ = g.Close()
+			return err
+		}
+		if err := g.Close(); err != nil {
+			return err
+		}
+	}
+
+	depDir := filepath.Join(buildDir, "deps")
+	if err := os.MkdirAll(depDir, util.DirPermDefault); err != nil {
+		return err
+	}
+	if err := downloadDeps(depDir, verbose); err != nil {
+		return err
 	}
 
 	cmd := exec.Command(
@@ -174,9 +216,13 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 		"-source", "1.8",
 		"-target", "1.8",
 		"-bootclasspath", androidJar,
+		"-classpath", filepath.Join(depDir, "*"),
 		"-d", filepath.Join(buildDir, "work"),
 	)
 	cmd.Args = append(cmd.Args, javaFiles...)
+	if verbose {
+		log.Printf("compiling java sources: %v", cmd.Args)
+	}
 	if out, err := cmd.CombinedOutput(); err != nil {
 		fmt.Println(cmd.Args)
 		os.Stderr.Write(out)
@@ -186,10 +232,6 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 	classFiles, err := filepath.Glob(filepath.Join(buildDir, "work/org/golang/app/*.class"))
 	if err != nil {
 		return err
-	}
-
-	if verbose {
-		log.Printf("class files: %v", classFiles)
 	}
 
 	// Strip the MethodParameters attribute from every method. javac emits this
@@ -202,13 +244,22 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 			return fmt.Errorf("strip MethodParameters %s: %w", f, err)
 		}
 	}
+
 	cmd = exec.Command(
 		filepath.Join(buildTools, "d8"),
-		append(
-			[]string{"--output", buildDir},
-			classFiles...,
-		)...,
+		"--output", buildDir,
+		"--lib", androidJar,
 	)
+	jarFiles, err := filepath.Glob(filepath.Join(depDir, "*.jar"))
+	if err != nil {
+		return err
+	}
+	cmd.Args = append(cmd.Args, jarFiles...)
+	cmd.Args = append(cmd.Args, classFiles...)
+
+	if verbose {
+		log.Printf("building dex file: %v", cmd.Args)
+	}
 	if out, err := cmd.CombinedOutput(); err != nil {
 		os.Stderr.Write(out)
 		return err
@@ -252,7 +303,83 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 	if err := w.Close(); err != nil {
 		return err
 	}
+
+	// generate and write checksum file
+	sumFile := "SHA256SUMS"
+	w, err = os.Create(sumFile)
+	if err != nil {
+		return err
+	}
+
+	var ww io.Writer = w
+	if verbose {
+		ww = io.MultiWriter(w, os.Stdout)
+		log.Printf("updating checksum file: %v", sumFile)
+	}
+	for _, jarFile := range append([]string{androidJar}, jarFiles...) {
+		f, err := os.Open(jarFile)
+		if err != nil {
+			return err
+		}
+		h := sha256.New()
+		_, err = io.Copy(h, f)
+		_ = f.Close()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(ww, "%x  %s\n", h.Sum(nil), filepath.Base(jarFile))
+	}
+	return w.Close()
+}
+
+func downloadDeps(dir string, verbose bool) error {
+	for _, depFile := range androidDeps {
+		dlFile := filepath.Join(dir, filepath.Base(depFile))
+		jarFile := dlFile
+		if base := strings.TrimSuffix(dlFile, ".aar"); base != dlFile {
+			jarFile = base + ".jar"
+		}
+		if fi, err := os.Stat(jarFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		} else if fi != nil && fi.Size() > 0 {
+			if verbose {
+				log.Printf("found existing file: %v", jarFile)
+			}
+			continue
+		}
+
+		depUrl := androidRepo + depFile
+		if verbose {
+			log.Printf("downloading dependency: %v: %v", depUrl, dlFile)
+		}
+		b, err := download(depUrl)
+		if err != nil {
+			return err
+		}
+
+		switch filepath.Ext(depFile) {
+		case ".jar":
+			if err := os.WriteFile(dlFile, b, util.FilePermDefault); err != nil {
+				return err
+			}
+		case ".aar":
+			if err := util.ExtractFileFromZipBytes(b, "classes.jar", jarFile); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown dependency format: %v", depFile)
+		}
+	}
 	return nil
+}
+
+func download(u string) ([]byte, error) {
+	res, err := http.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	return io.ReadAll(res.Body)
 }
 
 // stripMethodParameters rewrites a .class file in place, removing every
@@ -393,7 +520,9 @@ func (r *classReader) u4() uint32 {
 	r.pos += 4
 	return v
 }
+
 func (r *classReader) skip(n int) { r.pos += n }
+
 func (r *classReader) bytes(n int) []byte {
 	b := r.buf[r.pos : r.pos+n]
 	r.pos += n
