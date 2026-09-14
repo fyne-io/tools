@@ -284,6 +284,106 @@ func getAndroidJar(platform, buildDir string, verbose bool) (string, error) {
 	return androidJar, nil
 }
 
+func readAndroidDeps(file string) ([]string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	r := []string{}
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		t := strings.TrimSpace(s.Text())
+		if strings.HasPrefix(t, "#") {
+			continue
+		}
+		r = append(r, t)
+	}
+
+	return r, nil
+}
+
+func downloadDeps(androidDeps []string, dir string, verbose bool) error {
+	for _, dep := range androidDeps {
+		parts := strings.Split(dep, ":")
+		if len(parts) < 3 {
+			return fmt.Errorf("invalid dependency: %v", dep)
+		}
+		jarFile := filepath.Join(dir, parts[1]+"-"+parts[2]+".jar")
+
+		if fi, err := os.Stat(jarFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		} else if fi != nil && fi.Size() > 0 {
+			if verbose {
+				log.Printf("found existing file: %v", jarFile)
+			}
+			continue
+		}
+
+		pomPath := pomPathFromParts(parts)
+		pomUrl := androidRepo + pomPath
+		depUrl, err := getDownloadUrl(pomUrl)
+		if err != nil {
+			return err
+		}
+
+		dlFile := filepath.Join(dir, filepath.Base(depUrl))
+		if verbose {
+			log.Printf("downloading dependency: %v: %v", dlFile, depUrl)
+		}
+		b, err := download(depUrl)
+		if err != nil {
+			return err
+		}
+
+		switch filepath.Ext(dlFile) {
+		case ".jar":
+			if err := os.WriteFile(dlFile, b, util.FilePermDefault); err != nil {
+				return err
+			}
+		case ".aar":
+			if err := util.ExtractFileFromZipBytes(b, "classes.jar", jarFile); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown dependency format: %v", dlFile)
+		}
+	}
+	return nil
+}
+
+func pomPathFromParts(parts []string) string {
+	return strings.ReplaceAll(parts[0], ".", "/") + "/" + parts[1] + "/" + parts[2] + "/" + parts[1] + "-" + parts[2] + ".pom"
+}
+
+func getDownloadUrl(pomUrl string) (string, error) {
+	pom, err := download(pomUrl)
+	if err != nil {
+		return "", err
+	}
+	var prj struct {
+		Packaging string `xml:"packaging"`
+	}
+	if err := xml.Unmarshal(pom, &prj); err != nil {
+		return "", err
+	}
+	ext := ".jar"
+	if prj.Packaging != "" {
+		ext = "." + prj.Packaging
+	}
+	return strings.TrimSuffix(pomUrl, ".pom") + ext, nil
+}
+
+func download(u string) ([]byte, error) {
+	res, err := http.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	return io.ReadAll(res.Body)
+}
+
 func updateDexGo(infile, outfile string) error {
 	src, err := os.ReadFile(infile)
 	if err != nil {
@@ -349,106 +449,6 @@ func generateChecksums(sumFile string, files []string, verbose bool) error {
 		fmt.Fprintf(ww, "%x  %s\n", h.Sum(nil), filepath.Base(jarFile))
 	}
 	return w.Close()
-}
-
-func downloadDeps(androidDeps []string, dir string, verbose bool) error {
-	for _, dep := range androidDeps {
-		parts := strings.Split(dep, ":")
-		if len(parts) < 3 {
-			return fmt.Errorf("invalid dependency: %v", dep)
-		}
-		jarFile := filepath.Join(dir, parts[1]+"-"+parts[2]+".jar")
-
-		if fi, err := os.Stat(jarFile); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return err
-		} else if fi != nil && fi.Size() > 0 {
-			if verbose {
-				log.Printf("found existing file: %v", jarFile)
-			}
-			continue
-		}
-
-		pomPath := pomPathFromParts(parts)
-		pomUrl := androidRepo + pomPath
-		depUrl, err := getDownloadUrl(pomUrl)
-		if err != nil {
-			return err
-		}
-
-		dlFile := filepath.Join(dir, filepath.Base(depUrl))
-		if verbose {
-			log.Printf("downloading dependency: %v: %v", dlFile, depUrl)
-		}
-		b, err := download(depUrl)
-		if err != nil {
-			return err
-		}
-
-		switch filepath.Ext(dlFile) {
-		case ".jar":
-			if err := os.WriteFile(dlFile, b, util.FilePermDefault); err != nil {
-				return err
-			}
-		case ".aar":
-			if err := util.ExtractFileFromZipBytes(b, "classes.jar", jarFile); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unknown dependency format: %v", dlFile)
-		}
-	}
-	return nil
-}
-
-func pomPathFromParts(parts []string) string {
-	return strings.ReplaceAll(parts[0], ".", "/") + "/" + parts[1] + "/" + parts[2] + "/" + parts[1] + "-" + parts[2] + ".pom"
-}
-
-func download(u string) ([]byte, error) {
-	res, err := http.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	return io.ReadAll(res.Body)
-}
-
-func readAndroidDeps(file string) ([]string, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	r := []string{}
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		t := strings.TrimSpace(s.Text())
-		if strings.HasPrefix(t, "#") {
-			continue
-		}
-		r = append(r, t)
-	}
-
-	return r, nil
-}
-
-func getDownloadUrl(pomUrl string) (string, error) {
-	pom, err := download(pomUrl)
-	if err != nil {
-		return "", err
-	}
-	var prj struct {
-		Packaging string `xml:"packaging"`
-	}
-	if err := xml.Unmarshal(pom, &prj); err != nil {
-		return "", err
-	}
-	ext := ".jar"
-	if prj.Packaging != "" {
-		ext = "." + prj.Packaging
-	}
-	return strings.TrimSuffix(pomUrl, ".pom") + ext, nil
 }
 
 // stripMethodParameters rewrites a .class file in place, removing every
