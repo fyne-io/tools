@@ -190,4 +190,3 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 
 	return arscPath, extractedResDir, manifestPath, nil
 }
-
