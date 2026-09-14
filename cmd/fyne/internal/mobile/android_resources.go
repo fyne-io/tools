@@ -1,13 +1,10 @@
 package mobile
 
 import (
-	"archive/zip"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -175,100 +172,22 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 
 	// Extract resources.arsc from the output APK
 	arscPath = filepath.Join(tempDir, "resources.arsc")
-	if err := extractFileFromZip(outputAPK, "resources.arsc", arscPath); err != nil {
+	if err := util.ExtractFileFromZip(outputAPK, "resources.arsc", arscPath); err != nil {
 		return "", "", "", fmt.Errorf("failed to extract resources.arsc: %w", err)
 	}
 
 	// Extract compiled AndroidManifest.xml from the output APK
 	manifestPath = filepath.Join(tempDir, fileAndroidManifestXML)
-	if err := extractFileFromZip(outputAPK, fileAndroidManifestXML, manifestPath); err != nil {
+	if err := util.ExtractFileFromZip(outputAPK, fileAndroidManifestXML, manifestPath); err != nil {
 		return "", "", "", fmt.Errorf("failed to extract %s: %w", fileAndroidManifestXML, err)
 	}
 
 	// Extract res/ directory from the output APK
 	extractedResDir := filepath.Join(tempDir, "extracted_res")
-	if err := extractDirFromZip(outputAPK, "res/", extractedResDir); err != nil {
+	if err := util.ExtractDirFromZip(outputAPK, "res/", extractedResDir); err != nil {
 		return "", "", "", fmt.Errorf("failed to extract res/ directory: %w", err)
 	}
 
 	return arscPath, extractedResDir, manifestPath, nil
 }
 
-func copyZipFileToPath(f *zip.File, destPath string) error {
-	rc, err := f.Open()
-	if err != nil {
-		return err
-	}
-	defer rc.Close()
-
-	dest, err := os.Create(destPath)
-	if err != nil {
-		return err
-	}
-	defer dest.Close()
-
-	_, err = io.Copy(dest, rc)
-	return err
-}
-
-// extractFileFromZip extracts a single file from a zip archive
-func extractFileFromZip(zipPath, fileName, destPath string) error {
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		if f.Name != fileName {
-			continue
-		}
-
-		if err := copyZipFileToPath(f, destPath); err != nil {
-			return err
-		}
-	}
-	return fmt.Errorf("file %s not found in zip", fileName)
-}
-
-// extractDirFromZip extracts all files with a given prefix from a zip archive
-func extractDirFromZip(zipPath, prefix, destDir string) error {
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	if err := os.MkdirAll(destDir, util.DirPermDefault); err != nil {
-		return err
-	}
-
-	for _, f := range r.File {
-		if !strings.HasPrefix(f.Name, prefix) {
-			continue
-		}
-
-		relPath := f.Name[len(prefix):]
-		if relPath == "" {
-			continue
-		}
-		destPath := filepath.Join(destDir, relPath)
-
-		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(destPath, util.DirPermDefault); err != nil {
-				return err
-			}
-			continue
-		}
-		if err := os.MkdirAll(filepath.Dir(destPath), util.DirPermDefault); err != nil {
-			return err
-		}
-
-		// Extract file
-		if err := copyZipFileToPath(f, destPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
