@@ -35,7 +35,7 @@ func ExtractFileFromZip(zipPath, fileName, destPath string) error {
 	}
 	defer r.Close()
 
-	return extractFileFromZip(r, fileName, destPath)
+	return extractFileFromZip(&r.Reader, fileName, destPath)
 }
 
 // ExtractFileFromZipReader extracts a single file from an open zip archive handle
@@ -44,10 +44,10 @@ func ExtractFileFromZipBytes(b []byte, fileName, destPath string) error {
 	if err != nil {
 		return err
 	}
-	return extractFileFromZip(&zip.ReadCloser{Reader:*r}, fileName, destPath)
+	return extractFileFromZip(r, fileName, destPath)
 }
 
-func extractFileFromZip(r *zip.ReadCloser, fileName, destPath string) error {
+func extractFileFromZip(r *zip.Reader, fileName, destPath string) error {
 	for _, f := range r.File {
 		if f.Name != fileName {
 			continue
