@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
@@ -37,13 +38,11 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-const androidRepo = "https://dl.google.com/android/maven2/"
-
-var androidDeps = []string{
-	"androidx.annotation:annotation:1.3.0",
-	"androidx.camera:camera-core:1.6.2",
-	"androidx.core:core:1.19.0",
-}
+const (
+	androidRepo   = "https://dl.google.com/android/maven2/"
+	javaFilesGlob = "internal/driver/mobile/app/*.java"
+	javaDepsFile  = "internal/driver/mobile/app/java-dependencies.txt"
+)
 
 func main() {
 	app := &cli.App{
@@ -150,8 +149,6 @@ func lookupFyneDir(file string) (string, error) {
 	return "", fmt.Errorf("failed to find fyne source path")
 }
 
-const javaFilesGlob = "internal/driver/mobile/app/*.java"
-
 func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 	androidHome := os.Getenv("ANDROID_HOME")
 	if androidHome == "" {
@@ -185,11 +182,16 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 		return err
 	}
 
+	androidDeps, err := readAndroidDeps(filepath.Join(fyneSourceDir, javaDepsFile))
+	if err != nil {
+		return err
+	}
+
 	depDir := filepath.Join(buildDir, "deps")
 	if err := os.MkdirAll(depDir, util.DirPermDefault); err != nil {
 		return err
 	}
-	if err := downloadDeps(depDir, verbose); err != nil {
+	if err := downloadDeps(androidDeps, depDir, verbose); err != nil {
 		return err
 	}
 
@@ -349,7 +351,7 @@ func generateChecksums(sumFile string, files []string, verbose bool) error {
 	return w.Close()
 }
 
-func downloadDeps(dir string, verbose bool) error {
+func downloadDeps(androidDeps []string, dir string, verbose bool) error {
 	for _, dep := range androidDeps {
 		parts := strings.Split(dep, ":")
 		if len(parts) < 3 {
@@ -409,6 +411,26 @@ func download(u string) ([]byte, error) {
 	}
 	defer res.Body.Close()
 	return io.ReadAll(res.Body)
+}
+
+func readAndroidDeps(file string) ([]string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	r := []string{}
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		t := strings.TrimSpace(s.Text())
+		if strings.HasPrefix(t, "#") {
+			continue
+		}
+		r = append(r, t)
+	}
+
+	return r, nil
 }
 
 func getDownloadUrl(pomUrl string) (string, error) {
