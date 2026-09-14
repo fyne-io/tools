@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"go/format"
@@ -39,9 +40,9 @@ import (
 const androidRepo = "https://dl.google.com/android/maven2/"
 
 var androidDeps = []string{
-	"androidx/annotation/annotation/1.3.0/annotation-1.3.0.jar",
-	"androidx/camera/camera-core/1.6.2/camera-core-1.6.2.aar",
-	"androidx/core/core/1.19.0/core-1.19.0.aar",
+	"androidx.annotation:annotation:1.3.0",
+	"androidx.camera:camera-core:1.6.2",
+	"androidx.core:core:1.19.0",
 }
 
 func main() {
@@ -349,12 +350,13 @@ func generateChecksums(sumFile string, files []string, verbose bool) error {
 }
 
 func downloadDeps(dir string, verbose bool) error {
-	for _, depFile := range androidDeps {
-		dlFile := filepath.Join(dir, filepath.Base(depFile))
-		jarFile := dlFile
-		if base := strings.TrimSuffix(dlFile, ".aar"); base != dlFile {
-			jarFile = base + ".jar"
+	for _, dep := range androidDeps {
+		parts := strings.Split(dep, ":")
+		if len(parts) < 3 {
+			return fmt.Errorf("invalid dependency: %v", dep)
 		}
+		jarFile := filepath.Join(dir, parts[1]+"-"+parts[2]+".jar")
+
 		if fi, err := os.Stat(jarFile); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		} else if fi != nil && fi.Size() > 0 {
@@ -364,16 +366,23 @@ func downloadDeps(dir string, verbose bool) error {
 			continue
 		}
 
-		depUrl := androidRepo + depFile
+		pomPath := pomPathFromParts(parts)
+		pomUrl := androidRepo + pomPath
+		depUrl, err := getDownloadUrl(pomUrl)
+		if err != nil {
+			return err
+		}
+
+		dlFile := filepath.Join(dir, filepath.Base(depUrl))
 		if verbose {
-			log.Printf("downloading dependency: %v: %v", depUrl, dlFile)
+			log.Printf("downloading dependency: %v: %v", dlFile, depUrl)
 		}
 		b, err := download(depUrl)
 		if err != nil {
 			return err
 		}
 
-		switch filepath.Ext(depFile) {
+		switch filepath.Ext(dlFile) {
 		case ".jar":
 			if err := os.WriteFile(dlFile, b, util.FilePermDefault); err != nil {
 				return err
@@ -383,10 +392,14 @@ func downloadDeps(dir string, verbose bool) error {
 				return err
 			}
 		default:
-			return fmt.Errorf("unknown dependency format: %v", depFile)
+			return fmt.Errorf("unknown dependency format: %v", dlFile)
 		}
 	}
 	return nil
+}
+
+func pomPathFromParts(parts []string) string {
+	return strings.ReplaceAll(parts[0], ".", "/") + "/" + parts[1] + "/" + parts[2] + "/" + parts[1] + "-" + parts[2] + ".pom"
 }
 
 func download(u string) ([]byte, error) {
@@ -396,6 +409,24 @@ func download(u string) ([]byte, error) {
 	}
 	defer res.Body.Close()
 	return io.ReadAll(res.Body)
+}
+
+func getDownloadUrl(pomUrl string) (string, error) {
+	pom, err := download(pomUrl)
+	if err != nil {
+		return "", err
+	}
+	var prj struct {
+		Packaging string `xml:"packaging"`
+	}
+	if err := xml.Unmarshal(pom, &prj); err != nil {
+		return "", err
+	}
+	ext := ".jar"
+	if prj.Packaging != "" {
+		ext = "." + prj.Packaging
+	}
+	return strings.TrimSuffix(pomUrl, ".pom") + ext, nil
 }
 
 // stripMethodParameters rewrites a .class file in place, removing every
