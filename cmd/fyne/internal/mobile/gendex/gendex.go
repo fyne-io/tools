@@ -179,28 +179,9 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 		log.Printf("found java files: %v", javaFiles)
 	}
 
-	// get version from platform
-	androidVer := append(strings.Split(filepath.Base(platform), "android-"), "")[1]
-	if verbose {
-		log.Printf("found android version: %v", androidVer)
-	}
-
-	androidJar := filepath.Join(platform, "android.jar")
-	if f, err := os.Open(androidJar); err != nil {
+	androidJar, err := getAndroidJar(platform, buildDir, verbose)
+	if err != nil {
 		return err
-	} else {
-		androidJar = filepath.Join(buildDir, "android-"+androidVer+".jar")
-		g, err := os.Create(androidJar)
-		if err != nil {
-			return err
-		}
-		if _, err := io.Copy(g, f); err != nil {
-			_ = g.Close()
-			return err
-		}
-		if err := g.Close(); err != nil {
-			return err
-		}
 	}
 
 	depDir := filepath.Join(buildDir, "deps")
@@ -264,7 +245,44 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 		os.Stderr.Write(out)
 		return err
 	}
-	src, err := os.ReadFile(filepath.Join(buildDir, "classes.dex"))
+
+	if err := updateDexGo(filepath.Join(buildDir, "classes.dex"), outfile); err != nil {
+		return err
+	}
+
+	return generateChecksums("SHA256SUMS", append([]string{androidJar}, jarFiles...), verbose)
+}
+
+func getAndroidJar(platform, buildDir string, verbose bool) (string, error) {
+	androidVer := append(strings.Split(filepath.Base(platform), "android-"), "")[1]
+
+	if verbose {
+		log.Printf("found android version: %v", androidVer)
+	}
+
+	f, err := os.Open(filepath.Join(platform, "android.jar"))
+	if err != nil {
+		return "", err
+	}
+
+	androidJar := filepath.Join(buildDir, "android-"+androidVer+".jar")
+	g, err := os.Create(androidJar)
+	if err != nil {
+		return "", err
+	}
+	if _, err := io.Copy(g, f); err != nil {
+		_ = g.Close()
+		return "", err
+	}
+	if err := g.Close(); err != nil {
+		return "", err
+	}
+
+	return androidJar, nil
+}
+
+func updateDexGo(infile, outfile string) error {
+	src, err := os.ReadFile(infile)
 	if err != nil {
 		return err
 	}
@@ -300,13 +318,11 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 	if _, err := w.Write(out); err != nil {
 		return err
 	}
-	if err := w.Close(); err != nil {
-		return err
-	}
+	return w.Close()
+}
 
-	// generate and write checksum file
-	sumFile := "SHA256SUMS"
-	w, err = os.Create(sumFile)
+func generateChecksums(sumFile string, files []string, verbose bool) error {
+	w, err := os.Create(sumFile)
 	if err != nil {
 		return err
 	}
@@ -316,7 +332,7 @@ func gendex(fyneSourceDir, buildDir, outfile string, verbose bool) error {
 		ww = io.MultiWriter(w, os.Stdout)
 		log.Printf("updating checksum file: %v", sumFile)
 	}
-	for _, jarFile := range append([]string{androidJar}, jarFiles...) {
+	for _, jarFile := range files {
 		f, err := os.Open(jarFile)
 		if err != nil {
 			return err
