@@ -2,12 +2,12 @@ package util
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"bytes"
 )
 
 func copyZipFileToPath(f *zip.File, destPath string) error {
