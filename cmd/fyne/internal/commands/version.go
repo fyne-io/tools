@@ -6,12 +6,14 @@ import (
 	"os"
 	"runtime/debug"
 
+	"fyne.io/tools/cmd/fyne/internal/util"
+
 	"github.com/lucor/goinfo/report"
 	"github.com/urfave/cli/v2"
 )
 
 func getFyneGoModVersion(dir string) (string, error) {
-	wd, err := lookupDirWithGoMod(dir)
+	wd, err := util.LookupDirWithGoMod(dir)
 	if err != nil {
 		return "", err
 	}
