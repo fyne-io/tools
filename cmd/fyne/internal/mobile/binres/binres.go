@@ -62,14 +62,6 @@ func errWrongType(have ResType, want ...ResType) error {
 	return fmt.Errorf("wrong resource type %s, want one of %v", have, want)
 }
 
-// Values carried by the ATTR_TYPE entry of an attribute's resource map, see
-// android.content.res.ResTable_map in the platform's ResourceTypes.h.
-const (
-	attrTypeMarker TableRef = 0x01000000 // name of the ATTR_TYPE map entry
-	attrTypeEnum   uint32   = 0x00010000 // remaining entries are enum symbols
-	attrTypeFlags  uint32   = 0x00020000 // remaining entries are flag symbols
-)
-
 // ResType is the type of a resource
 type ResType uint16
 
@@ -738,24 +730,9 @@ func addAttributeNamespace(attr xml.Attr, nattr *Attribute, tbl *Table, pool *Po
 			return fmt.Errorf("unhandled data type %0#2x: %s", uint8(t), t)
 		}
 	} else {
-		// The value named 0x01000000 (ATTR_TYPE) carries the attribute's format
-		// bits, which say whether the remaining values are enum or flag symbols.
-		// Tables built by the original aapt also encoded flag symbols as hex and
-		// enum symbols as decimal, which aapt2 no longer does, so the last value's
-		// type only serves as a fallback for tables without the marker.
+		// 0x01000000 is an unknown ref that doesn't point to anything, typically
+		// located at the start of entry value lists, peek at last value to determine type.
 		t := nt.values[len(nt.values)-1].data.Type
-		for _, val := range nt.values {
-			if val.name != attrTypeMarker {
-				continue
-			}
-			switch {
-			case val.data.Value&attrTypeFlags != 0:
-				t = DataIntHex
-			case val.data.Value&attrTypeEnum != 0:
-				t = DataIntDec
-			}
-			break
-		}
 		switch t {
 		case DataIntDec:
 			for _, val := range nt.values {

@@ -2,11 +2,13 @@ package mobile
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
@@ -112,6 +114,10 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 		return "", "", "", fmt.Errorf("failed to create compiled directory: %w", err)
 	}
 
+	manifestData, err = ensureManifestIcon(manifestData)
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to ensure manifest icon: %w", err)
+	}
 	tempManifestPath := filepath.Join(tempDir, fileAndroidManifestXML)
 	if err := os.WriteFile(tempManifestPath, manifestData, util.FilePermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to write %s: %w", fileAndroidManifestXML, err)
@@ -271,4 +277,37 @@ func extractDirFromZip(zipPath, prefix, destDir string) error {
 	}
 
 	return nil
+}
+
+// ensureManifestIcon adds android:icon and android:roundIcon attributes
+func ensureManifestIcon(manifestData []byte) ([]byte, error) {
+	applicationTagRegex := regexp.MustCompile(`<application(\s[^>]*)?>`)
+
+	// search application tag
+	loc := applicationTagRegex.FindIndex(manifestData)
+	if loc == nil {
+		// manifestData has to have an application tag
+		return nil, fmt.Errorf("failed to find application tag in AndroidManifest.xml")
+	}
+
+	// build insertion
+	tag := manifestData[loc[0]:loc[1]]
+	var extra []byte
+	if !bytes.Contains(tag, []byte("android:icon=")) {
+		extra = append(extra, ` android:icon="@mipmap/ic_launcher"`...)
+	}
+	if !bytes.Contains(tag, []byte("android:roundIcon=")) {
+		extra = append(extra, ` android:roundIcon="@mipmap/ic_launcher_round"`...)
+	}
+	if len(extra) == 0 {
+		return manifestData, nil
+	}
+
+	// insert before the closing ">" of the opening tag
+	end := loc[1] - 1
+	out := make([]byte, 0, len(manifestData)+len(extra))
+	out = append(out, manifestData[:end]...)
+	out = append(out, extra...)
+	out = append(out, manifestData[end:]...)
+	return out, nil
 }

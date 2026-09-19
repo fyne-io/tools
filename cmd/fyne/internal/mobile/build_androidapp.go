@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
@@ -27,13 +28,12 @@ import (
 )
 
 type manifestTmplData struct {
-	JavaPkgPath  string
-	Name         string
-	Debug        bool
-	LibName      string
-	Version      string
-	Build        int
-	AdaptiveIcon bool
+	JavaPkgPath string
+	Name        string
+	Debug       bool
+	LibName     string
+	Version     string
+	Build       int
 }
 
 const (
@@ -66,19 +66,15 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 
-		foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
-		adaptive := foreground != "" && util.Exists(foreground)
-
 		buf := new(bytes.Buffer)
 		buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
 		err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
-			JavaPkgPath:  bundleID,
-			Name:         strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
-			Debug:        !buildRelease,
-			LibName:      libName,
-			Version:      version,
-			Build:        build,
-			AdaptiveIcon: adaptive,
+			JavaPkgPath: bundleID,
+			Name:        strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+			Debug:       !buildRelease,
+			LibName:     libName,
+			Version:     version,
+			Build:       build,
 		})
 		if err != nil {
 			return nil, err
@@ -260,11 +256,29 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		}
 	}
 
-	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
+	// there are certain things requiring more recent SDK build tools, namely aapt2
+	needAAPT2 := false
 
-	// No adaptive icons, use legacy build
+	// adaptive icons
+	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 	if iconForeground == "" {
+		needAAPT2 = true
+	}
+
+	// foreground service
+	foregroundServiceTypeRegex := regexp.MustCompile(`<service[\s\S]+?(android:foregroundServiceType)\s*?=\s*?"[\s\S]+?>`)
+	if foregroundServiceTypeRegex.Find(manifestData) != nil {
+		needAAPT2 = true
+	}
+
+	// No adaptive icons, no foreground service, use legacy build
+	if !needAAPT2 {
 		return legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
+	}
+
+	// Use the icon from FyneApp.toml or the command argument as iconForeground
+	if iconForeground == "" {
+		iconForeground = iconPath
 	}
 
 	// Use iconForeground as background if no separate background provided
@@ -284,7 +298,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		versionName,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to compile adaptive icon resources: %w", err)
+		return fmt.Errorf("failed to compile resources: %w", err)
 	}
 
 	w, err := apkwCreate("resources.arsc", apkw)
@@ -310,7 +324,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		if err != nil {
 			return err
 		}
-		return apkwWriteFile("res/"+relPath, path, apkw)
+		return apkwWriteFile("res/"+filepath.ToSlash(relPath), path, apkw)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to write res directory: %w", err)
