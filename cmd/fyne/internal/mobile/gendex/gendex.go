@@ -295,7 +295,7 @@ func readAndroidDeps(file string) ([]string, error) {
 	s := bufio.NewScanner(f)
 	for s.Scan() {
 		fields := strings.Fields(s.Text())
-		if len(fields) == 0 || fields[0] == "#" {
+		if len(fields) == 0 || strings.HasPrefix(fields[0], "#") {
 			continue
 		}
 		r = append(r, fields[0])
