@@ -381,6 +381,9 @@ func download(u string) ([]byte, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
+	if res.StatusCode >= 400 {
+		return nil, fmt.Errorf("http: %v: %v", u, res.Status)
+	}
 	return io.ReadAll(res.Body)
 }
 
