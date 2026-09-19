@@ -294,11 +294,11 @@ func readAndroidDeps(file string) ([]string, error) {
 	r := []string{}
 	s := bufio.NewScanner(f)
 	for s.Scan() {
-		t := strings.TrimSpace(s.Text())
-		if strings.HasPrefix(t, "#") {
+		fields := strings.Fields(s.Text())
+		if len(fields) == 0 || fields[0] == "#" {
 			continue
 		}
-		r = append(r, t)
+		r = append(r, fields[0])
 	}
 
 	return r, nil
