@@ -165,7 +165,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		appData: p.appData,
 	}
 
-	if p.os != "darwin" {
+	if p.os != goos.Darwin {
 		return []string{p.exe}, b.build()
 	}
 
@@ -422,7 +422,7 @@ func (p *Packager) normaliseIcon(path string) (string, error) {
 
 func validateAppID(appID, os, name string, release bool) (string, error) {
 	// old darwin compatibility
-	if os == "darwin" && appID == "" {
+	if os == goos.Darwin && appID == "" {
 		return "com.example." + name, nil
 	} else if os != goos.IOS && !pkgUtil.IsAndroid(os) && (os != goos.Windows || !release) {
 		return appID, nil
