@@ -165,7 +165,28 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		appData: p.appData,
 	}
 
-	return []string{p.exe}, b.build()
+	if p.os != goos.Darwin {
+		return []string{p.exe}, b.build()
+	}
+
+	for _, arch := range []string{"amd64", "arm64"} {
+		b.os = p.os + "/" + arch
+		b.target = p.exe + "-" + arch
+		if err := b.build(); err != nil {
+			return nil, err
+		}
+	}
+
+	r := newCommand("lipo")
+	r.setDir(p.srcDir)
+	r.setEnv(os.Environ())
+	rargs := []string{"-create", "-output", p.exe, p.exe + "-amd64", p.exe + "-arm64"}
+	out, err := r.runOutput(rargs...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create universal binary: %s", string(out))
+	}
+
+	return rargs[2:], nil
 }
 
 func (p *Packager) combinedVersion() string {
@@ -217,7 +238,7 @@ func (p *Packager) doPackage(runner runner) error {
 	}
 
 	switch {
-	case goos.Darwin == p.os:
+	case goos.IsDarwin(p.os):
 		return p.packageDarwin()
 	case goos.IsBSD(p.os) || goos.Linux == p.os:
 		return p.packageUNIX()
@@ -401,7 +422,7 @@ func (p *Packager) normaliseIcon(path string) (string, error) {
 
 func validateAppID(appID, os, name string, release bool) (string, error) {
 	// old darwin compatibility
-	if os == "darwin" && appID == "" {
+	if os == goos.Darwin && appID == "" {
 		return "com.example." + name, nil
 	} else if os != goos.IOS && !pkgUtil.IsAndroid(os) && (os != goos.Windows || !release) {
 		return appID, nil
