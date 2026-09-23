@@ -21,5 +21,9 @@ jobs:
           go-version: ${{ matrix.go-version }}
           go-version-file: "go.mod"
 
+      - name: Test (macOS, external linkmode)
+        if: matrix.os == 'macos-latest'
+        run: go test -race -tags ci -ldflags="-linkmode=external" ./...
       - name: Tests
+        if: matrix.os != 'macos-latest'
         run: go test -race -tags ci ./...

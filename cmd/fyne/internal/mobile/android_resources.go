@@ -1,13 +1,10 @@
 package mobile
 
 import (
-	"archive/zip"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -34,7 +31,7 @@ func generateAdaptiveIconXML(hasMonochrome bool) string {
 // writeAdaptiveIconResources creates all necessary resource files for adaptive icons
 func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath string) error {
 	xxxhdpiDir := filepath.Join(resDir, "mipmap-xxxhdpi")
-	if err := os.MkdirAll(xxxhdpiDir, 0o755); err != nil {
+	if err := os.MkdirAll(xxxhdpiDir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-xxxhdpi directory: %w", err)
 	}
 
@@ -57,16 +54,16 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 
 	// Create mipmap-anydpi-v26 metadata for adaptive icon XML
 	anydpiV26Dir := filepath.Join(resDir, "mipmap-anydpi-v26")
-	if err := os.MkdirAll(anydpiV26Dir, 0o755); err != nil {
+	if err := os.MkdirAll(anydpiV26Dir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-anydpi-v26 directory: %w", err)
 	}
 
 	adaptiveXML := generateAdaptiveIconXML(false) // v26 doesn't include monochrome
-	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher.xml"), []byte(adaptiveXML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher.xml"), []byte(adaptiveXML), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write ic_launcher.xml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher_round.xml"), []byte(adaptiveXML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher_round.xml"), []byte(adaptiveXML), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write ic_launcher_round.xml: %w", err)
 	}
 
@@ -75,16 +72,16 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 	}
 	// If monochrome provided, create v33 resources with monochrome support
 	anydpiV33Dir := filepath.Join(resDir, "mipmap-anydpi-v33")
-	if err := os.MkdirAll(anydpiV33Dir, 0o755); err != nil {
+	if err := os.MkdirAll(anydpiV33Dir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-anydpi-v33 directory: %w", err)
 	}
 
 	adaptiveXMLWithMono := generateAdaptiveIconXML(true)
-	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write v33 ic_launcher.xml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write v33 ic_launcher_round.xml: %w", err)
 	}
 	return nil
@@ -99,7 +96,7 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 	}
 
 	resDir = filepath.Join(tempDir, "res")
-	if err := os.MkdirAll(resDir, 0o755); err != nil {
+	if err := os.MkdirAll(resDir, util.DirPermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to create res directory: %w", err)
 	}
 
@@ -108,13 +105,13 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 	}
 
 	compiledDir := filepath.Join(tempDir, "compiled")
-	if err := os.MkdirAll(compiledDir, 0o755); err != nil {
+	if err := os.MkdirAll(compiledDir, util.DirPermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to create compiled directory: %w", err)
 	}
 
-	tempManifestPath := filepath.Join(tempDir, "AndroidManifest.xml")
-	if err := os.WriteFile(tempManifestPath, manifestData, 0o644); err != nil {
-		return "", "", "", fmt.Errorf("failed to write AndroidManifest.xml: %w", err)
+	tempManifestPath := filepath.Join(tempDir, fileAndroidManifestXML)
+	if err := os.WriteFile(tempManifestPath, manifestData, util.FilePermDefault); err != nil {
+		return "", "", "", fmt.Errorf("failed to write %s: %w", fileAndroidManifestXML, err)
 	}
 
 	err = filepath.Walk(resDir, func(path string, info os.FileInfo, err error) error {
@@ -175,108 +172,21 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 
 	// Extract resources.arsc from the output APK
 	arscPath = filepath.Join(tempDir, "resources.arsc")
-	if err := extractFileFromZip(outputAPK, "resources.arsc", arscPath); err != nil {
+	if err := util.ExtractFileFromZip(outputAPK, "resources.arsc", arscPath); err != nil {
 		return "", "", "", fmt.Errorf("failed to extract resources.arsc: %w", err)
 	}
 
 	// Extract compiled AndroidManifest.xml from the output APK
-	manifestPath = filepath.Join(tempDir, "AndroidManifest.xml")
-	if err := extractFileFromZip(outputAPK, "AndroidManifest.xml", manifestPath); err != nil {
-		return "", "", "", fmt.Errorf("failed to extract AndroidManifest.xml: %w", err)
+	manifestPath = filepath.Join(tempDir, fileAndroidManifestXML)
+	if err := util.ExtractFileFromZip(outputAPK, fileAndroidManifestXML, manifestPath); err != nil {
+		return "", "", "", fmt.Errorf("failed to extract %s: %w", fileAndroidManifestXML, err)
 	}
 
 	// Extract res/ directory from the output APK
 	extractedResDir := filepath.Join(tempDir, "extracted_res")
-	if err := extractDirFromZip(outputAPK, "res/", extractedResDir); err != nil {
+	if err := util.ExtractDirFromZip(outputAPK, "res/", extractedResDir); err != nil {
 		return "", "", "", fmt.Errorf("failed to extract res/ directory: %w", err)
 	}
 
 	return arscPath, extractedResDir, manifestPath, nil
-}
-
-// extractFileFromZip extracts a single file from a zip archive
-func extractFileFromZip(zipPath, fileName, destPath string) error {
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		if f.Name != fileName {
-			continue
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-		defer rc.Close()
-
-		dest, err := os.Create(destPath)
-		if err != nil {
-			return err
-		}
-		defer dest.Close()
-
-		_, err = io.Copy(dest, rc)
-		return err
-	}
-	return fmt.Errorf("file %s not found in zip", fileName)
-}
-
-// extractDirFromZip extracts all files with a given prefix from a zip archive
-func extractDirFromZip(zipPath, prefix, destDir string) error {
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return err
-	}
-
-	for _, f := range r.File {
-		if !strings.HasPrefix(f.Name, prefix) {
-			continue
-		}
-
-		relPath := f.Name[len(prefix):]
-		if relPath == "" {
-			continue
-		}
-		destPath := filepath.Join(destDir, relPath)
-
-		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(destPath, 0o755); err != nil {
-				return err
-			}
-			continue
-		}
-		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
-			return err
-		}
-
-		// Extract file
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-
-		dest, err := os.Create(destPath)
-		if err != nil {
-			rc.Close()
-			return err
-		}
-
-		_, err = io.Copy(dest, rc)
-		rc.Close()
-		dest.Close()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

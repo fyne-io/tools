@@ -6,12 +6,14 @@ import (
 	"os"
 	"runtime/debug"
 
+	"fyne.io/tools/cmd/fyne/internal/util"
+
 	"github.com/lucor/goinfo/report"
 	"github.com/urfave/cli/v2"
 )
 
 func getFyneGoModVersion(dir string) (string, error) {
-	wd, err := lookupDirWithGoMod(dir)
+	wd, err := util.LookupDirWithGoMod(dir)
 	if err != nil {
 		return "", err
 	}
@@ -23,7 +25,7 @@ func getFyneGoModVersion(dir string) (string, error) {
 		return info["version"].(string), nil
 	}
 
-	return "", fmt.Errorf("fyne version not found")
+	return "", errors.New("fyne version not found")
 }
 
 // Version returns the cli command for the program version.

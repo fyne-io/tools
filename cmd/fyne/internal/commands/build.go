@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,8 +13,10 @@ import (
 
 	"fyne.io/fyne/v2"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // Partly based on https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/blob/master/include/flags.yml?ref_type=heads.
@@ -66,7 +69,7 @@ func Build() *cli.Command {
 			argCount := ctx.Args().Len()
 			if argCount > 0 {
 				if argCount != 1 {
-					return fmt.Errorf("incorrect amount of path provided")
+					return errors.New("incorrect amount of path provided")
 				}
 				b.goPackage = ctx.Args().First()
 			}
@@ -79,32 +82,28 @@ func Build() *cli.Command {
 // Build parse the tags and start building
 func (b *Builder) Build() error {
 	if b.srcdir != "" {
-		b.srcdir = util.EnsureAbsPath(b.srcdir)
+		b.srcdir = pkgUtil.EnsureAbsPath(b.srcdir)
 		dirStat, err := os.Stat(b.srcdir)
 		if err != nil {
 			return err
 		}
 		if !dirStat.IsDir() {
-			return fmt.Errorf("specified source directory is not a valid directory")
+			return errors.New("specified source directory is not a valid directory")
 		}
 	}
 	if b.tagsToParse != "" {
-		b.tags = strings.Split(b.tagsToParse, ",")
+		b.tags = util.SplitComma(b.tagsToParse)
 	}
-	b.appData.Release = b.release
-	b.appData.CustomMetadata = b.customMetadata.m
+	b.Release = b.release
+	b.CustomMetadata = b.customMetadata.m
 
 	return b.build()
 }
 
-func isWeb(goos string) bool {
-	return goos == "js" || goos == "wasm" || goos == "web"
-}
-
 func (b *Builder) build() error {
-	goos := b.os
-	if goos == "" {
-		goos = targetOS()
+	osTarget := b.os
+	if osTarget == "" {
+		osTarget = targetOS()
 	}
 
 	b.updateGoExecutable()
@@ -136,13 +135,13 @@ func (b *Builder) build() error {
 	env := os.Environ()
 
 	arch := targetArch()
-	if p := strings.Split(goos, "/"); len(p) == 2 && p[0] == "darwin" && p[1] != "" {
-		goos, arch = p[0], p[1]
+	if p := util.SplitSlash(osTarget); len(p) == 2 && p[0] == goos.Darwin && p[1] != "" {
+		osTarget, arch = p[0], p[1]
 		env = append(env, "GOARCH="+arch)
 	}
 
 	ldFlags := extractLdflagsFromGoFlags()
-	if goos == "windows" {
+	if osTarget == goos.Windows {
 		ldFlags += " -H=windowsgui"
 	}
 
@@ -159,9 +158,9 @@ func (b *Builder) build() error {
 		args = append(args, "-o", b.target)
 	}
 
-	if !isWeb(goos) {
+	if !goos.IsWeb(osTarget) {
 		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
-		b.applyCAndLDFlags(&env, goos, arch)
+		b.applyCAndLDFlags(&env, osTarget, arch)
 	} else {
 		env = append(env, "CGO_ENABLED=0") // CGO is not available in WebAssembly
 	}
@@ -171,20 +170,20 @@ func (b *Builder) build() error {
 	if b.release {
 		tags = append(tags, "release")
 	}
-	if ok, set := b.appData.Migrations["fyneDo"]; ok && set {
+	if ok, set := b.Migrations["fyneDo"]; ok && set {
 		tags = append(tags, "migrated_fynedo")
 	}
 	if len(tags) > 0 {
-		args = append(args, "-tags", strings.Join(tags, ","))
+		args = append(args, "-tags", util.JoinComma(tags))
 	}
 
 	if b.goPackage != "" {
 		args = append(args, b.goPackage)
 	}
 
-	if goos != "ios" && goos != "android" && !isWeb(goos) {
-		env = append(env, "GOOS="+goos)
-	} else if goos == "web" || goos == "wasm" {
+	if osTarget != goos.IOS && osTarget != goos.Android && !goos.IsWeb(osTarget) {
+		env = append(env, "GOOS="+osTarget)
+	} else if goos.IsWASM(osTarget) {
 		env = append(env, "GOARCH=wasm")
 		env = append(env, "GOOS=js")
 	}
@@ -193,7 +192,7 @@ func (b *Builder) build() error {
 	b.runner.setEnv(env)
 	out, err := b.runner.runOutput(args...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", string(out))
+		fmt.Fprintln(os.Stderr, string(out))
 	}
 	return err
 }
@@ -218,7 +217,7 @@ func (b *Builder) computeSrcDir() (string, error) {
 func (b *Builder) updateToDefaultIconIfNotSet(srcdir string) {
 	if b.icon == "" {
 		defaultIcon := filepath.Join(srcdir, "Icon.png")
-		if util.Exists(defaultIcon) {
+		if pkgUtil.Exists(defaultIcon) {
 			b.icon = defaultIcon
 		}
 	}
@@ -258,22 +257,22 @@ func (b *Builder) updateGoExecutable() {
 	b.runner = newCommand(goBin)
 }
 
-func (b *Builder) applyCAndLDFlags(env *[]string, goos, arch string) {
+func (b *Builder) applyCAndLDFlags(env *[]string, os, arch string) {
 	cflags := []string{baseCFLAGSRegular}
 	if b.release {
 		cflags[0] = baseCFLAGSRelease
 	}
 
-	cflagsHardening := hardeningCFlagsLookup(ccVersion(), goos, arch)
+	cflagsHardening := hardeningCFlagsLookup(ccVersion(), os, arch)
 	if cflagsHardening != "" {
 		cflags = append(cflags, cflagsHardening)
 	}
 
 	ldflags := []string{}
-	switch goos {
-	case "linux":
+	switch os {
+	case goos.Linux:
 		ldflags = append(ldflags, hardeningLDFLAGSLinux)
-	case "darwin":
+	case goos.Darwin:
 		ldflags = append(ldflags, hardeningLDFLAGSDarwin)
 
 		cflags = append(cflags, "-mmacosx-version-min=10.13")
@@ -285,16 +284,18 @@ func (b *Builder) applyCAndLDFlags(env *[]string, goos, arch string) {
 		cflags = append(cflags, "-mbranch-protection=bti+pac-ret")
 	}
 
-	appendEnv(env, "CGO_CFLAGS", strings.Join(cflags, " "))
-	appendEnv(env, "CGO_LDFLAGS", strings.Join(ldflags, " "))
+	appendEnv(env, "CGO_CFLAGS", util.JoinSpace(cflags))
+	appendEnv(env, "CGO_LDFLAGS", util.JoinSpace(ldflags))
 }
+
+const maxIconSize = 512
 
 func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
 	data, err := metadata.LoadStandard(srcdir)
 	if err == nil {
 		// When icon path specified in metadata file, we should make it relative to metadata file
 		if data.Details.Icon != "" {
-			data.Details.Icon = util.MakePathRelativeTo(srcdir, data.Details.Icon)
+			data.Details.Icon = pkgUtil.MakePathRelativeTo(srcdir, data.Details.Icon)
 		}
 
 		app.mergeMetadata(data)
@@ -315,7 +316,7 @@ func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
 			return func() { os.Remove(metadataInitFilePath) }, err
 		}
 
-		res = metadata.ScaleIcon(res, 512)
+		res = metadata.ScaleIcon(res, maxIconSize)
 
 		// The return type of fyne.LoadResourceFromPath is always a *fyne.StaticResource.
 		app.ResGoString = res.(*fyne.StaticResource).GoString()
@@ -386,14 +387,16 @@ func appendEnv(env *[]string, varName, value string) {
 	*env = append(*env, varName+"="+value)
 }
 
+const goflagsEnvKey = "GOFLAGS"
+
 func extractLdflagsFromGoFlags() string {
-	goFlags := os.Getenv("GOFLAGS")
+	goFlags := os.Getenv(goflagsEnvKey)
 
 	ldFlags, goFlags := extractLdFlags(goFlags)
 	if goFlags != "" {
-		os.Setenv("GOFLAGS", goFlags)
+		os.Setenv(goflagsEnvKey, goFlags)
 	} else {
-		os.Unsetenv("GOFLAGS")
+		os.Unsetenv(goflagsEnvKey)
 	}
 
 	return ldFlags
@@ -403,23 +406,15 @@ func extractLdFlags(goFlags string) (string, string) {
 	if goFlags == "" {
 		return "", ""
 	}
-
-	flags := strings.Fields(goFlags)
-	ldflags := ""
-	newGoFlags := ""
-
-	for _, flag := range flags {
+	var ldflags, newGoFlags []string
+	for _, flag := range strings.Fields(goFlags) {
 		if strings.HasPrefix(flag, "-ldflags=") {
-			ldflags += strings.TrimPrefix(flag, "-ldflags=") + " "
+			ldflags = append(ldflags, strings.TrimPrefix(flag, "-ldflags="))
 		} else {
-			newGoFlags += flag + " "
+			newGoFlags = append(newGoFlags, flag)
 		}
 	}
-
-	ldflags = strings.TrimSpace(ldflags)
-	newGoFlags = strings.TrimSpace(newGoFlags)
-
-	return ldflags, newGoFlags
+	return util.JoinSpace(ldflags), util.JoinSpace(newGoFlags)
 }
 
 func normaliseVersion(str string) string {

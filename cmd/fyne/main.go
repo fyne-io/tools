@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	verCmd := commands.Version()
 	app := &cli.App{
 		Name:        "fyne",
 		Usage:       "A command line helper for various Fyne tools.",
@@ -25,7 +26,7 @@ func main() {
 			commands.Install(),
 			commands.Serve(),
 			commands.Translate(),
-			commands.Version(),
+			verCmd,
 			commands.Bundle(),
 		},
 	}
@@ -35,7 +36,15 @@ func main() {
 		app.Version = info.Main.Version
 	}
 
-	if err := app.Run(os.Args); err != nil {
+	cli.VersionPrinter = func(ctx *cli.Context) {
+		exitOnError(verCmd.Action(ctx))
+	}
+
+	exitOnError(app.Run(os.Args))
+}
+
+func exitOnError(err error) {
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

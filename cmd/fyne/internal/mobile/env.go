@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"golang.org/x/mod/semver"
@@ -25,11 +26,13 @@ var (
 
 	darwinArmNM string
 
+	//revive:disable:add-constant
 	allArchs = map[string][]string{
 		"android":      {"arm", "arm64", "386", "amd64"},
 		"ios":          {"arm64"},
 		"iossimulator": {"arm64", "amd64"},
 	}
+	//revive:enable:add-constant
 
 	bitcodeEnabled bool
 )
@@ -89,7 +92,14 @@ var (
 	before116 = false
 )
 
+const (
+	clangProg   = "clang"
+	clangPpProg = "clang++"
+	nmProg      = "nm"
+)
+
 func envInit() (err error) {
+	//revive:disable:add-constant
 	// Check the current Go version by go-list.
 	// An arbitrary standard package ('runtime' here) is given to go-list.
 	// This is because go-list tries to analyze the module at the current directory if no packages are given,
@@ -142,11 +152,11 @@ func envInit() (err error) {
 			return fmt.Errorf("gomobile requires Android API level >= %d", minAndroidAPI)
 		}
 		for arch, toolchain := range ndk {
-			clang := toolchain.Path(ndkRoot, "clang")
-			clangpp := toolchain.Path(ndkRoot, "clang++")
+			clang := toolchain.Path(ndkRoot, clangProg)
+			clangpp := toolchain.Path(ndkRoot, clangPpProg)
 			if !buildN {
 				tools := []string{clang, clangpp}
-				if runtime.GOOS == "windows" {
+				if runtime.GOOS == goos.Windows {
 					// Because of https://github.com/android-ndk/ndk/issues/920,
 					// we require r19c, not just r19b. Fortunately, the clang++.cmd
 					// script only exists in r19c.
@@ -172,11 +182,11 @@ func envInit() (err error) {
 		}
 	}
 
-	if !xcodeAvailable() || !util.IsIOS(buildTarget) {
+	if !xcodeAvailable() || !goos.IsIOS(buildTarget) {
 		return nil
 	}
 
-	darwinArmNM = "nm"
+	darwinArmNM = nmProg
 	darwinEnv = make(map[string][]string)
 	for _, arch := range allArchs[buildTarget] {
 		var env []string
@@ -187,7 +197,7 @@ func envInit() (err error) {
 			env = append(env, "GOARM=7")
 			fallthrough
 		case "arm64":
-			if buildTarget == "ios" {
+			if buildTarget == goos.IOS {
 				clang, cflags, err = envClang("iphoneos")
 				cflags += " -miphoneos-version-min=" + buildIOSVersion
 			} else { // iossimulator
@@ -208,9 +218,9 @@ func envInit() (err error) {
 			cflags += " -fembed-bitcode"
 		}
 
-		os := "ios"
+		os := goos.IOS
 		if before116 {
-			os = "darwin"
+			os = goos.Darwin
 		}
 		env = append(
 			env,
@@ -227,6 +237,7 @@ func envInit() (err error) {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 func ndkRoot() (string, error) {
@@ -251,14 +262,14 @@ func ndkRoot() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no Android NDK found in $ANDROID_HOME/ndk-bundle nor in $ANDROID_NDK_HOME")
+	return "", errors.New("no Android NDK found in $ANDROID_HOME/ndk-bundle nor in $ANDROID_NDK_HOME")
 }
 
 func envClang(sdkName string) (clang, cflags string, err error) {
 	if buildN {
 		return sdkName + "-clang", "-isysroot=" + sdkName, nil
 	}
-	cmd := exec.Command("xcrun", "--sdk", sdkName, "--find", "clang")
+	cmd := exec.Command("xcrun", "--sdk", sdkName, "--find", clangProg)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", "", fmt.Errorf("xcrun --find: %v\n%s", err, out)
@@ -275,6 +286,7 @@ func envClang(sdkName string) (clang, cflags string, err error) {
 }
 
 func archClang(goarch string) string {
+	//revive:disable:add-constant
 	switch goarch {
 	case "arm":
 		return "armv7"
@@ -287,6 +299,7 @@ func archClang(goarch string) string {
 	default:
 		panic(fmt.Sprintf("unknown GOARCH: %q", goarch))
 	}
+	//revive:enable:add-constant
 }
 
 // environ merges os.Environ and the given "key=value" pairs.
@@ -304,7 +317,7 @@ func environ(kv []string) []string {
 			new = append(new, ev)
 			continue
 		}
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == goos.Windows {
 			elem[0] = strings.ToUpper(elem[0])
 		}
 		envs[elem[0]] = elem[1]
@@ -314,7 +327,7 @@ func environ(kv []string) []string {
 		if len(elem) != 2 || elem[0] == "" {
 			panic(fmt.Sprintf("malformed env var %q from input", ev))
 		}
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == goos.Windows {
 			elem[0] = strings.ToUpper(elem[0])
 		}
 		envs[elem[0]] = elem[1]
@@ -326,7 +339,8 @@ func environ(kv []string) []string {
 }
 
 func archNDK() string {
-	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
+	//revive:disable:add-constant
+	if runtime.GOOS == goos.Windows && runtime.GOARCH == "386" {
 		return "windows"
 	}
 
@@ -338,11 +352,11 @@ func archNDK() string {
 		arch = "x86_64"
 	case "arm64":
 		// For darwin/arm64, see https://golang.org/cl/346153.
-		if runtime.GOOS == "darwin" {
+		if runtime.GOOS == goos.Darwin {
 			arch = "x86_64"
 			break
 		}
-		if runtime.GOOS == "android" { // termux
+		if runtime.GOOS == goos.Android { // termux
 			return "linux-aarch64"
 		}
 		fallthrough
@@ -350,6 +364,7 @@ func archNDK() string {
 		panic("unsupported GOARCH: " + runtime.GOARCH)
 	}
 	return runtime.GOOS + "-" + arch
+	//revive:enable:add-constant
 }
 
 type ndkToolchain struct {
@@ -367,13 +382,15 @@ func (tc *ndkToolchain) ClangPrefix(api int) string {
 	return fmt.Sprintf("%s%d", tc.clangPrefix, api)
 }
 
+const maxAndroidAPI = 99
+
 func (tc *ndkToolchain) Path(ndkRoot, toolName string) string {
-	for api := buildAndroidAPI; api < 99; api++ {
+	for api := buildAndroidAPI; api < maxAndroidAPI; api++ {
 		var pref string
 		switch toolName {
-		case "clang", "clang++":
+		case clangProg, clangPpProg:
 			pref = tc.ClangPrefix(api)
-		case "nm":
+		case nmProg:
 			pref = "llvm"
 		default:
 			pref = tc.toolPrefix
@@ -382,7 +399,7 @@ func (tc *ndkToolchain) Path(ndkRoot, toolName string) string {
 		toolPath := filepath.Join(ndkRoot, "toolchains", "llvm", "prebuilt", archNDK(), "bin", pref+"-"+toolName)
 		if util.Exists(toolPath) {
 			return toolPath
-		} else if runtime.GOOS == "windows" {
+		} else if runtime.GOOS == goos.Windows {
 			// On windows some of the NDK executable have a .exe extension and some don't, so try both.
 			toolPath += ".exe"
 			if util.Exists(toolPath) {
@@ -404,6 +421,7 @@ func (nc ndkConfig) Toolchain(arch string) ndkToolchain {
 }
 
 var ndk = ndkConfig{
+	//revive:disable:add-constant
 	"arm": {
 		arch:        "arm",
 		abi:         "armeabi-v7a",
@@ -433,6 +451,7 @@ var ndk = ndkConfig{
 		toolPrefix:  "x86_64-linux-android",
 		clangPrefix: "x86_64-linux-android",
 	},
+	//revive:enable:add-constant
 }
 
 func xcodeAvailable() bool {

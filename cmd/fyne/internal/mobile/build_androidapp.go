@@ -36,6 +36,11 @@ type manifestTmplData struct {
 	AdaptiveIcon bool
 }
 
+const (
+	fileAndroidManifestXML = "AndroidManifest.xml"
+	fileClassesDex         = "classes.dex"
+)
+
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
 ) (map[string]bool, error) {
@@ -54,7 +59,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	// Fix this to work with other Go tools.
 	dir := filepath.Dir(pkg.GoFiles[0])
 
-	manifestPath := filepath.Join(dir, "AndroidManifest.xml")
+	manifestPath := filepath.Join(dir, fileAndroidManifestXML)
 	manifestData, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -80,7 +85,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		}
 		manifestData = buf.Bytes()
 		if buildV {
-			fmt.Fprintf(os.Stderr, "generated AndroidManifest.xml:\n%s\n", manifestData)
+			fmt.Fprintf(os.Stderr, "generated %s:\n%s\n", fileAndroidManifestXML, manifestData)
 		}
 	} else {
 		libName, err = manifestLibName(manifestData)
@@ -165,7 +170,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		if err != nil {
 			_, _ = fmt.Fprint(os.Stderr, "Required command 'bundletool' not found when building Android for release.\n")
 			_, _ = fmt.Fprint(os.Stderr, "For more information see https://developer.android.com/tools/bundletool.\n")
-			return nil, fmt.Errorf("bundletool: command not found")
+			return nil, errors.New("bundletool: command not found")
 		}
 		err = convertAPKToAAB(buildO)
 		if err != nil {
@@ -311,7 +316,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		return fmt.Errorf("failed to write res directory: %w", err)
 	}
 
-	return apkwWriteFile("AndroidManifest.xml", compiledManifestPath, apkw)
+	return apkwWriteFile(fileAndroidManifestXML, compiledManifestPath, apkw)
 }
 
 func legacyAddAssets(apkw *Writer, manifestData []byte, iconPath string, target int) error {
@@ -344,7 +349,7 @@ func legacyAddAssets(apkw *Writer, manifestData []byte, iconPath string, target 
 		}
 	}
 
-	w, err := apkwCreate("AndroidManifest.xml", apkw)
+	w, err := apkwCreate(fileAndroidManifestXML, apkw)
 	if err != nil {
 		return err
 	}
@@ -373,7 +378,7 @@ func buildAPK(out io.Writer, nmpkgs map[string]map[string]bool, libFiles []strin
 		apkw = NewWriter(out, privKey)
 	}
 
-	w, err := apkwCreate("classes.dex", apkw)
+	w, err := apkwCreate(fileClassesDex, apkw)
 	if err != nil {
 		return nil, err
 	}
@@ -479,11 +484,13 @@ func convertAPKToAAB(aabPath string) error {
 	apkPath := buildO[:len(aabPath)-3] + "apk"
 	apkProtoPath := buildO[:len(aabPath)-3] + "apk-proto"
 	tmpPath := filepath.Join(filepath.Dir(aabPath), "tmpbundle")
-	err := os.MkdirAll(tmpPath, 0o755)
+	err := os.MkdirAll(tmpPath, util.DirPermDefault)
 	if err != nil {
 		return err
 	}
-	defer removeAll(tmpPath)
+	defer func() {
+		_ = removeAll(tmpPath)
+	}()
 
 	aapt2, err := util.Aapt2Path()
 	if err != nil {
@@ -507,10 +514,21 @@ func convertAPKToAAB(aabPath string) error {
 	}
 	_ = os.Remove(apkProtoPath)
 
-	_ = os.MkdirAll(filepath.Join(tmpPath, "dex"), 0o755)
-	_ = os.MkdirAll(filepath.Join(tmpPath, "manifest"), 0o755)
-	_ = os.Rename(filepath.Join(tmpPath, "AndroidManifest.xml"), filepath.Join(tmpPath, "manifest", "AndroidManifest.xml"))
-	_ = os.Rename(filepath.Join(tmpPath, "classes.dex"), filepath.Join(tmpPath, "dex", "classes.dex"))
+	tmpPathDex := filepath.Join(tmpPath, "dex")
+	tmpPathManifest := filepath.Join(tmpPath, "manifest")
+
+	if err := os.MkdirAll(tmpPathDex, util.DirPermDefault); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := os.MkdirAll(tmpPathManifest, util.DirPermDefault); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := os.Rename(filepath.Join(tmpPath, fileAndroidManifestXML), filepath.Join(tmpPathManifest, fileAndroidManifestXML)); err != nil {
+		return err
+	}
+	if err := os.Rename(filepath.Join(tmpPath, fileClassesDex), filepath.Join(tmpPathDex, fileClassesDex)); err != nil {
+		return err
+	}
 
 	cmd = exec.Command("zip", "../base.zip", "-r", ".")
 	cmd.Dir = tmpPath
