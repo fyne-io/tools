@@ -5,9 +5,13 @@ More detailed release notes can be found on the [releases page](https://github.c
 
 ## 1.7.3 - 30 Sep 2026
 
+### Added
+
+* Compiler/platform based optimisation flags (#144, #147, #152)
+* Fixing store compatibility for September (#151)
+
 ### Changed
 
-* Unified version lookup code (#149)
 * Update Fyne version, sync Go version, and work around macOS/CI issue (#157)
 * Make sure version argument and command do the same (#158)
 * gendex: use Fyne module source, CLI improvements, dependency download and checksum support (#166)
@@ -18,13 +22,6 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Correct the icon name for Makefiles (#140)
 * Ensure we list the most recent versions last to resolve correctly (#145)
 * Don't rely on an empty AppID, it's optional (#146)
-* Address linter issues (#153, #159, #160, #162, #163, #164)
-
-### Added
-
-* Compiler/platform based optimisation flags (#144, #147, #152)
-* Fixing store compatibility for September (#151)
-* Reusable go.mod lookup code (#165)
 
 ### New Contributors
 
