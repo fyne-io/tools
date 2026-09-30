@@ -8,7 +8,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 ### Added
 
 * Compiler/platform based optimisation flags (#144, #147, #152)
-* Fixing store compatibility for September (#151)
+* Fixing Play Store compatibility for September (#151)
 
 ### Changed
 
