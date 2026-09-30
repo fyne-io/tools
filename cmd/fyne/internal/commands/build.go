@@ -134,6 +134,12 @@ func (b *Builder) build() error {
 	args := []string{"build"}
 	env := os.Environ()
 
+	arch := targetArch()
+	if p := util.SplitSlash(osTarget); len(p) == 2 && p[0] == goos.Darwin && p[1] != "" {
+		osTarget, arch = p[0], p[1]
+		env = append(env, "GOARCH="+arch)
+	}
+
 	ldFlags := extractLdflagsFromGoFlags()
 	if osTarget == goos.Windows {
 		ldFlags += " -H=windowsgui"
@@ -154,7 +160,7 @@ func (b *Builder) build() error {
 
 	if !goos.IsWeb(osTarget) {
 		env = append(env, "CGO_ENABLED=1") // in case someone is trying to cross-compile...
-		b.applyCAndLDFlags(&env, osTarget)
+		b.applyCAndLDFlags(&env, osTarget, arch)
 	} else {
 		env = append(env, "CGO_ENABLED=0") // CGO is not available in WebAssembly
 	}
@@ -251,13 +257,12 @@ func (b *Builder) updateGoExecutable() {
 	b.runner = newCommand(goBin)
 }
 
-func (b *Builder) applyCAndLDFlags(env *[]string, os string) {
+func (b *Builder) applyCAndLDFlags(env *[]string, os, arch string) {
 	cflags := []string{baseCFLAGSRegular}
 	if b.release {
 		cflags[0] = baseCFLAGSRelease
 	}
 
-	arch := targetArch()
 	cflagsHardening := hardeningCFlagsLookup(ccVersion(), os, arch)
 	if cflagsHardening != "" {
 		cflags = append(cflags, cflagsHardening)

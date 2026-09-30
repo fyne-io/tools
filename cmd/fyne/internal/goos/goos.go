@@ -24,6 +24,11 @@ func IsBSD(os string) bool {
 	return os == FreeBSD || os == NetBSD || os == OpenBSD
 }
 
+// IsDarwin returns true if the given os parameter represents one of the Darwin targets.
+func IsDarwin(os string) bool {
+	return strings.HasPrefix(os, "darwin")
+}
+
 // IsIOS returns true if the given os parameter represents one of the iOS targets (ios, iossimulator)
 func IsIOS(os string) bool {
 	return strings.HasPrefix(os, "ios")
