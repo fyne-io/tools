@@ -298,6 +298,9 @@ func (i *Installer) installAndroid() error {
 
 	_, err := os.Stat(target)
 	if os.IsNotExist(err) {
+		if i.verbose {
+			fmt.Println("Packaging", target)
+		}
 		err := i.Packager.doPackage(nil)
 		if err != nil {
 			return nil
@@ -312,6 +315,9 @@ func (i *Installer) installIOS() error {
 
 	// Always redo the package because the codesign for ios and iossimulator
 	// must be different.
+	if i.verbose {
+		fmt.Println("Packaging", target)
+	}
 	if err := i.Packager.doPackage(nil); err != nil {
 		return nil
 	}
@@ -327,6 +333,9 @@ func (i *Installer) installIOS() error {
 }
 
 func (i *Installer) runMobileInstall(tool, target string, args ...string) error {
+	if i.verbose {
+		fmt.Println("Installing", target)
+	}
 	_, err := exec.LookPath(tool)
 	if err != nil {
 		return err
@@ -354,6 +363,9 @@ func (i *Installer) validate() error {
 }
 
 func (i *Installer) installToIOSSimulator(target string) error {
+	if i.verbose {
+		fmt.Println("Installing", target)
+	}
 	cmd := exec.Command(
 		"xcrun", "simctl", "install", //revive:disable-line:add-constant
 		"booted", // Install to the booted simulator.
