@@ -284,6 +284,9 @@ func (i *Installer) install() error {
 		}
 	}
 
+	if i.verbose {
+		fmt.Println("Installing to", i.installDir)
+	}
 	p.dir = i.installDir
 	err := p.doPackage(nil)
 	if err != nil {
