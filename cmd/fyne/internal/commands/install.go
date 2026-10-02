@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
+	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"github.com/urfave/cli/v2"
 
@@ -301,13 +302,17 @@ func (i *Installer) installAndroid() error {
 
 	_, err := os.Stat(target)
 	if os.IsNotExist(err) {
+		// the build that follows reports the package it creates, so this only
+		// states why an existing package is not installed again
 		if i.verbose {
-			fmt.Println("Packaging", target)
+			fmt.Println("Packaging", util.ShellQuote(target), "(no existing package)")
 		}
 		err := i.Packager.doPackage(nil)
 		if err != nil {
 			return nil
 		}
+	} else if i.verbose {
+		fmt.Println("Using existing package", util.ShellQuote(target))
 	}
 
 	return i.runMobileInstall("adb", target, "install")
@@ -319,7 +324,7 @@ func (i *Installer) installIOS() error {
 	// Always redo the package because the codesign for ios and iossimulator
 	// must be different.
 	if i.verbose {
-		fmt.Println("Packaging", target)
+		fmt.Println("Rebuilding package", util.ShellQuote(target), "(code signing needs a new package)")
 	}
 	if err := i.Packager.doPackage(nil); err != nil {
 		return nil
@@ -362,6 +367,7 @@ func (i *Installer) validate() error {
 	i.Packager.icon = i.icon
 	i.Packager.release = i.release
 	i.Packager.tags = i.tags
+	i.Packager.verbose = i.verbose
 	return i.Packager.validate()
 }
 
