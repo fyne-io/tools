@@ -349,7 +349,10 @@ func relDir(dir string) string {
 // it is written there.
 func relPath(path string) string {
 	rel := relDir(path)
-	if rel != "." && !strings.ContainsRune(rel, filepath.Separator) {
+	// a path that has no directory part is a file in the current one, note
+	// that relDir may return a path that uses a foreign separator or none at
+	// all, so ask for its directory instead of looking for a separator
+	if rel != "." && filepath.Dir(rel) == "." {
 		return "./" + rel
 	}
 

@@ -166,7 +166,9 @@ func Test_RelPath(t *testing.T) {
 
 	assert.Equal(t, "./myapp", relPath(filepath.Join(wd, "myapp"))) // a file next to us is named "./"
 	assert.Equal(t, filepath.Join("sub", "myapp"), relPath(filepath.Join(wd, "sub", "myapp")))
-	assert.Equal(t, "/etc/myapp", relPath("/etc/myapp")) // outside keeps the absolute path
+	above := filepath.Join(wd, "..", "..", "myapp")
+	assert.Equal(t, above, relPath(above))               // above keeps the absolute path
+	assert.Equal(t, "/etc/myapp", relPath("/etc/myapp")) // ... even with foreign separators
 }
 
 func Test_InstallAndroidVerboseOutput(t *testing.T) {
