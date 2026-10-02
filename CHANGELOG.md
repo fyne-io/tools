@@ -3,17 +3,6 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
-## Unreleased
-
-### Added
-
-* Report more steps and package names for verbose builds, packaging and installs
-
-### Fixed
-
-* Do not build for this machine when a mobile target is passed to the build command
-
-
 ## 1.7.3 - 30 Sep 2026
 
 ### Added
