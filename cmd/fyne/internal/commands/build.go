@@ -25,6 +25,12 @@ const (
 	baseCFLAGSRelease = "-O3 -pipe"
 )
 
+// Names of the files that are generated in the source directory for a build.
+const (
+	pprofInitFileName    = "fyne_pprof.go"
+	metadataInitFileName = "fyne_metadata_init.go"
+)
+
 // Builder generate the executables.
 type Builder struct {
 	*appData
@@ -35,9 +41,11 @@ type Builder struct {
 	pprofPort          int
 	tags               []string
 	tagsToParse        string
+	verbose            bool
 
 	customMetadata keyValueFlag
 
+	goBin  string
 	runner runner
 }
 
@@ -64,6 +72,7 @@ func Build() *cli.Command {
 			boolFlags["pprof"](&b.pprof),
 			intFlags["pprof-port"](&b.pprofPort),
 			genericFlags["metadata"](&b.customMetadata),
+			boolFlags["verbose"](&b.verbose),
 		},
 		Action: func(ctx *cli.Context) error {
 			argCount := ctx.Args().Len()
@@ -122,11 +131,24 @@ func (b *Builder) build() error {
 
 	b.updateToDefaultIconIfNotSet(srcdir)
 
+	if b.verbose {
+		exe := util.ShellQuote(relPath(b.exePath(osTarget)))
+		if dir := relDir(b.srcdir); dir == "." {
+			fmt.Println("Building", exe, "for", osTarget)
+		} else {
+			fmt.Println("Building", exe, "for", osTarget, "in", dir)
+		}
+	}
+
 	if b.pprof {
 		close, err := injectPprofFile(srcdir, b.pprofPort)
 		if err != nil {
 			fyne.LogError("Failed to inject pprof file, omitting pprof", err)
 		} else if close != nil {
+			if b.verbose {
+				fmt.Println("Injecting pprof file",
+					util.ShellQuote(filepath.Join(relDir(srcdir), pprofInitFileName)), "(removed after the build)")
+			}
 			defer close()
 		}
 	}
@@ -135,6 +157,10 @@ func (b *Builder) build() error {
 	if err != nil {
 		fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
 	} else if close != nil {
+		if b.verbose {
+			fmt.Println("Injecting metadata file",
+				util.ShellQuote(filepath.Join(relDir(srcdir), metadataInitFileName)), "(removed after the build)")
+		}
 		defer close()
 	}
 
@@ -191,6 +217,9 @@ func (b *Builder) build() error {
 
 	b.runner.setDir(b.srcdir)
 	b.runner.setEnv(env)
+	if b.verbose {
+		fmt.Println("Running", util.ShellQuoteCommand(b.goBin, args))
+	}
 	out, err := b.runner.runOutput(args...)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, string(out))
@@ -225,7 +254,7 @@ func (b *Builder) updateToDefaultIconIfNotSet(srcdir string) {
 }
 
 func injectPprofFile(srcdir string, port int) (func(), error) {
-	pprofInitFilePath := filepath.Join(srcdir, "fyne_pprof.go")
+	pprofInitFilePath := filepath.Join(srcdir, pprofInitFileName)
 	pprofInitFile, err := os.Create(pprofInitFilePath)
 	if err != nil {
 		return func() {}, err
@@ -248,14 +277,83 @@ func injectPprofFile(srcdir string, port int) (func(), error) {
 }
 
 func (b *Builder) updateGoExecutable() {
+	b.goBin = goBinary()
 	if b.runner != nil {
 		return
 	}
-	goBin := os.Getenv("GO")
-	if goBin == "" {
-		goBin = "go"
+	b.runner = newCommand(b.goBin)
+}
+
+// goBinary returns the go binary to run builds with.
+func goBinary() string {
+	if goBin := os.Getenv(goEnvKey); goBin != "" {
+		return goBin
 	}
-	b.runner = newCommand(goBin)
+	return goExecutable
+}
+
+// exePath returns the path of the executable that this build will create,
+// following the naming that the go tool applies to the output.
+func (b *Builder) exePath(osTarget string) string {
+	if b.target != "" {
+		return b.target
+	}
+
+	name := b.goPackage
+	if name == "" || name == "." {
+		name = calculateExeName(absDir(b.srcdir), osTarget)
+	} else {
+		// the go tool names the output after the package that is built
+		name = filepath.Base(name)
+		if osTarget == goos.Windows && !strings.HasSuffix(name, ".exe") {
+			name += ".exe"
+		}
+	}
+
+	return filepath.Join(absDir(b.srcdir), name)
+}
+
+// absDir returns the absolute path of dir, defaulting to the current directory.
+func absDir(dir string) string {
+	if dir != "" {
+		return dir
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "."
+	}
+	return wd
+}
+
+// relDir returns the path of dir relative to the current directory, which is
+// the short form that is easiest to recognise when reading build output.
+// Directories outside of the current one, such as install destinations, are
+// returned as absolute paths.
+func relDir(dir string) string {
+	abs := absDir(dir)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return abs
+	}
+
+	rel, err := filepath.Rel(wd, abs)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return abs
+	}
+	return rel
+}
+
+// relPath returns the path of a created file or directory like relDir does,
+// but names a file in the current directory as "./name" to make it clear that
+// it is written there.
+func relPath(path string) string {
+	rel := relDir(path)
+	if rel != "." && !strings.ContainsRune(rel, filepath.Separator) {
+		return "./" + rel
+	}
+
+	return rel
 }
 
 func (b *Builder) applyCAndLDFlags(env *[]string, os string) {
@@ -303,7 +401,7 @@ func createMetadataInitFile(srcdir string, app *appData) (func(), error) {
 		app.mergeMetadata(data)
 	}
 
-	metadataInitFilePath := filepath.Join(srcdir, "fyne_metadata_init.go")
+	metadataInitFilePath := filepath.Join(srcdir, metadataInitFileName)
 	metadataInitFile, err := os.Create(metadataInitFilePath)
 	if err != nil {
 		return func() {}, err
@@ -389,7 +487,12 @@ func appendEnv(env *[]string, varName, value string) {
 	*env = append(*env, varName+"="+value)
 }
 
-const goflagsEnvKey = "GOFLAGS"
+const (
+	goEnvKey     = "GO"
+	goExecutable = "go"
+
+	goflagsEnvKey = "GOFLAGS"
+)
 
 func extractLdflagsFromGoFlags() string {
 	goFlags := os.Getenv(goflagsEnvKey)
