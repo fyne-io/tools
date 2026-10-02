@@ -296,15 +296,30 @@ func (i *Installer) install() error {
 func (i *Installer) installAndroid() error {
 	target := mobile.AppOutputName(i.os, i.Packager.Name, i.release)
 
-	_, err := os.Stat(target)
-	if os.IsNotExist(err) {
-		err := i.Packager.doPackage(nil)
-		if err != nil {
-			return nil
-		}
+	buildPackage := func() error {
+		return i.Packager.doPackage(nil)
+	}
+	if err := i.ensurePackage(target, buildPackage); err != nil {
+		return err
 	}
 
 	return i.runMobileInstall("adb", target, "install")
+}
+
+// ensurePackage reuses the package at target if it is there and calls build
+// otherwise. The error of a failed build is reported, so that an outdated
+// package is not installed as if it were a new one.
+func (i *Installer) ensurePackage(target string, build func() error) error {
+	_, err := os.Stat(target)
+	if !os.IsNotExist(err) {
+		return nil
+	}
+
+	if err := build(); err != nil {
+		return fmt.Errorf("error packaging application: %w", err)
+	}
+
+	return nil
 }
 
 func (i *Installer) installIOS() error {
@@ -313,7 +328,7 @@ func (i *Installer) installIOS() error {
 	// Always redo the package because the codesign for ios and iossimulator
 	// must be different.
 	if err := i.Packager.doPackage(nil); err != nil {
-		return nil
+		return fmt.Errorf("error packaging application: %w", err)
 	}
 
 	switch i.os {
