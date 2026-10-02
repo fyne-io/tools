@@ -2,15 +2,20 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func (p *Packager) packageWasm() error {
 	appDir := pkgUtil.EnsureSubDir(p.dir, "wasm")
+	if p.verbose {
+		fmt.Println("Packaging", util.ShellQuote(relPath(appDir)))
+	}
 
 	tpl := webData{
 		AppName:    p.Name,

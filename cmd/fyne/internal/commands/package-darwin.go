@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 	"github.com/fogleman/gg"
 	"github.com/nfnt/resize"
 
@@ -34,6 +35,10 @@ func darwinLangs(langs []string) []string {
 
 func (p *Packager) packageDarwin() (err error) {
 	appDir := pkgUtil.EnsureSubDir(p.dir, p.Name+".app")
+	if p.verbose {
+		fmt.Println("Packaging", util.ShellQuote(relPath(appDir)))
+	}
+
 	exeName := filepath.Base(p.exe)
 
 	contentsDir := pkgUtil.EnsureSubDir(appDir, "Contents")
