@@ -95,6 +95,10 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	var nmpkgs map[string]bool
 	for _, arch := range archs {
 		path := filepath.Join(tmpdir, arch)
+		if buildVerbose {
+			printcmd("Building %s binary for %s", arch, buildTarget)
+		}
+
 		// Disable DWARF; see golang.org/issues/25148.
 		if err := goBuild(src, darwinEnv[arch], "-ldflags=-w", "-o="+path); err != nil {
 			return nil, err
@@ -148,6 +152,9 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	}
 	if buildX {
 		printcmd("mv %s %s", tmpdir+"/build/Release-iphoneos/main.app", buildO)
+	}
+	if buildVerbose {
+		printcmd("Packaging %s", util.ShellQuote(buildO))
 	}
 	if !buildN {
 		// if output already exists, remove.

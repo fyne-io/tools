@@ -216,12 +216,18 @@ func Test_buildPackageWasm(t *testing.T) {
 		os:      "wasm",
 		srcDir:  "myTest",
 		release: true,
+		verbose: true,
 	}
 	wasmBuildTest := &testCommandRuns{runs: expected, t: t}
-	files, err := p.buildPackage(wasmBuildTest, []string{})
+	var files []string
+	var err error
+	out := captureStdout(t, func() {
+		files, err = p.buildPackage(wasmBuildTest, []string{})
+	})
 	assert.NoError(t, err)
 	assert.NotNil(t, files)
 	assert.Equal(t, 1, len(files))
+	assert.Contains(t, out, "Running go build -trimpath -ldflags '-s -w' -tags release")
 }
 
 func Test_PackageWasm(t *testing.T) {

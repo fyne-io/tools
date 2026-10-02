@@ -9,6 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_BuildRejectsMobileTargets(t *testing.T) {
+	for _, target := range []string{"android", "android/arm64", "android/386", "ios", "iossimulator"} {
+		t.Run(target, func(t *testing.T) {
+			b := &Builder{appData: &appData{}, os: target, runner: &testCommandRuns{t: t}}
+
+			err := b.build()
+			assert.EqualError(t, err, "the build command cannot target "+target+
+				", mobile packages are created with \"fyne package --target "+target+"\"")
+		})
+	}
+}
+
 func Test_BuildWasmVersion(t *testing.T) {
 	expected := []mockRunner{
 		{

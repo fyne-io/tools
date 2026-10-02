@@ -56,6 +56,7 @@ func Package() *cli.Command {
 			stringFlags["profile"](&p.profile),
 			boolFlags["release"](&p.release),
 			genericFlags["metadata"](&p.customMetadata),
+			boolFlags["verbose"](&p.verbose),
 		},
 		Action: func(_ *cli.Context) error {
 			if p.customMetadata.m == nil {
@@ -76,6 +77,7 @@ type Packager struct {
 	tags, category                 string
 	tempDir                        string
 	langs                          []string
+	verbose                        bool
 
 	customMetadata      keyValueFlag
 	linuxAndBSDMetadata *metadata.LinuxAndBSD
@@ -160,6 +162,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		target:  p.exe,
 		release: p.release,
 		tags:    tags,
+		verbose: p.verbose,
 		runner:  runner,
 
 		appData: p.appData,
@@ -193,7 +196,19 @@ func (p *Packager) doPackage(runner runner) error {
 		tags = util.SplitComma(p.tags)
 	}
 
-	if !pkgUtil.Exists(p.exe) && !pkgUtil.IsMobile(p.os) {
+	switch {
+	case pkgUtil.IsMobile(p.os): // we don't use the normal build command for mobile so inject before gomobile...
+		close, err := injectMetadataIfPossible(p.dir, p.appData, createMetadataInitFile)
+		if err != nil {
+			fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
+		} else if close != nil {
+			if p.verbose {
+				fmt.Println("Injecting metadata file",
+					util.ShellQuote(filepath.Join(relDir(p.dir), metadataInitFileName)), "(removed after the build)")
+			}
+			defer close()
+		}
+	case !pkgUtil.Exists(p.exe):
 		files, err := p.buildPackage(runner, tags)
 		if err != nil {
 			return fmt.Errorf("error building application: %w", err)
@@ -206,13 +221,9 @@ func (p *Packager) doPackage(runner runner) error {
 		if p.os != goos.Windows {
 			defer p.removeBuild(files)
 		}
-	}
-	if pkgUtil.IsMobile(p.os) { // we don't use the normal build command for mobile so inject before gomobile...
-		close, err := injectMetadataIfPossible(p.dir, p.appData, createMetadataInitFile)
-		if err != nil {
-			fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
-		} else if close != nil {
-			defer close()
+	default:
+		if p.verbose {
+			fmt.Println("Using existing executable", util.ShellQuote(relPath(p.exe)))
 		}
 	}
 
