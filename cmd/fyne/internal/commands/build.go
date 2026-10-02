@@ -106,6 +106,13 @@ func (b *Builder) build() error {
 		osTarget = targetOS()
 	}
 
+	if goos.IsMobile(osTarget) {
+		// a mobile application is created by gomobile, a plain go build would
+		// silently produce a binary for this machine instead
+		return fmt.Errorf("the build command cannot target %s, mobile packages are created with \"fyne package --target %s\"",
+			osTarget, osTarget)
+	}
+
 	b.updateGoExecutable()
 
 	srcdir, err := b.computeSrcDir()
