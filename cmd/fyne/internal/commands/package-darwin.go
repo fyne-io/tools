@@ -37,6 +37,10 @@ func darwinLangs(langs []string) []string {
 
 func (p *Packager) packageDarwin() (err error) {
 	appDir := pkgUtil.EnsureSubDir(p.dir, p.Name+".app")
+	if p.verbose {
+		fmt.Println("Packaging", relPath(appDir))
+	}
+
 	exeName := filepath.Base(p.exe)
 
 	contentsDir := pkgUtil.EnsureSubDir(appDir, "Contents")
