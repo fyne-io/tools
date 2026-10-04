@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMicrophonePermission(t *testing.T) {
+func TestMicrophoneCapability(t *testing.T) {
 	tests := map[string]struct {
 		tmpl *template.Template
 		want string

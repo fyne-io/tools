@@ -247,7 +247,7 @@ func (r *Releaser) packageMacOSRelease() error {
 	defer os.RemoveAll(r.Name + ".app") // this was the output of package and it can get in the way of future builds
 
 	cleanup, err := r.writeEntitlements(templates.EntitlementsDarwin, struct{ Microphone bool }{
-		Microphone: r.Permissions.Microphone,
+		Microphone: r.Capabilities.Microphone,
 	})
 	if err != nil {
 		return errors.New("failed to write entitlements plist template")
@@ -289,7 +289,7 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		Microphone                                     bool
 	}{
 		AppID:      r.AppID,
-		Microphone: r.Permissions.Microphone,
+		Microphone: r.Capabilities.Microphone,
 		// TODO read this info
 		Developer:     encodeXMLString(r.developer),
 		DeveloperName: encodeXMLString(r.nameFromCertInfo(r.developer)),

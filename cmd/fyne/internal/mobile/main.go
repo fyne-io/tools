@@ -20,5 +20,5 @@ type command struct {
 	Build                  int
 
 	iconFG, iconBG, iconMono string
-	permissions              metadata.Permissions
+	capabilities             metadata.Capabilities
 }

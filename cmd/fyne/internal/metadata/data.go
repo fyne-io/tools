@@ -7,14 +7,14 @@ type FyneApp struct {
 	Details      AppDetails
 	AdaptiveIcon *AdaptiveIcon `toml:",omitempty"`
 
-	Development map[string]string `toml:",omitempty"`
-	Release     map[string]string `toml:",omitempty"`
-	Source      *AppSource        `toml:",omitempty"`
-	CanOpen     *CanOpen          `toml:",omitempty"`
-	LinuxAndBSD *LinuxAndBSD      `toml:",omitempty"`
-	Languages   []string          `toml:",omitempty"`
-	Migrations  map[string]bool   `toml:",omitempty"`
-	Permissions *Permissions      `toml:",omitempty"`
+	Development  map[string]string `toml:",omitempty"`
+	Release      map[string]string `toml:",omitempty"`
+	Source       *AppSource        `toml:",omitempty"`
+	CanOpen      *CanOpen          `toml:",omitempty"`
+	LinuxAndBSD  *LinuxAndBSD      `toml:",omitempty"`
+	Languages    []string          `toml:",omitempty"`
+	Migrations   map[string]bool   `toml:",omitempty"`
+	Capabilities *Capabilities     `toml:",omitempty"`
 }
 
 // AppDetails describes the build information, this group may be OS or arch specific
@@ -44,8 +44,8 @@ type LinuxAndBSD struct {
 	ExecParams  string   `toml:",omitempty"`
 }
 
-// Permissions lists the system integrations an application uses that the OS requires to be declared at package time.
-type Permissions struct {
+// Capabilities lists the system integrations an application uses that the OS requires to be declared at package time.
+type Capabilities struct {
 	Microphone bool `toml:",omitempty"`
 	// MicrophoneUsage optionally overrides the default explanation shown when the OS asks the user for access.
 	MicrophoneUsage string `toml:",omitempty"`
@@ -53,9 +53,9 @@ type Permissions struct {
 
 // MicrophoneUsageText returns the explanation of why the named app uses the microphone,
 // this is the default text unless MicrophoneUsage was set.
-func (p Permissions) MicrophoneUsageText(appName string) string {
-	if p.MicrophoneUsage != "" {
-		return p.MicrophoneUsage
+func (c Capabilities) MicrophoneUsageText(appName string) string {
+	if c.MicrophoneUsage != "" {
+		return c.MicrophoneUsage
 	}
 	return appName + " uses the microphone to capture audio"
 }

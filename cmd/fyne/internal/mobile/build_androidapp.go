@@ -45,7 +45,7 @@ const (
 
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
-	permissions metadata.Permissions,
+	capabilities metadata.Capabilities,
 ) (map[string]bool, error) {
 	var env []string
 	if release { // Google Play Store requires 16K alignment
@@ -82,7 +82,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			Version:      version,
 			Build:        build,
 			AdaptiveIcon: adaptive,
-			Microphone:   permissions.Microphone,
+			Microphone:   capabilities.Microphone,
 		})
 		if err != nil {
 			return nil, err

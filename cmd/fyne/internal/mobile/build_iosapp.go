@@ -26,7 +26,7 @@ import (
 
 func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	appName, version string, build int, release bool, cert, profile string,
-	permissions metadata.Permissions,
+	capabilities metadata.Capabilities,
 ) (map[string]bool, error) {
 	src := pkg.PkgPath
 	buildO = rfc1034Label(appName) + ".app"
@@ -63,8 +63,8 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 		Build:    build,
 		Legacy:   len(allArchs["ios"]) > 2,
 
-		Microphone:      permissions.Microphone,
-		MicrophoneUsage: permissions.MicrophoneUsageText(name),
+		Microphone:      capabilities.Microphone,
+		MicrophoneUsage: capabilities.MicrophoneUsageText(name),
 	}); err != nil {
 		return nil, err
 	}
