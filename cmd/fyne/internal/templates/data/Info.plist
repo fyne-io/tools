@@ -36,7 +36,7 @@
 	{{- end}}
 	{{- if .Microphone}}
 	<key>NSMicrophoneUsageDescription</key>
-	<string>{{.Name}} uses the microphone to capture audio</string>
+	<string>{{html .MicrophoneUsage}}</string>
 	{{- end}}
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.{{.Category}}</string>

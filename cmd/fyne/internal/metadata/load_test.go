@@ -40,4 +40,9 @@ func TestLoadAppMetadata_Permissions(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, data.Permissions)
 	assert.True(t, data.Permissions.Microphone)
+	assert.Equal(t, "Fyne App uses the microphone to capture audio", data.Permissions.MicrophoneUsageText("Fyne App"))
+
+	data, err = Load(strings.NewReader("[Permissions]\nMicrophone = true\nMicrophoneUsage = \"Record voice notes\"\n"))
+	assert.Nil(t, err)
+	assert.Equal(t, "Record voice notes", data.Permissions.MicrophoneUsageText("Fyne App"))
 }

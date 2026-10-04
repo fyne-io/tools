@@ -23,6 +23,8 @@ type darwinData struct {
 	Category      string
 	Languages     []string
 	Microphone    bool
+
+	MicrophoneUsage string
 }
 
 func darwinLangs(langs []string) []string {
@@ -52,7 +54,7 @@ func (p *Packager) packageDarwin() (err error) {
 	tplData := darwinData{
 		Name: p.Name, ExeName: exeName, AppID: p.AppID, Version: p.AppVersion, Build: p.AppBuild,
 		Category: strings.ToLower(p.category), Languages: darwinLangs(p.langs),
-		Microphone: p.Permissions.Microphone,
+		Microphone: p.Permissions.Microphone, MicrophoneUsage: p.Permissions.MicrophoneUsageText(p.Name),
 	}
 	if err := templates.InfoPlistDarwin.Execute(infoFile, tplData); err != nil {
 		return fmt.Errorf("failed to write plist template: %w", err)

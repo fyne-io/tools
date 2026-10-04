@@ -47,6 +47,17 @@ type LinuxAndBSD struct {
 // Permissions lists the system integrations an application uses that the OS requires to be declared at package time.
 type Permissions struct {
 	Microphone bool `toml:",omitempty"`
+	// MicrophoneUsage optionally overrides the default explanation shown when the OS asks the user for access.
+	MicrophoneUsage string `toml:",omitempty"`
+}
+
+// MicrophoneUsageText returns the explanation of why the named app uses the microphone,
+// this is the default text unless MicrophoneUsage was set.
+func (p Permissions) MicrophoneUsageText(appName string) string {
+	if p.MicrophoneUsage != "" {
+		return p.MicrophoneUsage
+	}
+	return appName + " uses the microphone to capture audio"
 }
 
 // CanOpen represents a selection of file types (mime etc) that this application can open.
