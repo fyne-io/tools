@@ -14,6 +14,7 @@ type FyneApp struct {
 	LinuxAndBSD *LinuxAndBSD      `toml:",omitempty"`
 	Languages   []string          `toml:",omitempty"`
 	Migrations  map[string]bool   `toml:",omitempty"`
+	Permissions *Permissions      `toml:",omitempty"`
 }
 
 // AppDetails describes the build information, this group may be OS or arch specific
@@ -41,6 +42,11 @@ type LinuxAndBSD struct {
 	Comment     string   `toml:",omitempty"`
 	Keywords    []string `toml:",omitempty"`
 	ExecParams  string   `toml:",omitempty"`
+}
+
+// Permissions lists the system integrations an application uses that the OS requires to be declared at package time.
+type Permissions struct {
+	Microphone bool `toml:",omitempty"`
 }
 
 // CanOpen represents a selection of file types (mime etc) that this application can open.

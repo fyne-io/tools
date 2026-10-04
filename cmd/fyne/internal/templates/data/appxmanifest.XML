@@ -17,4 +17,9 @@
   </Resources>
 
   <!-- TODO <Applications> -->
+  {{- if .Microphone}}
+  <Capabilities>
+    <DeviceCapability Name="microphone" />
+  </Capabilities>
+  {{- end}}
 </Package>

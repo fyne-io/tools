@@ -20,11 +20,13 @@ import (
 
 	"golang.org/x/tools/go/packages"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	appName, version string, build int, release bool, cert, profile string,
+	permissions metadata.Permissions,
 ) (map[string]bool, error) {
 	src := pkg.PkgPath
 	buildO = rfc1034Label(appName) + ".app"
@@ -59,6 +61,8 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 		Version:  version,
 		Build:    build,
 		Legacy:   len(allArchs["ios"]) > 2,
+
+		Microphone: permissions.Microphone,
 	}); err != nil {
 		return nil, err
 	}
@@ -280,6 +284,8 @@ type infoplistTmplData struct {
 	Version  string
 	Build    int
 	Legacy   bool
+
+	Microphone bool
 }
 
 var infoplistTmpl = template.Must(template.New("infoplist").Parse(`<?xml version="1.0" encoding="UTF-8"?>
@@ -331,6 +337,10 @@ var infoplistTmpl = template.Must(template.New("infoplist").Parse(`<?xml version
   </dict>
   <key>CFBundleIconName</key>
   <string>AppIcon</string>
+{{- if .Microphone}}
+  <key>NSMicrophoneUsageDescription</key>
+  <string>{{.Name}} uses the microphone to capture audio</string>
+{{- end}}
   <key>LSRequiresIPhoneOS</key>
   <true/>
   <key>UILaunchStoryboardName</key>

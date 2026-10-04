@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,4 +29,15 @@ func TestLoadAppMetadata(t *testing.T) {
 	assert.NotNil(t, data.Source)
 	assert.Equal(t, data.Source.Repo, "https://github.com/fyne-io/fyne")
 	assert.Equal(t, data.Source.Dir, "internal/metadata/testdata")
+}
+
+func TestLoadAppMetadata_Permissions(t *testing.T) {
+	data, err := Load(strings.NewReader("[Details]\nName = \"Fyne App\"\n"))
+	assert.Nil(t, err)
+	assert.Nil(t, data.Permissions)
+
+	data, err = Load(strings.NewReader("[Permissions]\nMicrophone = true\n"))
+	assert.Nil(t, err)
+	assert.NotNil(t, data.Permissions)
+	assert.True(t, data.Permissions.Microphone)
 }
