@@ -300,22 +300,38 @@ func (i *Installer) install() error {
 func (i *Installer) installAndroid() error {
 	target := mobile.AppOutputName(i.os, i.Packager.Name, i.release)
 
-	_, err := os.Stat(target)
-	if os.IsNotExist(err) {
-		// the build that follows reports the package it creates, so this only
-		// states why an existing package is not installed again
-		if i.verbose {
-			fmt.Println("Packaging", util.ShellQuote(target), "(no existing package)")
-		}
-		err := i.Packager.doPackage(nil)
-		if err != nil {
-			return nil
-		}
-	} else if i.verbose {
-		fmt.Println("Using existing package", util.ShellQuote(target))
+	buildPackage := func() error {
+		return i.Packager.doPackage(nil)
+	}
+	if err := i.ensurePackage(target, buildPackage); err != nil {
+		return err
 	}
 
 	return i.runMobileInstall("adb", target, "install")
+}
+
+// ensurePackage reuses the package at target if it is there and calls build
+// otherwise. The error of a failed build is reported, so that an outdated
+// package is not installed as if it were a new one.
+func (i *Installer) ensurePackage(target string, build func() error) error {
+	_, err := os.Stat(target)
+	if !os.IsNotExist(err) {
+		if i.verbose {
+			fmt.Println("Using existing package", util.ShellQuote(target))
+		}
+		return nil
+	}
+
+	// the build that follows reports the package it creates, so this only
+	// states why an existing package is not installed again
+	if i.verbose {
+		fmt.Println("Packaging", util.ShellQuote(target), "(no existing package)")
+	}
+	if err := build(); err != nil {
+		return fmt.Errorf("error packaging application: %w", err)
+	}
+
+	return nil
 }
 
 func (i *Installer) installIOS() error {
@@ -327,7 +343,7 @@ func (i *Installer) installIOS() error {
 		fmt.Println("Rebuilding package", util.ShellQuote(target), "(code signing needs a new package)")
 	}
 	if err := i.Packager.doPackage(nil); err != nil {
-		return nil
+		return fmt.Errorf("error packaging application: %w", err)
 	}
 
 	switch i.os {
