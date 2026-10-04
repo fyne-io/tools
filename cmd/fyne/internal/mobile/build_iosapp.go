@@ -154,7 +154,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 		printcmd("mv %s %s", tmpdir+"/build/Release-iphoneos/main.app", buildO)
 	}
 	if buildVerbose {
-		printcmd("Packaging %s", util.ShellQuote(buildO))
+		printcmd("Packaging %s", buildO)
 	}
 	if !buildN {
 		// if output already exists, remove.

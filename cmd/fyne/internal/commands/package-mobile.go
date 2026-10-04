@@ -62,7 +62,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 
 	appDir := filepath.Join(p.dir, mobile.AppOutputName(p.os, p.Name, p.release))
 	if p.verbose {
-		fmt.Println("Creating icons for", util.ShellQuote(relPath(appDir)))
+		fmt.Println("Creating icons for", relPath(appDir))
 	}
 
 	return runCmdCaptureOutput("xcrun", "actool", "Images.xcassets", "--compile", appDir, "--platform",

@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
-	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"github.com/urfave/cli/v2"
 
@@ -317,7 +316,7 @@ func (i *Installer) ensurePackage(target string, build func() error) error {
 	_, err := os.Stat(target)
 	if !os.IsNotExist(err) {
 		if i.verbose {
-			fmt.Println("Using existing package", util.ShellQuote(target))
+			fmt.Println("Using existing package", target)
 		}
 		return nil
 	}
@@ -325,7 +324,7 @@ func (i *Installer) ensurePackage(target string, build func() error) error {
 	// the build that follows reports the package it creates, so this only
 	// states why an existing package is not installed again
 	if i.verbose {
-		fmt.Println("Packaging", util.ShellQuote(target), "(no existing package)")
+		fmt.Println("Packaging", target, "(no existing package)")
 	}
 	if err := build(); err != nil {
 		return fmt.Errorf("error packaging application: %w", err)
@@ -340,7 +339,7 @@ func (i *Installer) installIOS() error {
 	// Always redo the package because the codesign for ios and iossimulator
 	// must be different.
 	if i.verbose {
-		fmt.Println("Rebuilding package", util.ShellQuote(target), "(code signing needs a new package)")
+		fmt.Println("Rebuilding package", target, "(code signing needs a new package)")
 	}
 	if err := i.Packager.doPackage(nil); err != nil {
 		return fmt.Errorf("error packaging application: %w", err)

@@ -105,7 +105,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 		if buildVerbose {
-			printcmd("Building shared object %s for %s", util.ShellQuote(libPath), arch)
+			printcmd("Building shared object %s for %s", libPath, arch)
 		}
 		// If building release and no ldflags are set then remove the useless debug and DWARF build options
 		if release && buildLdflags == "" {
@@ -135,7 +135,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		buildO = androidPkgName(appName) + ext
 	}
 	if buildVerbose {
-		printcmd("Packaging %s", util.ShellQuote(buildO))
+		printcmd("Packaging %s", buildO)
 	}
 	if !strings.HasSuffix(buildO, ext) {
 		return nil, fmt.Errorf("output file name %q does not end in '%s", buildO, ext)

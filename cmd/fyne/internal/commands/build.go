@@ -132,7 +132,7 @@ func (b *Builder) build() error {
 	b.updateToDefaultIconIfNotSet(srcdir)
 
 	if b.verbose {
-		exe := util.ShellQuote(relPath(b.exePath(osTarget)))
+		exe := relPath(b.exePath(osTarget))
 		if dir := relDir(b.srcdir); dir == "." {
 			fmt.Println("Building", exe, "for", osTarget)
 		} else {
@@ -146,8 +146,8 @@ func (b *Builder) build() error {
 			fyne.LogError("Failed to inject pprof file, omitting pprof", err)
 		} else if close != nil {
 			if b.verbose {
-				fmt.Println("Injecting pprof file",
-					util.ShellQuote(filepath.Join(relDir(srcdir), pprofInitFileName)), "(removed after the build)")
+				fmt.Println("Injecting pprof file", filepath.Join(relDir(srcdir), pprofInitFileName),
+					"(removed after the build)")
 			}
 			defer close()
 		}
@@ -158,8 +158,8 @@ func (b *Builder) build() error {
 		fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
 	} else if close != nil {
 		if b.verbose {
-			fmt.Println("Injecting metadata file",
-				util.ShellQuote(filepath.Join(relDir(srcdir), metadataInitFileName)), "(removed after the build)")
+			fmt.Println("Injecting metadata file", filepath.Join(relDir(srcdir), metadataInitFileName),
+				"(removed after the build)")
 		}
 		defer close()
 	}
@@ -218,7 +218,7 @@ func (b *Builder) build() error {
 	b.runner.setDir(b.srcdir)
 	b.runner.setEnv(env)
 	if b.verbose {
-		fmt.Println("Running", util.ShellQuoteCommand(b.goBin, args))
+		fmt.Println("Running", util.JoinSpace(append([]string{b.goBin}, args...)))
 	}
 	out, err := b.runner.runOutput(args...)
 	if err != nil {
@@ -277,19 +277,15 @@ func injectPprofFile(srcdir string, port int) (func(), error) {
 }
 
 func (b *Builder) updateGoExecutable() {
-	b.goBin = goBinary()
+	goBin := os.Getenv("GO")
+	if goBin == "" {
+		goBin = "go"
+	}
+	b.goBin = goBin
 	if b.runner != nil {
 		return
 	}
 	b.runner = newCommand(b.goBin)
-}
-
-// goBinary returns the go binary to run builds with.
-func goBinary() string {
-	if goBin := os.Getenv(goEnvKey); goBin != "" {
-		return goBin
-	}
-	return goExecutable
 }
 
 // exePath returns the path of the executable that this build will create,
@@ -491,9 +487,6 @@ func appendEnv(env *[]string, varName, value string) {
 }
 
 const (
-	goEnvKey     = "GO"
-	goExecutable = "go"
-
 	goflagsEnvKey = "GOFLAGS"
 )
 

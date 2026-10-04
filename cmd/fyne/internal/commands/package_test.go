@@ -227,7 +227,7 @@ func Test_buildPackageWasm(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, files)
 	assert.Equal(t, 1, len(files))
-	assert.Contains(t, out, "Running go build -trimpath -ldflags '-s -w' -tags release")
+	assert.Contains(t, out, "Running go build -trimpath -ldflags -s -w -tags release")
 }
 
 func Test_PackageWasm(t *testing.T) {

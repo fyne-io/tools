@@ -48,27 +48,16 @@ func goEnv(name string) string {
 	return strings.TrimSpace(string(val))
 }
 
-// cmdWorkDir returns the directory a command is executed in.
-func cmdWorkDir(cmd *exec.Cmd) string {
-	if cmd.Dir != "" {
-		return cmd.Dir
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return "."
-	}
-	return wd
-}
-
 func runCmd(cmd *exec.Cmd) error {
-	if buildX || buildN {
-		dir := ""
-		if cmd.Dir != "" {
-			dir = "PWD=" + cmd.Dir + " "
-		}
+	dir := ""
+	if cmd.Dir != "" {
+		dir = "PWD=" + cmd.Dir + " "
+	}
+	switch {
+	case buildX || buildN:
 		printcmd("%s%s%s", dir, util.JoinSpace(append(cmd.Env, "")), util.JoinSpace(cmd.Args))
-	} else if buildVerbose {
-		printcmd("PWD=%s %s", cmdWorkDir(cmd), util.ShellQuoteCommand(cmd.Args[0], cmd.Args[1:]))
+	case buildVerbose:
+		printcmd("%s%s", dir, util.JoinSpace(cmd.Args))
 	}
 
 	buf := new(bytes.Buffer)

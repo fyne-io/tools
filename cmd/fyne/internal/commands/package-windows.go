@@ -74,7 +74,7 @@ func (p *Packager) packageWindows(tags []string) error {
 	// launch rsrc to generate the object file
 	outPath := filepath.Join(p.srcDir, "fyne.syso")
 	if p.verbose {
-		fmt.Println("Generating resource file", util.ShellQuote(relDir(outPath)))
+		fmt.Println("Generating resource file", relDir(outPath))
 	}
 
 	vi := &goversioninfo.VersionInfo{}
@@ -132,8 +132,7 @@ func (p *Packager) packageWindows(tags []string) error {
 		}
 		appPath := filepath.Join(wd, appName)
 		if p.verbose {
-			fmt.Println("Installing", util.ShellQuote(relPath(appPath)), "to",
-				util.ShellQuote(relPath(filepath.Join(p.dir, appName))))
+			fmt.Println("Installing", relPath(appPath), "to", relPath(filepath.Join(p.dir, appName)))
 		}
 
 		err = runAsAdminWindows("copy", appPath, filepath.Join(p.dir, appName))
@@ -146,7 +145,7 @@ func (p *Packager) packageWindows(tags []string) error {
 			return errors.New("failed to locate current working directory")
 		}
 
-		fmt.Println("Packaging", util.ShellQuote(relPath(filepath.Join(wd, appName))))
+		fmt.Println("Packaging", relPath(filepath.Join(wd, appName)))
 	}
 	return nil
 }

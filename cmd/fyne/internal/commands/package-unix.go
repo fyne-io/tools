@@ -11,7 +11,6 @@ import (
 	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
-	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 type unixData struct {
@@ -87,7 +86,7 @@ func (p *Packager) packageUNIX() error {
 		if !p.install {
 			note = " (removed after packaging)"
 		}
-		fmt.Println("Creating desktop file", util.ShellQuote(relDir(desktop))+note)
+		fmt.Println("Creating desktop file", relDir(desktop)+note)
 	}
 
 	deskFile, err := os.Create(desktop)
@@ -147,7 +146,7 @@ func (p *Packager) packageUNIX() error {
 		tarCmdArgs = []string{"-zcf", tarball}
 	}
 	if p.verbose {
-		fmt.Println("Packaging", util.ShellQuote(relPath(tarball)))
+		fmt.Println("Packaging", relPath(tarball))
 	}
 
 	// Compatibility mode for old fyne-cross versions using images with new CLI

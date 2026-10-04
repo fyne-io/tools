@@ -203,8 +203,8 @@ func (p *Packager) doPackage(runner runner) error {
 			fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
 		} else if close != nil {
 			if p.verbose {
-				fmt.Println("Injecting metadata file",
-					util.ShellQuote(filepath.Join(relDir(p.dir), metadataInitFileName)), "(removed after the build)")
+				fmt.Println("Injecting metadata file", filepath.Join(relDir(p.dir), metadataInitFileName),
+					"(removed after the build)")
 			}
 			defer close()
 		}
@@ -223,7 +223,7 @@ func (p *Packager) doPackage(runner runner) error {
 		}
 	default:
 		if p.verbose {
-			fmt.Println("Using existing executable", util.ShellQuote(relPath(p.exe)))
+			fmt.Println("Using existing executable", relPath(p.exe))
 		}
 	}
 
