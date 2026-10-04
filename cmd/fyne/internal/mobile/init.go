@@ -49,12 +49,15 @@ func goEnv(name string) string {
 }
 
 func runCmd(cmd *exec.Cmd) error {
-	if buildX || buildN {
-		dir := ""
-		if cmd.Dir != "" {
-			dir = "PWD=" + cmd.Dir + " "
-		}
+	dir := ""
+	if cmd.Dir != "" {
+		dir = "PWD=" + cmd.Dir + " "
+	}
+	switch {
+	case buildX || buildN:
 		printcmd("%s%s%s", dir, util.JoinSpace(append(cmd.Env, "")), util.JoinSpace(cmd.Args))
+	case buildVerbose:
+		printcmd("%s%s", dir, util.JoinSpace(cmd.Args))
 	}
 
 	buf := new(bytes.Buffer)

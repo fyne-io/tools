@@ -104,6 +104,9 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		if err := mkdir(filepath.Dir(libAbsPath)); err != nil {
 			return nil, err
 		}
+		if buildVerbose {
+			printcmd("Building shared object %s for %s", libPath, arch)
+		}
 		// If building release and no ldflags are set then remove the useless debug and DWARF build options
 		if release && buildLdflags == "" {
 			buildLdflags = "-w" // gomobile requires symbol check, so "-s" cannot be used yet - TODO resolve this
@@ -130,6 +133,9 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	}
 	if buildO == "" {
 		buildO = androidPkgName(appName) + ext
+	}
+	if buildVerbose {
+		printcmd("Packaging %s", buildO)
 	}
 	if !strings.HasSuffix(buildO, ext) {
 		return nil, fmt.Errorf("output file name %q does not end in '%s", buildO, ext)
