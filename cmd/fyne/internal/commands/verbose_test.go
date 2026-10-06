@@ -40,6 +40,7 @@ func Test_VerboseFlagIsAvailable(t *testing.T) {
 		"build":   Build(),
 		"package": Package(),
 		"install": Install(),
+		"release": Release(),
 	} {
 		var found bool
 		for _, flag := range cmd.Flags {
