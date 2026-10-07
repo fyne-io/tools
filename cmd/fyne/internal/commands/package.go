@@ -303,6 +303,8 @@ func (p *Packager) validate() (err error) {
 		p.langs = data.Languages
 
 		p.linuxAndBSDMetadata = data.LinuxAndBSD
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 
 	exeName := calculateExeName(p.srcDir, p.os)
