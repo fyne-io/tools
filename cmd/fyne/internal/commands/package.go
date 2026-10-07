@@ -292,7 +292,7 @@ func (p *Packager) validate() (err error) {
 		p.langs = data.Languages
 
 		p.linuxAndBSDMetadata = data.LinuxAndBSD
-	} if !errors.Is(err, os.ErrNotExist) {
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 
