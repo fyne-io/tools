@@ -12,6 +12,8 @@ import (
 	"io"
 	"strings"
 	"unicode/utf16"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // NoEntry marks a key with no value in the table
@@ -58,10 +60,16 @@ type Table struct {
 	pkgs []*Package
 }
 
+const (
+	mipmapPackageID         = 127
+	mipmapScreenTypeDensity = 640
+	mipmapVersionSDK        = 4
+)
+
 // NewMipmapTable returns a resource table initialized for a single xxxhdpi mipmap resource
 // and the path to write resource data to.
 func NewMipmapTable(pkgname string) (*Table, string) {
-	pkg := &Package{id: 127, name: pkgname, typePool: &Pool{}, keyPool: &Pool{}}
+	pkg := &Package{id: mipmapPackageID, name: pkgname, typePool: &Pool{}, keyPool: &Pool{}}
 
 	attr := pkg.typePool.ref("attr")
 	mipmap := pkg.typePool.ref("mipmap")
@@ -69,8 +77,8 @@ func NewMipmapTable(pkgname string) (*Table, string) {
 
 	nt := &Entry{values: []*Value{{data: &Data{Type: DataString}}}}
 	typ := &Type{id: 2, indices: []uint32{0}, entries: []*Entry{nt}}
-	typ.config.screenType.density = 640
-	typ.config.version.sdk = 4
+	typ.config.screenType.density = mipmapScreenTypeDensity
+	typ.config.version.sdk = mipmapVersionSDK
 
 	pkg.specs = append(pkg.specs,
 		&TypeSpec{
@@ -136,7 +144,7 @@ func OpenTable() (*Table, error) {
 // Both locate the spec by name "style".
 func (tbl *Table) SpecByName(name string) (int, *Package, int, *TypeSpec, error) {
 	n := strings.TrimPrefix(name, "@android:")
-	n = strings.Split(n, "/")[0]
+	n = util.SplitSlash(n)[0]
 	for pp, pkg := range tbl.pkgs {
 		for tt, spec := range pkg.specs {
 			if n == pkg.typePool.strings[spec.id-1] {
@@ -155,7 +163,7 @@ func (tbl *Table) RefByName(name string) (TableRef, error) {
 		return 0, err
 	}
 
-	q := strings.Split(name, "/")
+	q := util.SplitSlash(name)
 	if len(q) != 2 {
 		return 0, fmt.Errorf("invalid entry format, missing forward-slash: %q", name)
 	}
@@ -176,6 +184,7 @@ func (tbl *Table) RefByName(name string) (TableRef, error) {
 
 // UnmarshalBinary creates the table from binary data
 func (tbl *Table) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&tbl.chunkHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
@@ -203,10 +212,12 @@ func (tbl *Table) UnmarshalBinary(bin []byte) error {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given table
 func (tbl *Table) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 12)
 	putu16(bin, uint16(ResTable))
 	putu16(bin[2:], 12)
@@ -236,6 +247,7 @@ func (tbl *Table) MarshalBinary() ([]byte, error) {
 	putu32(bin[4:], uint32(len(bin)))
 
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Package contains a collection of resource data types.
@@ -256,6 +268,7 @@ type Package struct {
 
 // UnmarshalBinary creates a package from binary data
 func (pkg *Package) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&pkg.chunkHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
@@ -327,10 +340,12 @@ func (pkg *Package) UnmarshalBinary(bin []byte) error {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given package
 func (pkg *Package) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	// Package header size is determined by C++ struct ResTable_package
 	// see frameworks/base/include/ResourceTypes.h
 	bin := make([]byte, 288)
@@ -386,6 +401,7 @@ func (pkg *Package) MarshalBinary() ([]byte, error) {
 
 	putu32(bin[4:], uint32(len(bin)))
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // TypeSpec provides a specification for the resources defined by a particular type.
@@ -402,6 +418,7 @@ type TypeSpec struct {
 
 // UnmarshalBinary creates the type spec from binary data
 func (spec *TypeSpec) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&spec.chunkHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
@@ -419,10 +436,12 @@ func (spec *TypeSpec) UnmarshalBinary(bin []byte) error {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given type spec
 func (spec *TypeSpec) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 16+len(spec.entries)*4)
 	putu16(bin, uint16(ResTableTypeSpec))
 	putu16(bin[2:], 16)
@@ -445,6 +464,7 @@ func (spec *TypeSpec) MarshalBinary() ([]byte, error) {
 	}
 
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Type provides a collection of entries for a specific device configuration.
@@ -503,6 +523,7 @@ type Type struct {
 
 // UnmarshalBinary creates the type from binary data
 func (typ *Type) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&typ.chunkHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
@@ -517,7 +538,7 @@ func (typ *Type) UnmarshalBinary(bin []byte) error {
 	typ.entriesStart = btou32(bin[16:])
 
 	if typ.res0 != 0 || typ.res1 != 0 {
-		return fmt.Errorf("res0 res1 not zero")
+		return errors.New("res0 res1 not zero")
 	}
 
 	typ.config.size = btou32(bin[20:])
@@ -567,10 +588,12 @@ func (typ *Type) UnmarshalBinary(bin []byte) error {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given type
 func (typ *Type) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 56+len(typ.entries)*4)
 	putu16(bin, uint16(ResTableType))
 	putu16(bin[2:], 56)
@@ -623,6 +646,7 @@ func (typ *Type) MarshalBinary() ([]byte, error) {
 
 	putu32(bin[4:], uint32(len(bin)))
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Entry is a resource key typically followed by a value or resource map.
@@ -640,6 +664,7 @@ type Entry struct {
 
 // UnmarshalBinary creates an entry from binary data
 func (nt *Entry) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	nt.size = btou16(bin)
 	nt.flags = btou16(bin[2:])
 	nt.key = PoolRef(btou32(bin[4:]))
@@ -665,10 +690,12 @@ func (nt *Entry) UnmarshalBinary(bin []byte) error {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given entry
 func (nt *Entry) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 8)
 	sz := nt.size
 	if sz == 0 {
@@ -698,6 +725,7 @@ func (nt *Entry) MarshalBinary() ([]byte, error) {
 	}
 
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Value is resource value associated with a key
@@ -708,13 +736,16 @@ type Value struct {
 
 // UnmarshalBinary creates the pool from binary data
 func (val *Value) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	val.name = TableRef(btou32(bin))
 	val.data = &Data{}
 	return val.data.UnmarshalBinary(bin[4:])
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given value
 func (val *Value) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 12)
 	putu32(bin, uint32(val.name))
 	b, err := val.data.MarshalBinary()
@@ -723,6 +754,7 @@ func (val *Value) MarshalBinary() ([]byte, error) {
 	}
 	copy(bin[4:], b)
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // DataType marks the type of a data item in a value
@@ -757,19 +789,23 @@ type Data struct {
 
 // UnmarshalBinary creates the data item from binary data
 func (d *Data) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	d.ByteSize = btou16(bin)
 	d.Res0 = bin[2]
 	d.Type = DataType(bin[3])
 	d.Value = btou32(bin[4:])
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given data item
 func (d *Data) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 8)
 	putu16(bin, 8)
 	bin[2] = d.Res0
 	bin[3] = byte(d.Type)
 	putu32(bin[4:], d.Value)
 	return bin, nil
+	//revive:enable:add-constant
 }

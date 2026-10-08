@@ -13,6 +13,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // splashIconSize is the point size of the centred launch screen icon, matching the 288dp
@@ -21,36 +22,36 @@ const splashIconSize = 288
 
 func (p *Packager) packageAndroid(arch string, tags []string) error {
 	iconFG, iconBG, iconMono := "", "", ""
-	if p.appData.AdaptiveIcon != nil {
-		iconFG = p.appData.AdaptiveIcon.Foreground
-		iconBG = p.appData.AdaptiveIcon.Background
-		iconMono = p.appData.AdaptiveIcon.Monochrome
+	if p.AdaptiveIcon != nil {
+		iconFG = p.AdaptiveIcon.Foreground
+		iconBG = p.AdaptiveIcon.Background
+		iconMono = p.AdaptiveIcon.Monochrome
 	}
 
 	return mobile.RunNewBuild(arch, p.AppID, p.icon, p.Name, p.AppVersion, p.AppBuild, p.release, p.distribution,
-		"", "", tags, iconFG, iconBG, iconMono, p.appData.Splash)
+		"", "", tags, iconFG, iconBG, iconMono, p.verbose, p.appData.Splash)
 }
 
 func (p *Packager) packageIOS(target string, tags []string) error {
 	err := mobile.RunNewBuild(target, p.AppID, p.icon, p.Name, p.AppVersion, p.AppBuild, p.release, p.distribution,
-		p.certificate, p.profile, tags, "", "", "", nil)
+		p.certificate, p.profile, tags, "", "", "", p.verbose, nil)
 	if err != nil {
 		return err
 	}
 
-	assetDir := util.EnsureSubDir(p.dir, "Images.xcassets")
+	assetDir := pkgUtil.EnsureSubDir(p.dir, "Images.xcassets")
 	defer os.RemoveAll(assetDir)
 	err = os.WriteFile(filepath.Join(assetDir, "Contents.json"), []byte(`{
   "info" : {
     "author" : "xcode",
     "version" : 1
   }
-}`), 0o644)
+}`), util.FilePermDefault)
 	if err != nil {
 		fyne.LogError("Content err", err)
 	}
 
-	iconDir := util.EnsureSubDir(assetDir, "AppIcon.appiconset")
+	iconDir := pkgUtil.EnsureSubDir(assetDir, "AppIcon.appiconset")
 	contentFile, _ := os.Create(filepath.Join(iconDir, "Contents.json"))
 
 	err = templates.XCAssetsDarwin.Execute(contentFile, nil)
@@ -58,20 +59,11 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 		return fmt.Errorf("failed to write xcassets content template: %w", err)
 	}
 
-	if err = copyResizeIcon(1024, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(180, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(120, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(76, iconDir, p.icon); err != nil {
-		return err
-	}
-	if err = copyResizeIcon(152, iconDir, p.icon); err != nil {
-		return err
+	iconSizes := []int{76, 120, 152, 180, 1024} //revive:disable-line:add-constant
+	for _, iconSize := range iconSizes {
+		if err = copyResizeIcon(iconSize, iconDir, p.icon); err != nil {
+			return err
+		}
 	}
 
 	if p.appData.Splash != nil {
@@ -85,6 +77,9 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 	}
 
 	appDir := filepath.Join(p.dir, mobile.AppOutputName(p.os, p.Name, p.release))
+	if p.verbose {
+		fmt.Println("Creating icons for", relPath(appDir))
+	}
 	err = runCmdCaptureOutput("xcrun", "actool", "Images.xcassets", "--compile", appDir, "--platform",
 		"iphoneos", "--target-device", "iphone", "--minimum-deployment-target", "9.0", "--app-icon", "AppIcon",
 		"--output-format", "human-readable-text", "--output-partial-info-plist", "/dev/null")

@@ -14,16 +14,19 @@ type NodeHeader struct {
 
 // UnmarshalBinary creates a node header from binary data
 func (hdr *NodeHeader) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&hdr.chunkHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
 	hdr.LineNumber = btou32(bin[8:])
 	hdr.Comment = PoolRef(btou32(bin[12:]))
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given header
 func (hdr *NodeHeader) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 16)
 	b, err := hdr.chunkHeader.MarshalBinary()
 	if err != nil {
@@ -33,6 +36,7 @@ func (hdr *NodeHeader) MarshalBinary() ([]byte, error) {
 	putu32(bin[8:], hdr.LineNumber)
 	putu32(bin[12:], uint32(hdr.Comment))
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Namespace represents an XML namespace
@@ -46,6 +50,7 @@ type Namespace struct {
 
 // UnmarshalBinary creates a namespace from binary data
 func (ns *Namespace) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&ns.NodeHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
@@ -53,10 +58,12 @@ func (ns *Namespace) UnmarshalBinary(bin []byte) error {
 	ns.prefix = PoolRef(btou32(buf))
 	ns.uri = PoolRef(btou32(buf[4:]))
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given namespace
 func (ns *Namespace) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	if ns.end == nil {
 		ns.typ = ResXMLEndNamespace
 	} else {
@@ -74,6 +81,7 @@ func (ns *Namespace) MarshalBinary() ([]byte, error) {
 	putu32(bin[16:], uint32(ns.prefix))
 	putu32(bin[20:], uint32(ns.uri))
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Element represents an XML element
@@ -97,6 +105,7 @@ type Element struct {
 
 // UnmarshalBinary creates an element from binary data
 func (el *Element) UnmarshalBinary(buf []byte) error {
+	//revive:disable:add-constant
 	if err := (&el.NodeHeader).UnmarshalBinary(buf); err != nil {
 		return err
 	}
@@ -123,10 +132,12 @@ func (el *Element) UnmarshalBinary(buf []byte) error {
 	}
 
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given element
 func (el *Element) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	el.typ = ResXMLStartElement
 	el.headerByteSize = 16
 	el.AttributeSize = 20
@@ -163,6 +174,7 @@ func (el *Element) MarshalBinary() ([]byte, error) {
 	}
 
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // ElementEnd marks the end of an element node, either Element or CharData.
@@ -174,6 +186,7 @@ type ElementEnd struct {
 
 // UnmarshalBinary creates the element end from binary data
 func (el *ElementEnd) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	err := (&el.NodeHeader).UnmarshalBinary(bin)
 	if err != nil {
 		return err
@@ -183,10 +196,12 @@ func (el *ElementEnd) UnmarshalBinary(bin []byte) error {
 	el.NS = PoolRef(btou32(buf))
 	el.Name = PoolRef(btou32(buf[4:]))
 	return nil
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given element end
 func (el *ElementEnd) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	el.typ = ResXMLEndElement
 	el.headerByteSize = 16
 	el.byteSize = 24
@@ -200,6 +215,7 @@ func (el *ElementEnd) MarshalBinary() ([]byte, error) {
 	putu32(bin[16:], uint32(el.NS))
 	putu32(bin[20:], uint32(el.Name))
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // Attribute represents an XML attribute
@@ -212,14 +228,17 @@ type Attribute struct {
 
 // UnmarshalBinary creates the attribute end from binary data
 func (attr *Attribute) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	attr.NS = PoolRef(btou32(bin))
 	attr.Name = PoolRef(btou32(bin[4:]))
 	attr.RawValue = PoolRef(btou32(bin[8:]))
 	return (&attr.TypedValue).UnmarshalBinary(bin[12:])
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from a given attribute
 func (attr *Attribute) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	bin := make([]byte, 20)
 	putu32(bin, uint32(attr.NS))
 	putu32(bin[4:], uint32(attr.Name))
@@ -230,6 +249,7 @@ func (attr *Attribute) MarshalBinary() ([]byte, error) {
 	}
 	copy(bin[12:], b)
 	return bin, nil
+	//revive:enable:add-constant
 }
 
 // CharData represents a CDATA node and includes ref to node's text value.
@@ -241,16 +261,19 @@ type CharData struct {
 
 // UnmarshalBinary creates the character data from binary data
 func (cdt *CharData) UnmarshalBinary(bin []byte) error {
+	//revive:disable:add-constant
 	if err := (&cdt.NodeHeader).UnmarshalBinary(bin); err != nil {
 		return err
 	}
 	buf := bin[cdt.headerByteSize:]
 	cdt.RawData = PoolRef(btou32(buf))
 	return (&cdt.TypedData).UnmarshalBinary(buf[4:])
+	//revive:enable:add-constant
 }
 
 // MarshalBinary outputs the binary format from given character data
 func (cdt *CharData) MarshalBinary() ([]byte, error) {
+	//revive:disable:add-constant
 	cdt.typ = ResXMLCharData
 	cdt.headerByteSize = 16
 	cdt.byteSize = 28
@@ -268,4 +291,5 @@ func (cdt *CharData) MarshalBinary() ([]byte, error) {
 	}
 	copy(bin[20:], b)
 	return bin, nil
+	//revive:enable:add-constant
 }

@@ -22,7 +22,9 @@ import (
 
 	"fyne.io/fyne/v2"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const (
@@ -54,6 +56,7 @@ func Package() *cli.Command {
 			stringFlags["profile"](&p.profile),
 			boolFlags["release"](&p.release),
 			genericFlags["metadata"](&p.customMetadata),
+			boolFlags["verbose"](&p.verbose),
 		},
 		Action: func(_ *cli.Context) error {
 			if p.customMetadata.m == nil {
@@ -74,6 +77,7 @@ type Packager struct {
 	tags, category                 string
 	tempDir                        string
 	langs                          []string
+	verbose                        bool
 
 	customMetadata      keyValueFlag
 	linuxAndBSDMetadata *metadata.LinuxAndBSD
@@ -122,7 +126,7 @@ func (p *Packager) Run(_ []string) {
 
 	err = p.doPackage(nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 }
@@ -158,6 +162,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 		target:  p.exe,
 		release: p.release,
 		tags:    tags,
+		verbose: p.verbose,
 		runner:  runner,
 
 		appData: p.appData,
@@ -167,7 +172,7 @@ func (p *Packager) buildPackage(runner runner, tags []string) ([]string, error) 
 }
 
 func (p *Packager) combinedVersion() string {
-	versions := strings.Split(p.AppVersion, ".")
+	versions := util.SplitDot(p.AppVersion)
 	for len(versions) < 3 {
 		versions = append(versions, "0")
 	}
@@ -188,44 +193,52 @@ func (p *Packager) doPackage(runner runner) error {
 
 	var tags []string
 	if p.tags != "" {
-		tags = strings.Split(p.tags, ",")
+		tags = util.SplitComma(p.tags)
 	}
 
-	if !util.Exists(p.exe) && !util.IsMobile(p.os) {
+	switch {
+	case pkgUtil.IsMobile(p.os): // we don't use the normal build command for mobile so inject before gomobile...
+		close, err := injectMetadataIfPossible(p.dir, p.appData, createMetadataInitFile)
+		if err != nil {
+			fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
+		} else if close != nil {
+			if p.verbose {
+				fmt.Println("Injecting metadata file", filepath.Join(relDir(p.dir), metadataInitFileName),
+					"(removed after the build)")
+			}
+			defer close()
+		}
+	case !pkgUtil.Exists(p.exe):
 		files, err := p.buildPackage(runner, tags)
 		if err != nil {
 			return fmt.Errorf("error building application: %w", err)
 		}
 		for _, file := range files {
-			if p.os != "web" && !util.Exists(file) {
+			if p.os != "web" && !pkgUtil.Exists(file) {
 				return fmt.Errorf("unable to build directory to expected executable, %s", file)
 			}
 		}
-		if p.os != "windows" {
+		if p.os != goos.Windows {
 			defer p.removeBuild(files)
 		}
-	}
-	if util.IsMobile(p.os) { // we don't use the normal build command for mobile so inject before gomobile...
-		close, err := injectMetadataIfPossible(p.dir, p.appData, createMetadataInitFile)
-		if err != nil {
-			fyne.LogError("Failed to inject metadata init file, omitting metadata", err)
-		} else if close != nil {
-			defer close()
+	default:
+		if p.verbose {
+			fmt.Println("Using existing executable", relPath(p.exe))
 		}
 	}
 
-	switch p.os {
-	case "darwin":
+	switch {
+	case goos.Darwin == p.os:
 		return p.packageDarwin()
-	case "linux", "openbsd", "freebsd", "netbsd":
+	case goos.IsBSD(p.os) || goos.Linux == p.os:
 		return p.packageUNIX()
-	case "windows":
+	case goos.Windows == p.os:
 		return p.packageWindows(tags)
-	case "android/arm", "android/arm64", "android/amd64", "android/386", "android":
+	case goos.IsAndroid(p.os):
 		return p.packageAndroid(p.os, tags)
-	case "ios", "iossimulator":
+	case goos.IsIOS(p.os):
 		return p.packageIOS(p.os, tags)
-	case "web", "wasm":
+	case goos.IsWASM(p.os):
 		return p.packageWasm()
 	default:
 		return fmt.Errorf("unsupported target operating system \"%s\"", p.os)
@@ -266,7 +279,7 @@ func (p *Packager) validate() (err error) {
 			return errors.New("parameter --source-dir is currently not supported for mobile builds. " +
 				"Change directory to the main package and try again")
 		}
-		p.srcDir = util.EnsureAbsPath(p.srcDir)
+		p.srcDir = pkgUtil.EnsureAbsPath(p.srcDir)
 	}
 	if err := os.Chdir(p.srcDir); err != nil {
 		return err
@@ -275,24 +288,26 @@ func (p *Packager) validate() (err error) {
 		return fmt.Errorf("failed to find go code in source directory: %s", p.srcDir)
 	}
 
-	p.appData.CustomMetadata = p.customMetadata.m
-	p.appData.Release = p.release
+	p.CustomMetadata = p.customMetadata.m
+	p.Release = p.release
 
 	data, err := metadata.LoadStandard(p.srcDir)
 	if err == nil {
 		// When icon path specified in metadata file, we should make it relative to metadata file
 		if data.Details.Icon != "" {
-			data.Details.Icon = util.MakePathRelativeTo(p.srcDir, data.Details.Icon)
+			data.Details.Icon = pkgUtil.MakePathRelativeTo(p.srcDir, data.Details.Icon)
 		}
 		if data.Splash != nil && data.Splash.Icon != "" {
 			data.Splash.Icon = util.MakePathRelativeTo(p.srcDir, data.Splash.Icon)
 		}
 
-		p.appData.mergeMetadata(data)
+		p.mergeMetadata(data)
 		p.sourceMetadata = data.Source
 		p.langs = data.Languages
 
 		p.linuxAndBSDMetadata = data.LinuxAndBSD
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 
 	exeName := calculateExeName(p.srcDir, p.os)
@@ -300,7 +315,7 @@ func (p *Packager) validate() (err error) {
 	if p.exe == "" {
 		p.exe = filepath.Join(p.srcDir, exeName)
 
-		if util.Exists(p.exe) { // the exe was not specified, assume stale
+		if pkgUtil.Exists(p.exe) { // the exe was not specified, assume stale
 			p.removeBuild([]string{p.exe})
 		}
 	} else if p.os == "ios" || p.os == "android" {
@@ -313,7 +328,7 @@ func (p *Packager) validate() (err error) {
 	if p.icon == "" || p.icon == "Icon.png" {
 		p.icon = filepath.Join(p.srcDir, "Icon.png")
 	}
-	if !util.Exists(p.icon) {
+	if !pkgUtil.Exists(p.icon) {
 		return errors.New("Missing application icon at \"" + p.icon + "\"")
 	}
 	if strings.ToLower(filepath.Ext(p.icon)) != ".png" {
@@ -342,7 +357,7 @@ func calculateExeName(sourceDir, osys string) string {
 		modulePath := modfile.ModulePath(data)
 		moduleName, _, ok := module.SplitPathVersion(modulePath)
 		if ok {
-			paths := strings.Split(moduleName, "/")
+			paths := util.SplitSlash(moduleName)
 			name := paths[len(paths)-1]
 			if name != "" {
 				exeName = name
@@ -350,7 +365,7 @@ func calculateExeName(sourceDir, osys string) string {
 		}
 	}
 
-	if osys == "windows" {
+	if osys == goos.Windows {
 		exeName = exeName + ".exe"
 	}
 
@@ -361,7 +376,7 @@ func isValidVersion(ver string) bool {
 	if semver.IsValid("v" + ver) {
 		return true
 	}
-	parts := strings.Split(ver, ".")
+	parts := util.SplitDot(ver)
 	if len(parts) < 1 || len(parts) > 2 {
 		return false
 	}
@@ -402,33 +417,33 @@ func (p *Packager) normaliseIcon(path string) (string, error) {
 
 func validateAppID(appID, os, name string, release bool) (string, error) {
 	// old darwin compatibility
-	if os == "darwin" {
-		if appID == "" {
-			return "com.example." + name, nil
+	if os == "darwin" && appID == "" {
+		return "com.example." + name, nil
+	} else if os != goos.IOS && !pkgUtil.IsAndroid(os) && (os != goos.Windows || !release) {
+		return appID, nil
+	}
+
+	// all mobile, and for windows when releasing, needs a unique id - usually reverse DNS style
+	if appID == "" {
+		return "", errors.New("missing app-id parameter for package")
+	} else if !strings.Contains(appID, ".") {
+		return "", errors.New("app-id must be globally unique and contain at least 1 '.'")
+	} else if pkgUtil.IsAndroid(os) {
+		if strings.Contains(appID, "-") {
+			return "", errors.New("app-id can not contain '-'")
 		}
-	} else if os == "ios" || util.IsAndroid(os) || (os == "windows" && release) {
-		// all mobile, and for windows when releasing, needs a unique id - usually reverse DNS style
-		if appID == "" {
-			return "", errors.New("missing app-id parameter for package")
-		} else if !strings.Contains(appID, ".") {
-			return "", errors.New("app-id must be globally unique and contain at least 1 '.'")
-		} else if util.IsAndroid(os) {
-			if strings.Contains(appID, "-") {
-				return "", errors.New("app-id can not contain '-'")
+
+		// appID package names can not start with '_' or a number
+		packageNames := util.SplitDot(appID)
+		for _, name := range packageNames {
+			if len(name) == 0 {
+				continue
 			}
 
-			// appID package names can not start with '_' or a number
-			packageNames := strings.Split(appID, ".")
-			for _, name := range packageNames {
-				if len(name) == 0 {
-					continue
-				}
-
-				if name[0] == '_' {
-					return "", fmt.Errorf("app-id package names can not start with '_' (%s)", name)
-				} else if name[0] >= '0' && name[0] <= '9' {
-					return "", fmt.Errorf("app-id package names can not start with a number (%s)", name)
-				}
+			if name[0] == '_' {
+				return "", fmt.Errorf("app-id package names can not start with '_' (%s)", name)
+			} else if name[0] >= '0' && name[0] <= '9' {
+				return "", fmt.Errorf("app-id package names can not start with a number (%s)", name)
 			}
 		}
 	}

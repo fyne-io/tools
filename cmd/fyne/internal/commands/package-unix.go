@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 )
@@ -36,21 +37,22 @@ func (p *Packager) packageUNIX() error {
 
 	outDir := p.dir
 	if !p.install {
-		outDir = util.EnsureSubDir(util.EnsureSubDir(p.dir, "tmp-pkg"), dirName)
+		outDir = pkgUtil.EnsureSubDir(pkgUtil.EnsureSubDir(p.dir, "tmp-pkg"), dirName)
 	}
 
+	outDirUsr := pkgUtil.EnsureSubDir(outDir, "usr")
 	if _, err := os.Stat(filepath.Join("/", "usr", "local")); os.IsNotExist(err) {
-		prefixDir = util.EnsureSubDir(outDir, "usr")
+		prefixDir = outDirUsr
 		local = ""
 	} else {
-		prefixDir = util.EnsureSubDir(util.EnsureSubDir(outDir, "usr"), "local")
+		prefixDir = pkgUtil.EnsureSubDir(outDirUsr, "local")
 	}
 
-	shareDir := util.EnsureSubDir(prefixDir, "share")
+	shareDir := pkgUtil.EnsureSubDir(prefixDir, "share")
 
-	binDir := util.EnsureSubDir(prefixDir, "bin")
+	binDir := pkgUtil.EnsureSubDir(prefixDir, "bin")
 	binName := filepath.Join(binDir, filepath.Base(p.exe))
-	err := util.CopyExeFile(p.exe, binName)
+	err := pkgUtil.CopyExeFile(p.exe, binName)
 	if err != nil {
 		return fmt.Errorf("failed to copy application binary file: %w", err)
 	}
@@ -60,10 +62,10 @@ func (p *Packager) packageUNIX() error {
 		appIDOrName = p.Name
 	}
 
-	iconDir := util.EnsureSubDir(shareDir, "pixmaps")
+	iconDir := pkgUtil.EnsureSubDir(shareDir, "pixmaps")
 	iconName := appIDOrName + filepath.Ext(p.icon)
 	iconPath := filepath.Join(iconDir, iconName)
-	err = util.CopyFile(p.icon, iconPath)
+	err = pkgUtil.CopyFile(p.icon, iconPath)
 	if err != nil {
 		return fmt.Errorf("failed to copy icon: %w", err)
 	}
@@ -75,8 +77,18 @@ func (p *Packager) packageUNIX() error {
 		openWith = " %F"
 	}
 
-	appsDir := util.EnsureSubDir(shareDir, "applications")
+	appsDir := pkgUtil.EnsureSubDir(shareDir, "applications")
 	desktop := filepath.Join(appsDir, appIDOrName+".desktop")
+	if p.verbose {
+		// when packaging, the desktop file is staged in a directory that the
+		// tarball is created from and which is removed afterwards
+		note := ""
+		if !p.install {
+			note = " (removed after packaging)"
+		}
+		fmt.Println("Creating desktop file", relDir(desktop)+note)
+	}
+
 	deskFile, err := os.Create(desktop)
 	if err != nil {
 		return fmt.Errorf("failed to create desktop file: %w", err)
@@ -127,9 +139,14 @@ func (p *Packager) packageUNIX() error {
 		return fmt.Errorf("failed to write Makefile string: %w", err)
 	}
 
-	tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
-	if p.os == "openbsd" {
-		tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
+	tarball := filepath.Join(p.dir, p.Name+".tar.xz")
+	tarCmdArgs := []string{"-Jcf", tarball}
+	if p.os == goos.OpenBSD {
+		tarball = filepath.Join(p.dir, p.Name+".tar.gz")
+		tarCmdArgs = []string{"-zcf", tarball}
+	}
+	if p.verbose {
+		fmt.Println("Packaging", relPath(tarball))
 	}
 
 	// Compatibility mode for old fyne-cross versions using images with new CLI
@@ -138,7 +155,7 @@ func (p *Packager) packageUNIX() error {
 	// switching to a new namespace and merging fyne-cross into fyne-tools as
 	// one of the supported commands.
 	if fyneCrossCompat {
-		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr")
+		tarCmdArgs = append(tarCmdArgs, "-C", outDir, "Makefile", "usr") //revive:disable-line:add-constant
 	} else {
 		tarCmdArgs = append(tarCmdArgs, "-C", parent, dirName)
 	}

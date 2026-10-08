@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -47,7 +48,7 @@ func apiResources() ([]byte, error) {
 		}
 	}
 	if buf.Len() == 0 {
-		return nil, fmt.Errorf("failed to read resources.arsc")
+		return nil, errors.New("failed to read resources.arsc")
 	}
 	return buf.Bytes(), nil
 }
@@ -55,7 +56,7 @@ func apiResources() ([]byte, error) {
 func LatestAPIResourcesPath() (string, error) {
 	sdkdir := os.Getenv("ANDROID_HOME")
 	if sdkdir == "" {
-		return "", fmt.Errorf("ANDROID_HOME env var not set")
+		return "", errors.New("ANDROID_HOME env var not set")
 	}
 	parent := path.Join(sdkdir, "platforms")
 	dir, err := os.ReadDir(parent)

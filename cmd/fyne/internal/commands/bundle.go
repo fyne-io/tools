@@ -11,6 +11,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"github.com/urfave/cli/v2"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const fileHeader = "// auto-generated\n" + // to exclude this file in goreportcard (it has to be first)
@@ -111,7 +113,7 @@ func (b *Bundler) Run(args []string) {
 			fileModes = os.O_RDWR | os.O_APPEND
 		}
 
-		f, err := os.OpenFile(b.out, fileModes, 0o666)
+		f, err := os.OpenFile(b.out, fileModes, util.FilePermDefault)
 		if err == nil {
 			outFile = f
 		} else {
@@ -134,7 +136,7 @@ func (b *Bundler) Run(args []string) {
 	case os.IsNotExist(err):
 		fyne.LogError("Specified file could not be found", err)
 	case stat.IsDir():
-		b.dirBundle(args[0], outFile)
+		_ = b.dirBundle(args[0], outFile)
 	case b.name != "":
 		b.prefix = ""
 		fallthrough
@@ -162,16 +164,19 @@ func (b *Bundler) bundleAction(ctx *cli.Context) (err error) {
 		outFile = file
 	}
 
+	logFileNotFound := func(err error) {
+		fyne.LogError("Specified file could not be found", err)
+	}
 	for _, arg := range ctx.Args().Slice() {
 		files, err := filepath.Glob(arg)
 		if err != nil {
-			fyne.LogError("Specified file could not be found", err)
+			logFileNotFound(err)
 			return err
 		}
 		for _, file := range files {
 			switch stat, err := os.Stat(file); {
 			case os.IsNotExist(err):
-				fyne.LogError("Specified file could not be found", err)
+				logFileNotFound(err)
 				return err
 			case stat.IsDir():
 				return b.dirBundle(file, outFile)
@@ -218,7 +223,9 @@ func (b *Bundler) dirBundle(dirpath string, out *os.File) error {
 // should only be output once per file.
 func (b *Bundler) doBundle(path string, out *os.File) {
 	if !b.noheader {
-		writeHeader(b.pkg, out)
+		if err := writeHeader(b.pkg, out); err != nil {
+			fyne.LogError("failed to write header", err)
+		}
 		b.noheader = true
 	}
 
@@ -235,7 +242,7 @@ func openOutputFile(filePath string, noheader bool) (file *os.File, close func()
 		fileModes = os.O_RDWR | os.O_APPEND
 	}
 
-	f, err := os.OpenFile(filePath, fileModes, 0o666)
+	f, err := os.OpenFile(filePath, fileModes, util.FilePermDefault)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			fyne.LogError("Unable to open output file", err)
@@ -260,14 +267,21 @@ func sanitiseName(file, prefix string) string {
 	return prefix + name
 }
 
-func writeHeader(pkg string, out *os.File) {
-	out.WriteString(fileHeader)
-	out.WriteString("\n\npackage ")
-	out.WriteString(pkg)
-	out.WriteString("\n\nimport (\n")
-	out.WriteString("\t_ \"embed\"\n\n")
-	out.WriteString("\t\"fyne.io/fyne/v2\"\n")
-	out.WriteString(")\n")
+func writeHeader(pkg string, out *os.File) error {
+	for _, s := range []string{
+		fileHeader,
+		"\n\npackage ",
+		pkg,
+		"\n\nimport (\n",
+		"\t_ \"embed\"\n\n",
+		"\t\"fyne.io/fyne/v2\"\n",
+		")\n",
+	} {
+		if _, err := out.WriteString(s); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func writeResource(file, name string, f *os.File) {

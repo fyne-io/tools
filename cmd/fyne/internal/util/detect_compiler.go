@@ -27,6 +27,8 @@ type CompilerInfo struct {
 	OS      string
 }
 
+const gccProg = "gcc"
+
 // DetectCompiler takes the output of `cc --version` and tries to detect the
 // compiler, compiler version, and os name when available.
 func DetectCompiler(s, os string) (*CompilerInfo, error) {
@@ -54,12 +56,12 @@ func DetectCompiler(s, os string) (*CompilerInfo, error) {
 
 		if m[1] == ".exe" {
 			if x := rxBuiltBy.FindStringSubmatch(m[2]); len(x) == 2 {
-				return &CompilerInfo{"gcc", m[3], osname(x[1])}, nil
+				return &CompilerInfo{gccProg, m[3], osname(x[1])}, nil
 			}
 		}
 
-		if m[2] == "" || m[2] == "gcc" {
-			return &CompilerInfo{"gcc", m[3], osname("")}, nil
+		if m[2] == "" || m[2] == gccProg {
+			return &CompilerInfo{gccProg, m[3], osname("")}, nil
 		}
 
 		o := append(strings.Fields(strings.Map(func(r rune) rune {
@@ -69,7 +71,7 @@ func DetectCompiler(s, os string) (*CompilerInfo, error) {
 			return ' '
 		}, m[2])), "")[0]
 
-		return &CompilerInfo{"gcc", m[3], osname(o)}, nil
+		return &CompilerInfo{gccProg, m[3], osname(o)}, nil
 	}
 
 	return nil, ErrNoCompilerFound

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -18,6 +19,8 @@ import (
 	"text/template"
 
 	"golang.org/x/tools/go/packages"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
@@ -77,7 +80,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 			printcmd("echo \"%s\" > %s", file.contents, file.name)
 		}
 		if !buildN {
-			if err := os.WriteFile(file.name, file.contents, 0o600); err != nil {
+			if err := os.WriteFile(file.name, file.contents, util.PermUserRead|util.PermUserWrite); err != nil {
 				return nil, err
 			}
 		}
@@ -92,6 +95,10 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	var nmpkgs map[string]bool
 	for _, arch := range archs {
 		path := filepath.Join(tmpdir, arch)
+		if buildVerbose {
+			printcmd("Building %s binary for %s", arch, buildTarget)
+		}
+
 		// Disable DWARF; see golang.org/issues/25148.
 		if err := goBuild(src, darwinEnv[arch], "-ldflags=-w", "-o="+path); err != nil {
 			return nil, err
@@ -146,6 +153,9 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	if buildX {
 		printcmd("mv %s %s", tmpdir+"/build/Release-iphoneos/main.app", buildO)
 	}
+	if buildVerbose {
+		printcmd("Packaging %s", buildO)
+	}
 	if !buildN {
 		// if output already exists, remove.
 		if err := os.RemoveAll(buildO); err != nil {
@@ -190,7 +200,7 @@ func DetectIOSTeamID(optCert string) (string, error) {
 	}
 
 	if len(cert.Subject.OrganizationalUnit) == 0 {
-		err = fmt.Errorf("the signing certificate has no organizational unit (team ID)")
+		err = errors.New("the signing certificate has no organizational unit (team ID)")
 		return "", err
 	}
 

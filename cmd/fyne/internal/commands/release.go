@@ -11,8 +11,10 @@ import (
 	"text/template"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/tools/cmd/fyne/internal/goos"
 	"fyne.io/tools/cmd/fyne/internal/mobile"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 
 	"github.com/urfave/cli/v2"
 )
@@ -53,6 +55,7 @@ func Release() *cli.Command {
 			stringFlags["icon"](&r.icon),
 			boolFlags["use-raw-icon"](&r.rawIcon),
 			genericFlags["metadata"](&r.customMetadata),
+			boolFlags["verbose"](&r.verbose),
 		},
 		Action: r.releaseAction,
 	}
@@ -110,27 +113,27 @@ func (r *Releaser) PrintHelp(indent string) {
 //
 // Deprecated: A better version will be exposed in the future.
 func (r *Releaser) Run(params []string) {
-	r.Packager.distribution = true
-	r.Packager.release = true
+	r.distribution = true
+	r.release = true
 
 	if err := r.validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 
 	if err := r.beforePackage(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 	r.Packager.Run(params)
 	if err := r.afterPackage(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 	}
 }
 
 func (r *Releaser) releaseAction(_ *cli.Context) error {
-	r.Packager.distribution = true
-	r.Packager.release = true
+	r.distribution = true
+	r.release = true
 
 	if err := r.validate(); err != nil {
 		return err
@@ -140,20 +143,16 @@ func (r *Releaser) releaseAction(_ *cli.Context) error {
 		return err
 	}
 
-	if err := r.Packager.packageWithoutValidate(); err != nil {
+	if err := r.packageWithoutValidate(); err != nil {
 		return err
 	}
 
-	if err := r.afterPackage(); err != nil {
-		return err
-	}
-
-	return nil
+	return r.afterPackage()
 }
 
 func (r *Releaser) afterPackage() error {
-	if util.IsAndroid(r.os) {
-		target := mobile.AppOutputName(r.os, r.Packager.Name, r.release)
+	if pkgUtil.IsAndroid(r.os) {
+		target := mobile.AppOutputName(r.os, r.Name, r.release)
 		apk := filepath.Join(r.dir, target)
 		if err := r.zipAlign(apk); err != nil {
 			return err
@@ -183,8 +182,8 @@ func (r *Releaser) afterPackage() error {
 }
 
 func (r *Releaser) beforePackage() error {
-	if util.IsAndroid(r.os) {
-		if err := util.RequireAndroidSDK(); err != nil {
+	if pkgUtil.IsAndroid(r.os) {
+		if err := pkgUtil.RequireAndroidSDK(); err != nil {
 			return err
 		}
 	}
@@ -194,7 +193,7 @@ func (r *Releaser) beforePackage() error {
 
 func (r *Releaser) nameFromCertInfo(info string) string {
 	// format should be "CN=Company, O=Company, L=City, S=State, C=Country"
-	parts := strings.Split(info, ",")
+	parts := util.SplitComma(info)
 	cn := parts[0]
 	pos := strings.Index(strings.ToUpper(cn), "CN=")
 	if pos == -1 {
@@ -204,6 +203,8 @@ func (r *Releaser) nameFromCertInfo(info string) string {
 	return cn[pos+3:]
 }
 
+const fileEntitlementsPlist = "entitlements.plist"
+
 func (r *Releaser) packageIOSRelease() error {
 	team, err := mobile.DetectIOSTeamID(r.certificate)
 	if err != nil {
@@ -211,10 +212,13 @@ func (r *Releaser) packageIOSRelease() error {
 	}
 
 	payload := filepath.Join(r.dir, "Payload")
-	_ = os.Mkdir(payload, 0o750)
+	_ = os.Mkdir(payload, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 	defer os.RemoveAll(payload)
 	appName := mobile.AppOutputName(r.os, r.Name, r.release)
 	payloadAppDir := filepath.Join(payload, appName)
+	if r.verbose {
+		fmt.Println("Creating", relPath(payloadAppDir))
+	}
 	if err := os.Rename(filepath.Join(r.dir, appName), payloadAppDir); err != nil {
 		return err
 	}
@@ -228,13 +232,19 @@ func (r *Releaser) packageIOSRelease() error {
 	}
 	defer cleanup()
 
+	if r.verbose {
+		fmt.Println("Codesigning", relPath(payloadAppDir))
+	}
 	cmd := exec.Command("codesign", "-f", "-vv", "-s", r.certificate, "--entitlements",
-		"entitlements.plist", "Payload/"+appName+"/")
+		fileEntitlementsPlist, "Payload/"+appName+"/")
 	if err := cmd.Run(); err != nil {
 		fyne.LogError("Codesign failed", err)
 		return errors.New("unable to codesign application bundle")
 	}
 
+	if r.verbose {
+		fmt.Println("Creating", relPath(appName[:len(appName)-4]+".ipa"))
+	}
 	return exec.Command("zip", "-r", appName[:len(appName)-4]+".ipa", "Payload/").Run()
 }
 
@@ -252,13 +262,19 @@ func (r *Releaser) packageMacOSRelease() error {
 	}
 	defer cleanup()
 
-	cmd := exec.Command("codesign", "-vfs", appCert, "--entitlement", "entitlements.plist", r.Name+".app")
+	if r.verbose {
+		fmt.Println("Codesigning", relPath(r.Name+".app"))
+	}
+	cmd := exec.Command("codesign", "-vfs", appCert, "--entitlement", fileEntitlementsPlist, r.Name+".app")
 	err = cmd.Run()
 	if err != nil {
 		fyne.LogError("Codesign failed", err)
 		return errors.New("unable to codesign application bundle")
 	}
 
+	if r.verbose {
+		fmt.Println("Building", relPath(unsignedPath))
+	}
 	cmd = exec.Command("productbuild", "--component", r.Name+".app", "/Applications/",
 		"--product", r.Name+".app/Contents/Info.plist", unsignedPath)
 	err = cmd.Run()
@@ -268,13 +284,19 @@ func (r *Releaser) packageMacOSRelease() error {
 	}
 	defer os.Remove(unsignedPath)
 
+	if r.verbose {
+		fmt.Println("Signing", relPath(r.Name+".pkg"))
+	}
 	cmd = exec.Command("productsign", "--sign", installCert, unsignedPath, r.Name+".pkg")
 	return cmd.Run()
 }
 
 func (r *Releaser) packageWindowsRelease(outFile string) error {
+	if r.verbose {
+		fmt.Println("Packaging", relPath(outFile))
+	}
 	payload := filepath.Join(r.dir, "Payload")
-	_ = os.Mkdir(payload, 0o750)
+	_ = os.Mkdir(payload, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 	defer os.RemoveAll(payload)
 
 	manifestPath := filepath.Join(payload, "appxmanifest.xml")
@@ -296,8 +318,12 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 		return errors.New("failed to write application manifest template")
 	}
 
-	util.CopyFile(r.icon, filepath.Join(payload, "Icon.png"))
-	util.CopyFile(r.Name, filepath.Join(payload, r.Name))
+	if err := pkgUtil.CopyFile(r.icon, filepath.Join(payload, "Icon.png")); err != nil {
+		return err
+	}
+	if err := pkgUtil.CopyFile(r.Name, filepath.Join(payload, r.Name)); err != nil {
+		return err
+	}
 
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
@@ -312,12 +338,15 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 }
 
 func (r *Releaser) signAndroid(path string) error {
+	if r.verbose {
+		fmt.Println("Signing", relPath(path))
+	}
 	signer := "jarsigner"
 	var args []string
 	if r.release {
 		args = []string{"-keystore", r.keyStore}
 	} else {
-		signer = filepath.Join(util.AndroidBuildToolsPath(), "/apksigner")
+		signer = filepath.Join(pkgUtil.AndroidBuildToolsPath(), "/apksigner")
 		args = []string{"sign", "--ks", r.keyStore}
 	}
 
@@ -351,6 +380,9 @@ func (r *Releaser) signAndroid(path string) error {
 }
 
 func (r *Releaser) signWindows(appx string) error {
+	if r.verbose {
+		fmt.Println("Signing", relPath(appx))
+	}
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
 		return errors.New("cannot find signtool.exe, make sure you have installed the Windows SDK")
@@ -373,7 +405,7 @@ func (r *Releaser) validate() error {
 		return err
 	}
 
-	if util.IsMobile(r.os) || r.os == "windows" {
+	if pkgUtil.IsMobile(r.os) || r.os == goos.Windows {
 		if r.AppVersion == "" { // Here it is required, if provided then package validate will check format
 			return errors.New("missing required --app-version parameter")
 		}
@@ -381,7 +413,7 @@ func (r *Releaser) validate() error {
 			return errors.New("missing required --app-build parameter")
 		}
 	}
-	if r.os == "windows" {
+	if r.os == goos.Windows {
 		if r.developer == "" {
 			return errors.New("missing required --developer parameter for windows release,\n" +
 				"use data from Partner Portal, format \"CN=Company, O=Company, L=City, S=State, C=Country\"")
@@ -393,11 +425,11 @@ func (r *Releaser) validate() error {
 			return errors.New("missing required --password parameter for windows release")
 		}
 	}
-	if util.IsAndroid(r.os) {
+	if pkgUtil.IsAndroid(r.os) {
 		if r.keyStore == "" {
 			return errors.New("missing required --keystore parameter for android release")
 		}
-	} else if r.os == "darwin" {
+	} else if r.os == goos.Darwin {
 		if r.certificate == "" {
 			r.certificate = "3rd Party Mac Developer Application"
 		}
@@ -410,7 +442,7 @@ func (r *Releaser) validate() error {
 			return errors.New("category does not match one of the supported list: " +
 				strings.Join(macAppStoreCategories, ", "))
 		}
-	} else if r.os == "ios" {
+	} else if r.os == goos.IOS {
 		if r.certificate == "" {
 			r.certificate = "Apple Distribution"
 		}
@@ -422,7 +454,7 @@ func (r *Releaser) validate() error {
 }
 
 func (r *Releaser) writeEntitlements(tmpl *template.Template, entitlementData any) (cleanup func(), err error) {
-	entitlementPath := filepath.Join(r.dir, "entitlements.plist")
+	entitlementPath := filepath.Join(r.dir, fileEntitlementsPlist)
 	entitlements, err := os.Create(entitlementPath)
 	if err != nil {
 		return nil, err
@@ -442,13 +474,16 @@ func (r *Releaser) writeEntitlements(tmpl *template.Template, entitlementData an
 }
 
 func (r *Releaser) zipAlign(path string) error {
+	if r.verbose {
+		fmt.Println("Aligning", relPath(path))
+	}
 	unaligned := filepath.Join(filepath.Dir(path), "unaligned.apk")
 	err := os.Rename(path, unaligned)
 	if err != nil {
 		return nil
 	}
 
-	cmd := filepath.Join(util.AndroidBuildToolsPath(), "zipalign")
+	cmd := filepath.Join(pkgUtil.AndroidBuildToolsPath(), "zipalign")
 	err = exec.Command(cmd, "16", unaligned, path).Run()
 	if err != nil {
 		_ = os.Rename(path, unaligned) // ignore error, return previous
