@@ -70,29 +70,10 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 
-		foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
-		adaptive := foreground != "" && util.Exists(foreground)
-		hasSplash := splash != nil && util.Exists(iconPath)
-
-		buf := new(bytes.Buffer)
-		buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
-		err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
-			JavaPkgPath:  bundleID,
-			Name:         strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
-			Debug:        !buildRelease,
-			LibName:      libName,
-			Version:      version,
-			Build:        build,
-			AdaptiveIcon: adaptive,
-			Icon:         adaptive || hasSplash,
-			Splash:       hasSplash,
-		})
+		manifestData, err = generateAndroidManifest(dir, bundleID, appName, libName, version, build,
+			iconPath, iconFG, iconBG, iconMono, splash)
 		if err != nil {
 			return nil, err
-		}
-		manifestData = buf.Bytes()
-		if buildV {
-			fmt.Fprintf(os.Stderr, "generated %s:\n%s\n", fileAndroidManifestXML, manifestData)
 		}
 	} else {
 		libName, err = manifestLibName(manifestData)
@@ -193,6 +174,39 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 
 	// TODO: return nmpkgs
 	return nmpkgs[androidArchs[0]], nil
+}
+
+// generateAndroidManifest renders the AndroidManifest.xml template for an app that does not provide its own.
+// The icon and splash screen resources are declared in the manifest when the source images are available.
+func generateAndroidManifest(dir, bundleID, appName, libName, version string, build int,
+	iconPath, iconFG, iconBG, iconMono string, splash *metadata.Splash,
+) ([]byte, error) {
+	foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
+	adaptive := foreground != "" && util.Exists(foreground)
+	hasSplash := splash != nil && util.Exists(iconPath)
+
+	buf := new(bytes.Buffer)
+	buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
+	err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
+		JavaPkgPath:  bundleID,
+		Name:         strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+		Debug:        !buildRelease,
+		LibName:      libName,
+		Version:      version,
+		Build:        build,
+		AdaptiveIcon: adaptive,
+		Icon:         adaptive || hasSplash,
+		Splash:       hasSplash,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	manifestData := buf.Bytes()
+	if buildV {
+		fmt.Fprintf(os.Stderr, "generated %s:\n%s\n", fileAndroidManifestXML, manifestData)
+	}
+	return manifestData, nil
 }
 
 // detectAdaptiveIcons checks for adaptive icon layers based on metadata or convention
