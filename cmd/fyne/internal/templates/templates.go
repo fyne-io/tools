@@ -39,6 +39,9 @@ var (
 	// XCAssetsDarwin is the Contents.json file for darwin xcassets bundle
 	XCAssetsDarwin = template.Must(template.New("XCAssets").Parse(xcassetsJSON))
 
+	// LaunchScreenIOS is the storyboard shown by iOS while the app loads
+	LaunchScreenIOS = template.Must(template.New("LaunchScreen").Parse(launchScreenStoryboard))
+
 	// IndexHTML is the index.html used to serve web package
 	IndexHTML = template.Must(template.New("index.html").Parse(indexHTML))
 

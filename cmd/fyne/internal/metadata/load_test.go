@@ -28,4 +28,8 @@ func TestLoadAppMetadata(t *testing.T) {
 	assert.NotNil(t, data.Source)
 	assert.Equal(t, data.Source.Repo, "https://github.com/fyne-io/fyne")
 	assert.Equal(t, data.Source.Dir, "internal/metadata/testdata")
+
+	assert.NotNil(t, data.Splash)
+	assert.Equal(t, "#015952", data.Splash.Background)
+	assert.Equal(t, "assets/splash-icon.png", data.Splash.Icon)
 }

@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -34,10 +35,13 @@ type manifestTmplData struct {
 	Version      string
 	Build        int
 	AdaptiveIcon bool
+	Icon         bool
+	Splash       bool
 }
 
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
+	splash *metadata.Splash,
 ) (map[string]bool, error) {
 	var env []string
 	if release { // Google Play Store requires 16K alignment
@@ -63,6 +67,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 
 		foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 		adaptive := foreground != "" && util.Exists(foreground)
+		hasSplash := splash != nil && util.Exists(iconPath)
 
 		buf := new(bytes.Buffer)
 		buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
@@ -74,6 +79,8 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			Version:      version,
 			Build:        build,
 			AdaptiveIcon: adaptive,
+			Icon:         adaptive || hasSplash,
+			Splash:       hasSplash,
 		})
 		if err != nil {
 			return nil, err
@@ -148,7 +155,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	if err != nil {
 		return nil, err
 	}
-	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, iconFG, iconBG, iconMono)
+	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, iconFG, iconBG, iconMono, splash)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +214,7 @@ func detectAdaptiveIcons(dir, foreground, background, monochrome string) (string
 }
 
 func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int, versionCode int,
-	versionName, iconFG, iconBG, iconMono string,
+	versionName, iconFG, iconBG, iconMono string, splash *metadata.Splash,
 ) error {
 	// Add any assets.
 	var arsc struct {
@@ -257,8 +264,8 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 
 	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 
-	// No adaptive icons, use legacy build
-	if iconForeground == "" {
+	// No adaptive icons or splash screen, use legacy build
+	if iconForeground == "" && (splash == nil || arsc.iconPath == "") {
 		return legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
 	}
 
@@ -267,19 +274,21 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		iconBackground = iconForeground
 	}
 
-	// Compile adaptive icon resources with aapt2
+	// Compile icon and splash resources with aapt2
 	arscPath, resDir, compiledManifestPath, err := compileAndroidResources(
 		tmpdir,
 		manifestData,
+		arsc.iconPath,
 		iconForeground,
 		iconBackground,
 		iconMonochrome,
+		splash,
 		target,
 		versionCode,
 		versionName,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to compile adaptive icon resources: %w", err)
+		return fmt.Errorf("failed to compile android resources: %w", err)
 	}
 
 	w, err := apkwCreate("resources.arsc", apkw)

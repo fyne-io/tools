@@ -6,6 +6,7 @@ type FyneApp struct {
 	Description  string `toml:",omitempty"`
 	Details      AppDetails
 	AdaptiveIcon *AdaptiveIcon `toml:",omitempty"`
+	Splash       *Splash       `toml:",omitempty"`
 
 	Development map[string]string `toml:",omitempty"`
 	Release     map[string]string `toml:",omitempty"`
@@ -28,6 +29,14 @@ type AdaptiveIcon struct {
 	Foreground string `toml:",omitempty"`
 	Background string `toml:",omitempty"`
 	Monochrome string `toml:",omitempty"`
+}
+
+// Splash describes the native launch screen that iOS and Android show while the app loads.
+// Background is a hex colour such as "#015952" and Icon is an optional square PNG that will be centered.
+// The icon defaults to the adaptive icon foreground or the app icon.
+type Splash struct {
+	Background string `toml:",omitempty"`
+	Icon       string `toml:",omitempty"`
 }
 
 type AppSource struct {
