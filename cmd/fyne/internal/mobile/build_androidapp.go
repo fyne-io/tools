@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -34,6 +35,7 @@ type manifestTmplData struct {
 	Version      string
 	Build        int
 	AdaptiveIcon bool
+	Microphone   bool
 }
 
 const (
@@ -43,6 +45,7 @@ const (
 
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
+	capabilities metadata.Capabilities,
 ) (map[string]bool, error) {
 	var env []string
 	if release { // Google Play Store requires 16K alignment
@@ -79,6 +82,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			Version:      version,
 			Build:        build,
 			AdaptiveIcon: adaptive,
+			Microphone:   capabilities.Microphone,
 		})
 		if err != nil {
 			return nil, err

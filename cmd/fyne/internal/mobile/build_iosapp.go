@@ -20,11 +20,13 @@ import (
 
 	"golang.org/x/tools/go/packages"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	appName, version string, build int, release bool, cert, profile string,
+	capabilities metadata.Capabilities,
 ) (map[string]bool, error) {
 	src := pkg.PkgPath
 	buildO = rfc1034Label(appName) + ".app"
@@ -52,13 +54,17 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 		return nil, err
 	}
 
+	name := strings.Title(appName) //lint:ignore SA1019 It is fine for our uses.
 	infoplist := new(bytes.Buffer)
 	if err := infoplistTmpl.Execute(infoplist, infoplistTmplData{
 		BundleID: bundleID,
-		Name:     strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+		Name:     name,
 		Version:  version,
 		Build:    build,
 		Legacy:   len(allArchs["ios"]) > 2,
+
+		Microphone:      capabilities.Microphone,
+		MicrophoneUsage: capabilities.MicrophoneUsageText(name),
 	}); err != nil {
 		return nil, err
 	}
@@ -287,6 +293,9 @@ type infoplistTmplData struct {
 	Version  string
 	Build    int
 	Legacy   bool
+
+	Microphone      bool
+	MicrophoneUsage string
 }
 
 var infoplistTmpl = template.Must(template.New("infoplist").Parse(`<?xml version="1.0" encoding="UTF-8"?>
@@ -338,6 +347,10 @@ var infoplistTmpl = template.Must(template.New("infoplist").Parse(`<?xml version
   </dict>
   <key>CFBundleIconName</key>
   <string>AppIcon</string>
+{{- if .Microphone}}
+  <key>NSMicrophoneUsageDescription</key>
+  <string>{{html .MicrophoneUsage}}</string>
+{{- end}}
   <key>LSRequiresIPhoneOS</key>
   <true/>
   <key>UILaunchStoryboardName</key>
