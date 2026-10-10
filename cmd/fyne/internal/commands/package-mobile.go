@@ -66,7 +66,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 	}
 
 	return runCmdCaptureOutput("xcrun", "actool", "Images.xcassets", "--compile", appDir, "--platform",
-		"iphoneos", "--target-device", "iphone", "--minimum-deployment-target", "9.0", "--app-icon", "AppIcon",
+		"iphoneos", "--target-device", "iphone", "--minimum-deployment-target", "15.0", "--app-icon", "AppIcon",
 		"--output-format", "human-readable-text", "--output-partial-info-plist", "/dev/null")
 }
 
