@@ -362,7 +362,12 @@ func (b *Builder) applyCAndLDFlags(env *[]string, os string) {
 	}
 
 	arch := targetArch()
-	cflagsHardening := hardeningCFlagsLookup(ccVersion(), os, arch)
+	ccVer, err := ccVersionAndDefaultFlags()
+	if err != nil {
+		fyne.LogError("failed to get compiler version and default flags", err)
+		ccVer = ccVersion()
+	}
+	cflagsHardening := hardeningCFlagsLookup(ccVer, os, arch)
 	if cflagsHardening != "" {
 		cflags = append(cflags, cflagsHardening)
 	}
