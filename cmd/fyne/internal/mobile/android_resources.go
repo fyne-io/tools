@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/util"
 )
@@ -87,9 +88,104 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 	return nil
 }
 
+// writeLauncherIconResources creates a plain (non-adaptive) launcher icon resource
+func writeLauncherIconResources(resDir, iconPath string) error {
+	xxxhdpiDir := filepath.Join(resDir, "mipmap-xxxhdpi")
+	if err := os.MkdirAll(xxxhdpiDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create mipmap-xxxhdpi directory: %w", err)
+	}
+
+	for _, name := range []string{"ic_launcher.png", "ic_launcher_round.png"} {
+		if err := util.CopyFile(iconPath, filepath.Join(xxxhdpiDir, name)); err != nil {
+			return fmt.Errorf("failed to copy launcher icon: %w", err)
+		}
+	}
+	return nil
+}
+
+// splashIconSize is the pixel size of the xxxhdpi splash icon, 288dp to match the drawable
+// size that the Android 12+ system splash screen lays out its icon at.
+const splashIconSize = 288 * 4
+
+// writeSplashResources creates the SplashTheme that the launcher activity uses.
+// Before Android 12 the window background (colour plus centred icon) is shown while
+// the app starts; from Android 12 the system splash screen uses the same colour and icon.
+func writeSplashResources(resDir string, splash *metadata.Splash, iconPath string) error {
+	background := splash.Background
+	if background == "" {
+		background = "#FFFFFF"
+	}
+
+	drawableDir := filepath.Join(resDir, "drawable")
+	bitmapDir := filepath.Join(resDir, "drawable-xxxhdpi")
+	valuesDir := filepath.Join(resDir, "values")
+	valuesV31Dir := filepath.Join(resDir, "values-v31")
+	for _, dir := range []string{drawableDir, bitmapDir, valuesDir, valuesV31Dir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("failed to create %s directory: %w", filepath.Base(dir), err)
+		}
+	}
+
+	icon := splash.Icon
+	if icon == "" {
+		icon = iconPath
+	}
+	if err := util.WriteScaledPNG(icon, filepath.Join(bitmapDir, "splash_icon.png"), splashIconSize); err != nil {
+		return fmt.Errorf("failed to write splash icon: %w", err)
+	}
+
+	window := `<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background"/>
+    <item android:gravity="center">
+        <bitmap android:src="@drawable/splash_icon" android:gravity="center"/>
+    </item>
+</layer-list>
+`
+	if err := os.WriteFile(filepath.Join(drawableDir, "splash_background.xml"), []byte(window), 0o644); err != nil {
+		return fmt.Errorf("failed to write splash_background.xml: %w", err)
+	}
+
+	colors := fmt.Sprintf(`<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_background">%s</color>
+</resources>
+`, background)
+	if err := os.WriteFile(filepath.Join(valuesDir, "colors.xml"), []byte(colors), 0o644); err != nil {
+		return fmt.Errorf("failed to write colors.xml: %w", err)
+	}
+
+	styles := `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="SplashTheme" parent="@android:style/Theme">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+</resources>
+`
+	if err := os.WriteFile(filepath.Join(valuesDir, "styles.xml"), []byte(styles), 0o644); err != nil {
+		return fmt.Errorf("failed to write styles.xml: %w", err)
+	}
+
+	stylesV31 := `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="SplashTheme" parent="@android:style/Theme">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    </style>
+</resources>
+`
+	if err := os.WriteFile(filepath.Join(valuesV31Dir, "styles.xml"), []byte(stylesV31), 0o644); err != nil {
+		return fmt.Errorf("failed to write v31 styles.xml: %w", err)
+	}
+	return nil
+}
+
 // compileAndroidResources compiles Android resources using aapt2
 // Returns: resources.arsc path, res/ directory path, compiled AndroidManifest.xml path, error
-func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath, backgroundPath, monochromePath string, targetSDK, versionCode int, versionName string) (arscPath string, resDir string, manifestPath string, err error) {
+func compileAndroidResources(tempDir string, manifestData []byte, iconPath, foregroundPath, backgroundPath, monochromePath string,
+	splash *metadata.Splash, targetSDK, versionCode int, versionName string,
+) (arscPath string, resDir string, manifestPath string, err error) {
 	aapt2, err := util.Aapt2Path()
 	if err != nil {
 		return "", "", "", err
@@ -100,8 +196,22 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 		return "", "", "", fmt.Errorf("failed to create res directory: %w", err)
 	}
 
-	if err := writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath); err != nil {
+	if foregroundPath != "" {
+		if err := writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath); err != nil {
+			return "", "", "", err
+		}
+	} else if err := writeLauncherIconResources(resDir, iconPath); err != nil {
 		return "", "", "", err
+	}
+
+	if splash != nil {
+		splashIcon := foregroundPath
+		if splashIcon == "" {
+			splashIcon = iconPath
+		}
+		if err := writeSplashResources(resDir, splash, splashIcon); err != nil {
+			return "", "", "", err
+		}
 	}
 
 	compiledDir := filepath.Join(tempDir, "compiled")

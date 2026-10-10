@@ -297,6 +297,9 @@ func (p *Packager) validate() (err error) {
 		if data.Details.Icon != "" {
 			data.Details.Icon = pkgUtil.MakePathRelativeTo(p.srcDir, data.Details.Icon)
 		}
+		if data.Splash != nil && data.Splash.Icon != "" {
+			data.Splash.Icon = util.MakePathRelativeTo(p.srcDir, data.Splash.Icon)
+		}
 
 		p.mergeMetadata(data)
 		p.sourceMetadata = data.Source
