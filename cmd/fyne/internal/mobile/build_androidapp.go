@@ -36,6 +36,7 @@ type manifestTmplData struct {
 	Build        int
 	AdaptiveIcon bool
 	Icon         bool
+	Microphone   bool
 	Splash       bool
 }
 
@@ -46,7 +47,7 @@ const (
 
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
-	splash *metadata.Splash,
+	capabilities metadata.Capabilities, splash *metadata.Splash,
 ) (map[string]bool, error) {
 	var env []string
 	if release { // Google Play Store requires 16K alignment
@@ -71,7 +72,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		}
 
 		manifestData, err = generateAndroidManifest(dir, bundleID, appName, libName, version, build,
-			iconPath, iconFG, iconBG, iconMono, splash)
+			iconPath, iconFG, iconBG, iconMono, capabilities, splash)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +180,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 // generateAndroidManifest renders the AndroidManifest.xml template for an app that does not provide its own.
 // The icon and splash screen resources are declared in the manifest when the source images are available.
 func generateAndroidManifest(dir, bundleID, appName, libName, version string, build int,
-	iconPath, iconFG, iconBG, iconMono string, splash *metadata.Splash,
+	iconPath, iconFG, iconBG, iconMono string, capabilities metadata.Capabilities, splash *metadata.Splash,
 ) ([]byte, error) {
 	foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 	adaptive := foreground != "" && util.Exists(foreground)
@@ -196,6 +197,7 @@ func generateAndroidManifest(dir, bundleID, appName, libName, version string, bu
 		Build:        build,
 		AdaptiveIcon: adaptive,
 		Icon:         adaptive || hasSplash,
+		Microphone:   capabilities.Microphone,
 		Splash:       hasSplash,
 	})
 	if err != nil {

@@ -20,5 +20,6 @@ type command struct {
 	Build                  int
 
 	iconFG, iconBG, iconMono string
+	capabilities             metadata.Capabilities
 	splash                   *metadata.Splash
 }

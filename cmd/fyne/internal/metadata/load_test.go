@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,4 +33,20 @@ func TestLoadAppMetadata(t *testing.T) {
 	assert.NotNil(t, data.Splash)
 	assert.Equal(t, "#015952", data.Splash.Background)
 	assert.Equal(t, "assets/splash-icon.png", data.Splash.Icon)
+}
+
+func TestLoadAppMetadata_Permissions(t *testing.T) {
+	data, err := Load(strings.NewReader("[Details]\nName = \"Fyne App\"\n"))
+	assert.Nil(t, err)
+	assert.Nil(t, data.Capabilities)
+
+	data, err = Load(strings.NewReader("[Capabilities]\nMicrophone = true\n"))
+	assert.Nil(t, err)
+	assert.NotNil(t, data.Capabilities)
+	assert.True(t, data.Capabilities.Microphone)
+	assert.Equal(t, "Fyne App uses the microphone to capture audio", data.Capabilities.MicrophoneUsageText("Fyne App"))
+
+	data, err = Load(strings.NewReader("[Capabilities]\nMicrophone = true\nMicrophoneUsage = \"Record voice notes\"\n"))
+	assert.Nil(t, err)
+	assert.Equal(t, "Record voice notes", data.Capabilities.MicrophoneUsageText("Fyne App"))
 }

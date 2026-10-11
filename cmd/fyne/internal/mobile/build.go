@@ -124,7 +124,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			target = androidTargetDebug // TODO once we have gomobile debug signing working for v2 android signs
 		}
 		nmpkgs, err = goAndroidBuild(pkg, buildBundleID, targetArchs, cmd.IconPath, cmd.AppName, cmd.Version, cmd.Build,
-			target, buildRelease, cmd.iconFG, cmd.iconBG, cmd.iconMono, cmd.splash)
+			target, buildRelease, cmd.iconFG, cmd.iconBG, cmd.iconMono, cmd.capabilities, cmd.splash)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +148,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 			return pkg, nil
 		}
-		nmpkgs, err = goIOSBuild(pkg, buildBundleID, targetArchs, cmd.AppName, cmd.Version, cmd.Build, buildRelease, cmd.Cert, cmd.Profile)
+		nmpkgs, err = goIOSBuild(pkg, buildBundleID, targetArchs, cmd.AppName, cmd.Version, cmd.Build, buildRelease, cmd.Cert, cmd.Profile, cmd.capabilities)
 		if err != nil {
 			return nil, err
 		}
@@ -253,7 +253,7 @@ var (
 
 // RunNewBuild executes a new mobile build for the specified configuration
 func RunNewBuild(target, appID, icon, name, version string, build int, release, distribution bool, cert, profile string,
-	tags []string, iconFG, iconBG, iconMono string, verbose bool, splash *metadata.Splash,
+	tags []string, iconFG, iconBG, iconMono string, verbose bool, capabilities metadata.Capabilities, splash *metadata.Splash,
 ) error {
 	buildTarget = target
 	buildBundleID = appID
@@ -277,6 +277,7 @@ func RunNewBuild(target, appID, icon, name, version string, build int, release, 
 	cmd.iconFG = iconFG
 	cmd.iconBG = iconBG
 	cmd.iconMono = iconMono
+	cmd.capabilities = capabilities
 	cmd.splash = splash
 	return runBuild(cmd)
 }
