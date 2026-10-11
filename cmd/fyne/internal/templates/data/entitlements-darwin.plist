@@ -4,5 +4,9 @@
 <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
+    {{- if .Microphone}}
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+    {{- end}}
 </dict>
 </plist>

@@ -12,6 +12,7 @@ type appData struct {
 	CustomMetadata    map[string]string
 	Migrations        map[string]bool
 	CanOpen           *metadata.CanOpen
+	Capabilities      metadata.Capabilities
 	VersionAtLeast2_3 bool
 	VersionAtLeast2_6 bool
 }
@@ -55,4 +56,7 @@ func (a *appData) mergeMetadata(data *metadata.FyneApp) {
 	}
 	a.Migrations = data.Migrations
 	a.CanOpen = data.CanOpen
+	if data.Capabilities != nil {
+		a.Capabilities = *data.Capabilities
+	}
 }

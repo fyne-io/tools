@@ -6,6 +6,8 @@ package mobile
 
 import (
 	"flag"
+
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 )
 
 type command struct {
@@ -18,4 +20,5 @@ type command struct {
 	Build                  int
 
 	iconFG, iconBG, iconMono string
+	capabilities             metadata.Capabilities
 }

@@ -152,6 +152,11 @@ func Test_MergeMetadata(t *testing.T) {
 	assert.Equal(t, "v0.1", p.AppVersion)
 	assert.Equal(t, 3, p.AppBuild)
 	assert.Equal(t, "test.png", p.icon)
+	assert.False(t, p.Capabilities.Microphone)
+
+	data.Capabilities = &metadata.Capabilities{Microphone: true}
+	p.mergeMetadata(data)
+	assert.True(t, p.Capabilities.Microphone)
 }
 
 func Test_validateAppID(t *testing.T) {
