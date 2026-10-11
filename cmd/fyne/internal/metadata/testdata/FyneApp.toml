@@ -7,6 +7,10 @@ ID = "io.fyne.fyne"
 Version = "1.0.0"
 Build = 1
 
+[Splash]
+Background = "#015952"
+Icon = "assets/splash-icon.png"
+
 [Development]
 InDevelopmentOnly = "Value4"
 Test = "Value2"

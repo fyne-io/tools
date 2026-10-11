@@ -21,4 +21,5 @@ type command struct {
 
 	iconFG, iconBG, iconMono string
 	capabilities             metadata.Capabilities
+	splash                   *metadata.Splash
 }

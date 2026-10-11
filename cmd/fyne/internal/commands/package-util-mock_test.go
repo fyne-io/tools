@@ -164,6 +164,10 @@ func (m mockUtil) MakePathRelativeTo(root, path string) string {
 	return utilMakePathRelativeToMock(root, path)
 }
 
+func (m mockUtil) WriteScaledPNG(src, dst string, size int) error {
+	return nil
+}
+
 func (m mockUtil) RequireAndroidSDK() error {
 	return utilRequireAndroidSDKMock()
 }

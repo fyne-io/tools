@@ -5,12 +5,12 @@
 	android:versionName="{{.Version}}">
 
 	<application android:label="{{.Name}}" android:debuggable="{{.Debug}}"
-				 {{if .AdaptiveIcon}}android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"{{end}}>
+				 {{if .Icon}}android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"{{end}}>
 	<activity android:name="org.golang.app.GoNativeActivity"
 		android:label="{{.Name}}"
 		android:configChanges="orientation|keyboardHidden|uiMode"
 		android:exported="true"
-		android:theme="@android:style/Theme">
+		android:theme="{{if .Splash}}@style/SplashTheme{{else}}@android:style/Theme{{end}}">
 		<meta-data android:name="android.app.lib_name" android:value="{{.LibName}}" />
 		<intent-filter>
 			<action android:name="android.intent.action.MAIN" />
