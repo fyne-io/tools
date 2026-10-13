@@ -81,7 +81,7 @@ func (p *Packager) packageIOS(target string, tags []string) error {
 		fmt.Println("Creating icons for", relPath(appDir))
 	}
 	err = runCmdCaptureOutput("xcrun", "actool", "Images.xcassets", "--compile", appDir, "--platform",
-		"iphoneos", "--target-device", "iphone", "--minimum-deployment-target", "9.0", "--app-icon", "AppIcon",
+		"iphoneos", "--target-device", "iphone", "--minimum-deployment-target", "13.0", "--app-icon", "AppIcon",
 		"--output-format", "human-readable-text", "--output-partial-info-plist", "/dev/null")
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func compileLaunchScreen(dir, appDir, background string) error {
 	}
 
 	return runCmdCaptureOutput("xcrun", "ibtool", "--compile", filepath.Join(appDir, "LaunchScreen.storyboardc"),
-		"--target-device", "iphone", "--minimum-deployment-target", "9.0", storyboard)
+		"--target-device", "iphone", "--minimum-deployment-target", "13.0", storyboard)
 }
 
 // parseHexColor converts a "#RRGGBB" colour into 0-1 components, defaulting to white.
