@@ -288,7 +288,7 @@ func addBuildFlags(cmd *command) {
 	cmd.Flag.StringVar(&buildLdflags, "ldflags", "", "")
 	cmd.Flag.StringVar(&buildTarget, "os", "android", "")
 	cmd.Flag.StringVar(&buildBundleID, "bundleid", "", "")
-	cmd.Flag.StringVar(&buildIOSVersion, "iosversion", "7.0", "")
+	cmd.Flag.StringVar(&buildIOSVersion, "iosversion", "13.0", "")
 	cmd.Flag.IntVar(&buildAndroidAPI, "androidapi", minAndroidAPI, "")
 
 	cmd.Flag.BoolVar(&buildA, "a", false, "")
