@@ -30,6 +30,16 @@ var (
 
 type mockUtil struct{}
 
+// useMockPkgUtil replaces the package utilities with the mocks for the duration
+// of the test.
+func useMockPkgUtil(t *testing.T) {
+	t.Helper()
+
+	previous := pkgUtil
+	t.Cleanup(func() { pkgUtil = previous })
+	pkgUtil = mockUtil{}
+}
+
 func expectedTotalCount(t *testing.T, totalExpected int, totalProcessed int) {
 	assert.Equal(t, totalExpected, totalProcessed)
 }

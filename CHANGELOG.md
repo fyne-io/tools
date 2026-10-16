@@ -3,6 +3,33 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
+## 1.7.3 - 30 Sep 2026
+
+### Added
+
+* Compiler/platform based optimisation flags (#144, #147, #152)
+* Fixing Play Store compatibility for September (#151)
+
+### Changed
+
+* Update Fyne version, sync Go version, and work around macOS/CI issue (#157)
+* Make sure version argument and command do the same (#158)
+* gendex: use Fyne module source, CLI improvements, dependency download and checksum support (#166)
+
+### Fixed
+
+* Fix 'fyne package' embedding of Windows metadata and icon when outputting to a different directory (#134)
+* Correct the icon name for Makefiles (#140)
+* Ensure we list the most recent versions last to resolve correctly (#145)
+* Don't rely on an empty AppID, it's optional (#146)
+
+### New Contributors
+
+Code in v1.7.3 contains work from the following first time contributors:
+
+* @GraysonTinker
+
+
 ## 1.7.2 - 29 May 2026
 
 ### Changed

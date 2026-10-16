@@ -55,6 +55,7 @@ func Release() *cli.Command {
 			stringFlags["icon"](&r.icon),
 			boolFlags["use-raw-icon"](&r.rawIcon),
 			genericFlags["metadata"](&r.customMetadata),
+			boolFlags["verbose"](&r.verbose),
 		},
 		Action: r.releaseAction,
 	}
@@ -215,6 +216,9 @@ func (r *Releaser) packageIOSRelease() error {
 	defer os.RemoveAll(payload)
 	appName := mobile.AppOutputName(r.os, r.Name, r.release)
 	payloadAppDir := filepath.Join(payload, appName)
+	if r.verbose {
+		fmt.Println("Creating", relPath(payloadAppDir))
+	}
 	if err := os.Rename(filepath.Join(r.dir, appName), payloadAppDir); err != nil {
 		return err
 	}
@@ -228,6 +232,9 @@ func (r *Releaser) packageIOSRelease() error {
 	}
 	defer cleanup()
 
+	if r.verbose {
+		fmt.Println("Codesigning", relPath(payloadAppDir))
+	}
 	cmd := exec.Command("codesign", "-f", "-vv", "-s", r.certificate, "--entitlements",
 		fileEntitlementsPlist, "Payload/"+appName+"/")
 	if err := cmd.Run(); err != nil {
@@ -235,6 +242,9 @@ func (r *Releaser) packageIOSRelease() error {
 		return errors.New("unable to codesign application bundle")
 	}
 
+	if r.verbose {
+		fmt.Println("Creating", relPath(appName[:len(appName)-4]+".ipa"))
+	}
 	return exec.Command("zip", "-r", appName[:len(appName)-4]+".ipa", "Payload/").Run()
 }
 
@@ -252,6 +262,9 @@ func (r *Releaser) packageMacOSRelease() error {
 	}
 	defer cleanup()
 
+	if r.verbose {
+		fmt.Println("Codesigning", relPath(r.Name+".app"))
+	}
 	cmd := exec.Command("codesign", "-vfs", appCert, "--entitlement", fileEntitlementsPlist, r.Name+".app")
 	err = cmd.Run()
 	if err != nil {
@@ -259,6 +272,9 @@ func (r *Releaser) packageMacOSRelease() error {
 		return errors.New("unable to codesign application bundle")
 	}
 
+	if r.verbose {
+		fmt.Println("Building", relPath(unsignedPath))
+	}
 	cmd = exec.Command("productbuild", "--component", r.Name+".app", "/Applications/",
 		"--product", r.Name+".app/Contents/Info.plist", unsignedPath)
 	err = cmd.Run()
@@ -268,11 +284,17 @@ func (r *Releaser) packageMacOSRelease() error {
 	}
 	defer os.Remove(unsignedPath)
 
+	if r.verbose {
+		fmt.Println("Signing", relPath(r.Name+".pkg"))
+	}
 	cmd = exec.Command("productsign", "--sign", installCert, unsignedPath, r.Name+".pkg")
 	return cmd.Run()
 }
 
 func (r *Releaser) packageWindowsRelease(outFile string) error {
+	if r.verbose {
+		fmt.Println("Packaging", relPath(outFile))
+	}
 	payload := filepath.Join(r.dir, "Payload")
 	_ = os.Mkdir(payload, util.PermUserReadWriteExec|util.PermGroupRead|util.PermGroupExec)
 	defer os.RemoveAll(payload)
@@ -316,6 +338,9 @@ func (r *Releaser) packageWindowsRelease(outFile string) error {
 }
 
 func (r *Releaser) signAndroid(path string) error {
+	if r.verbose {
+		fmt.Println("Signing", relPath(path))
+	}
 	signer := "jarsigner"
 	var args []string
 	if r.release {
@@ -355,6 +380,9 @@ func (r *Releaser) signAndroid(path string) error {
 }
 
 func (r *Releaser) signWindows(appx string) error {
+	if r.verbose {
+		fmt.Println("Signing", relPath(appx))
+	}
 	binDir, err := findWindowsSDKBin()
 	if err != nil {
 		return errors.New("cannot find signtool.exe, make sure you have installed the Windows SDK")
@@ -446,6 +474,9 @@ func (r *Releaser) writeEntitlements(tmpl *template.Template, entitlementData an
 }
 
 func (r *Releaser) zipAlign(path string) error {
+	if r.verbose {
+		fmt.Println("Aligning", relPath(path))
+	}
 	unaligned := filepath.Join(filepath.Dir(path), "unaligned.apk")
 	err := os.Rename(path, unaligned)
 	if err != nil {

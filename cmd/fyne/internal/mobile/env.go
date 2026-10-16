@@ -80,6 +80,11 @@ func buildEnvInit() (cleanup func(), err error) {
 		fmt.Fprintln(xout, "WORK="+tmpdir)
 	}
 
+	if buildVerbose {
+		fmt.Fprintln(xout, "GOMOBILE="+gomobilepath)
+		fmt.Fprintln(xout, "WORK="+tmpdir)
+	}
+
 	if err := envInit(); err != nil {
 		return nil, err
 	}
