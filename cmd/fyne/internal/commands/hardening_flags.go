@@ -22,9 +22,9 @@ type hardeningFlags struct {
 // specific flags go first, generic flags last
 var hardeningFlagsTable = []hardeningFlags{
 	//revive:disable:add-constant
-	{"ubuntu", "amd64", "gcc", "*", "11.4.0", "-fcf-protection -fstack-protector-strong"}, // Ubuntu 22.04/gcc 11.4.0 fails with _FORTIFY_SOURCE redefined error
-	{"windows", "*", "gcc", "*", "*", "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"},     // mingw doesn't support -fcf-protection -- XXX: double check for better conditions
-	{"*", "arm64", "*", "*", "*", "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"},         // -fcf-protection unsupported on arm64
+	{"ubuntu", "amd64", "gcc", "*", "*", "-fcf-protection -fstack-protector-strong"},  // Ubuntu/gcc fails with _FORTIFY_SOURCE redefined error
+	{"windows", "*", "gcc", "*", "*", "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"}, // mingw doesn't support -fcf-protection -- XXX: double check for better conditions
+	{"*", "arm64", "*", "*", "*", "-D_FORTIFY_SOURCE=3 -fstack-protector-strong"},     // -fcf-protection unsupported on arm64
 	//revive:enable:add-constant
 }
 
