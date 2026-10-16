@@ -11,7 +11,7 @@ func Test_hardeningCFlagsLookup(t *testing.T) {
 	assert.Equal(t, "", hardeningCFlagsLookup("", "ubuntu", "amd64"))
 
 	// compiler version lower or equal
-	ubuntuGccHardeningCFLAGS :="-fcf-protection -fstack-protector-strong"
+	ubuntuGccHardeningCFLAGS := "-fcf-protection -fstack-protector-strong"
 	assert.Equal(t, ubuntuGccHardeningCFLAGS, hardeningCFlagsLookup("cc (Ubuntu) 11.3.0", "ubuntu", "amd64"))
 	assert.Equal(t, ubuntuGccHardeningCFLAGS, hardeningCFlagsLookup("cc (Ubuntu) 11.4.0", "ubuntu", "amd64"))
 
