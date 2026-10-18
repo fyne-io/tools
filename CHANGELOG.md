@@ -3,6 +3,27 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
+## 1.7.4 - 19 Oct 2026
+
+### Added
+
+* Start a "Capabilities" section, initially for Microphone (#174)
+* Support for secret preferences (#178)
+* Add mobile splash screen (#179)
+
+### Changed
+
+* Report steps and created files during verbose build, package, install (#171)
+* Report a failed mobile package build (#173)
+* Report the steps of a release build in verbose mode (#176)
+* Apple requires no earlier than iOS 13.0 now (#182)
+
+### Fixed
+
+* Drop _FORTIFY_SOURCE on Ubuntu/gcc completely (#175)
+* Don't ignore all errors when loading metadata (#177)
+
+
 ## 1.7.3 - 30 Sep 2026
 
 ### Added
