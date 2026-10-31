@@ -230,9 +230,7 @@ func extractFileFromZip(zipPath, fileName, destPath string) error {
 			continue
 		}
 
-		if err := copyZipFileToPath(f, destPath); err != nil {
-			return err
-		}
+		return copyZipFileToPath(f, destPath)
 	}
 	return fmt.Errorf("file %s not found in zip", fileName)
 }
