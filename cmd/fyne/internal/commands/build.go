@@ -198,15 +198,7 @@ func (b *Builder) build() error {
 		env = append(env, "CGO_ENABLED=0") // CGO is not available in WebAssembly
 	}
 
-	// handle build tags
-	tags := b.tags
-	if b.release {
-		tags = append(tags, "release")
-	}
-	if ok, set := b.Migrations["fyneDo"]; ok && set {
-		tags = append(tags, "migrated_fynedo")
-	}
-	if len(tags) > 0 {
+	if tags := b.buildTags(); len(tags) > 0 {
 		args = append(args, "-tags", util.JoinComma(tags))
 	}
 
@@ -231,6 +223,18 @@ func (b *Builder) build() error {
 		fmt.Fprintln(os.Stderr, string(out))
 	}
 	return err
+}
+
+// buildTags returns the build tags requested by the user plus those implied by the build options.
+func (b *Builder) buildTags() []string {
+	tags := b.tags
+	if b.release {
+		tags = append(tags, "release")
+	}
+	if ok, set := b.Migrations["fyneDo"]; ok && set {
+		tags = append(tags, "migrated_fynedo")
+	}
+	return tags
 }
 
 func (b *Builder) computeSrcDir() (string, error) {
