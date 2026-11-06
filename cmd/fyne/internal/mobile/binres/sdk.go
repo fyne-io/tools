@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 
 	"fyne.io/tools/cmd/fyne/internal/util"
 )
@@ -60,7 +60,7 @@ func LatestAPIResourcesPath() (string, error) {
 	if sdkdir == "" {
 		return "", errors.New("ANDROID_HOME env var not set")
 	}
-	parent := path.Join(sdkdir, "platforms")
+	parent := filepath.Join(sdkdir, "platforms")
 	dir, err := os.ReadDir(parent)
 	if err != nil {
 		return "", err
@@ -73,7 +73,7 @@ func LatestAPIResourcesPath() (string, error) {
 			maxSDK = d.Name()
 		}
 	}
-	return path.Join(sdkdir, "platforms", maxSDK, "android.jar"), nil
+	return filepath.Join(sdkdir, "platforms", maxSDK, "android.jar"), nil
 }
 
 // PackResources produces a stripped down gzip version of the resources.arsc from api jar.
