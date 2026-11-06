@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 	"path"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // MinSDK is the targeted sdk version for support by package binres.
@@ -64,9 +66,10 @@ func LatestAPIResourcesPath() (string, error) {
 		return "", err
 	}
 
+	// compared by number, as a string comparison puts android-9 after android-36
 	maxSDK := ""
 	for _, d := range dir {
-		if d.Name() > maxSDK {
+		if maxSDK == "" || util.CompareVersions(d.Name(), maxSDK) > 0 {
 			maxSDK = d.Name()
 		}
 	}

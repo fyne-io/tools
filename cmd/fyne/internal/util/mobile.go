@@ -10,6 +10,9 @@ import (
 
 // AndroidBuildToolsPath tries to find the location of the "build-tools" directory.
 // This depends on ANDROID_HOME variable, so you should call RequireAndroidSDK() first.
+// When more than one version is installed the newest is chosen, as the tools of
+// an older one cannot read the android.jar of a platform newer than them,
+// and the platform used is the newest installed (see binres.LatestAPIResourcesPath).
 func AndroidBuildToolsPath() string {
 	env := os.Getenv("ANDROID_HOME")
 	dir := filepath.Join(env, "build-tools")
@@ -25,7 +28,7 @@ func AndroidBuildToolsPath() string {
 		if f.Name() == "zipalign" { // no version subdir
 			return dir
 		}
-		if f.IsDir() && childDir == "" {
+		if f.IsDir() && (childDir == "" || CompareVersions(f.Name(), childDir) > 0) {
 			childDir = f.Name()
 		}
 	}
