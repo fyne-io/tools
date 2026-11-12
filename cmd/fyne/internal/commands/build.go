@@ -173,7 +173,7 @@ func (b *Builder) build() error {
 		env = append(env, "GOARCH="+arch)
 	}
 
-	ldFlags := extractLdflagsFromGoFlags()
+	ldFlags, env := util.ExtractLdflagsFromGoFlags(env)
 	if osTarget == goos.Windows {
 		ldFlags += " -H=windowsgui"
 	}
@@ -489,38 +489,6 @@ func appendEnv(env *[]string, varName, value string) {
 	}
 
 	*env = append(*env, varName+"="+value)
-}
-
-const (
-	goflagsEnvKey = "GOFLAGS"
-)
-
-func extractLdflagsFromGoFlags() string {
-	goFlags := os.Getenv(goflagsEnvKey)
-
-	ldFlags, goFlags := extractLdFlags(goFlags)
-	if goFlags != "" {
-		os.Setenv(goflagsEnvKey, goFlags)
-	} else {
-		os.Unsetenv(goflagsEnvKey)
-	}
-
-	return ldFlags
-}
-
-func extractLdFlags(goFlags string) (string, string) {
-	if goFlags == "" {
-		return "", ""
-	}
-	var ldflags, newGoFlags []string
-	for _, flag := range strings.Fields(goFlags) {
-		if strings.HasPrefix(flag, "-ldflags=") {
-			ldflags = append(ldflags, strings.TrimPrefix(flag, "-ldflags="))
-		} else {
-			newGoFlags = append(newGoFlags, flag)
-		}
-	}
-	return util.JoinSpace(ldflags), util.JoinSpace(newGoFlags)
 }
 
 func normaliseVersion(str string) string {

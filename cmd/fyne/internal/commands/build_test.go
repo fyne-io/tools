@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,6 +61,37 @@ func Test_BuildWasmReleaseVersion(t *testing.T) {
 	b := &Builder{appData: &appData{}, os: "wasm", srcdir: "myTest", release: true, runner: wasmBuildTest}
 	err := b.build()
 	assert.Nil(t, err)
+	wasmBuildTest.verifyExpectation()
+}
+
+func Test_BuildKeepsGoFlagsLdflags(t *testing.T) {
+	goFlags := "-ldflags=-X=main.version=v9.9.9 -mod=mod"
+	t.Setenv("GOFLAGS", goFlags)
+
+	var env []string
+	for _, v := range os.Environ() {
+		if !strings.HasPrefix(v, "GOFLAGS=") {
+			env = append(env, v)
+		}
+	}
+	env = append(env, "GOFLAGS=-mod=mod", "GOARCH=wasm", "GOOS=js", "CGO_ENABLED=0")
+
+	run := mockRunner{
+		expectedValue: expectedValue{
+			args: []string{"build", "-ldflags", "-X=main.version=v9.9.9"},
+			env:  env,
+			dir:  "myTest",
+		},
+		mockReturn: mockReturn{ret: []byte("")},
+	}
+
+	// The Windows packager builds twice in one process, the second build needs the ldflags as well.
+	wasmBuildTest := &testCommandRuns{runs: []mockRunner{run, run}, t: t}
+	b := &Builder{appData: &appData{}, os: "wasm", srcdir: "myTest", runner: wasmBuildTest}
+	assert.NoError(t, b.build())
+	assert.Equal(t, goFlags, os.Getenv("GOFLAGS"))
+	assert.NoError(t, b.build())
+	assert.Equal(t, goFlags, os.Getenv("GOFLAGS"))
 	wasmBuildTest.verifyExpectation()
 }
 
@@ -120,27 +152,6 @@ func Test_AppendEnv(t *testing.T) {
 		assert.Equal(t, "bar=baz", env[1])
 		assert.Equal(t, "foo1=bar=baz -bar", env[2])
 		assert.Equal(t, "foo2=baz2", env[3])
-	}
-}
-
-type extractTest struct {
-	value       string
-	wantLdFlags string
-	wantGoFlags string
-}
-
-func Test_ExtractLdFlags(t *testing.T) {
-	goFlagsTests := []extractTest{
-		{"-ldflags=-w", "-w", ""},
-		{"-ldflags=-s", "-s", ""},
-		{"-ldflags=-w -ldflags=-s", "-w -s", ""},
-		{"-mod=vendor", "", "-mod=vendor"},
-	}
-
-	for _, test := range goFlagsTests {
-		ldFlags, goFlags := extractLdFlags(test.value)
-		assert.Equal(t, test.wantLdFlags, ldFlags)
-		assert.Equal(t, test.wantGoFlags, goFlags)
 	}
 }
 
