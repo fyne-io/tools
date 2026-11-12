@@ -26,3 +26,13 @@ func Test_ExtractLdFlags(t *testing.T) {
 		assert.Equal(t, test.wantGoFlags, goFlags)
 	}
 }
+
+func Test_ExtractLdflagsFromGoFlags(t *testing.T) {
+	ldFlags, env := ExtractLdflagsFromGoFlags([]string{"FOO=bar", "GOFLAGS=-ldflags=-X=main.version=1 -mod=mod"})
+	assert.Equal(t, "-X=main.version=1", ldFlags)
+	assert.Equal(t, []string{"FOO=bar", "GOFLAGS=-mod=mod"}, env)
+
+	ldFlags, env = ExtractLdflagsFromGoFlags([]string{"FOO=bar"})
+	assert.Equal(t, "", ldFlags)
+	assert.Equal(t, []string{"FOO=bar"}, env)
+}

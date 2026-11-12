@@ -150,9 +150,11 @@ func envInit() (err error) {
 	//		bitcodeEnabled = true
 	//}
 
-	// Set buildLdflags based on GOFLAGS env.
-	bldf, goflags := util.ExtractLdFlags(goEnv("GOFLAGS"))
-	buildLdflags = strings.Join([]string{buildLdflags, bldf}, " ")
+	// Pass the -ldflags of GOFLAGS on the command line, where they would be overridden otherwise.
+	ldflags, goflags := util.ExtractLdFlags(goEnv("GOFLAGS"))
+	if ldflags != "" {
+		buildLdflags = strings.TrimSpace(buildLdflags + " " + ldflags)
+	}
 
 	// Setup the cross-compiler environments.
 	if ndkRoot, err := ndkRoot(); err == nil {

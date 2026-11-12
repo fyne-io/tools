@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,6 +61,37 @@ func Test_BuildWasmReleaseVersion(t *testing.T) {
 	b := &Builder{appData: &appData{}, os: "wasm", srcdir: "myTest", release: true, runner: wasmBuildTest}
 	err := b.build()
 	assert.Nil(t, err)
+	wasmBuildTest.verifyExpectation()
+}
+
+func Test_BuildKeepsGoFlagsLdflags(t *testing.T) {
+	goFlags := "-ldflags=-X=main.version=v9.9.9 -mod=mod"
+	t.Setenv("GOFLAGS", goFlags)
+
+	var env []string
+	for _, v := range os.Environ() {
+		if !strings.HasPrefix(v, "GOFLAGS=") {
+			env = append(env, v)
+		}
+	}
+	env = append(env, "GOFLAGS=-mod=mod", "GOARCH=wasm", "GOOS=js", "CGO_ENABLED=0")
+
+	run := mockRunner{
+		expectedValue: expectedValue{
+			args: []string{"build", "-ldflags", "-X=main.version=v9.9.9"},
+			env:  env,
+			dir:  "myTest",
+		},
+		mockReturn: mockReturn{ret: []byte("")},
+	}
+
+	// The Windows packager builds twice in one process, the second build needs the ldflags as well.
+	wasmBuildTest := &testCommandRuns{runs: []mockRunner{run, run}, t: t}
+	b := &Builder{appData: &appData{}, os: "wasm", srcdir: "myTest", runner: wasmBuildTest}
+	assert.NoError(t, b.build())
+	assert.Equal(t, goFlags, os.Getenv("GOFLAGS"))
+	assert.NoError(t, b.build())
+	assert.Equal(t, goFlags, os.Getenv("GOFLAGS"))
 	wasmBuildTest.verifyExpectation()
 }
 
