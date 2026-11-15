@@ -353,6 +353,23 @@ var infoplistTmpl = template.Must(template.New("infoplist").Parse(`<?xml version
 {{- end}}
   <key>LSRequiresIPhoneOS</key>
   <true/>
+  <key>UIApplicationSceneManifest</key>
+  <dict>
+    <key>UIApplicationSupportsMultipleScenes</key>
+    <false/>
+    <key>UISceneConfigurations</key>
+    <dict>
+      <key>UIWindowSceneSessionRoleApplication</key>
+      <array>
+        <dict>
+          <key>UISceneConfigurationName</key>
+          <string>Default Configuration</string>
+          <key>UISceneDelegateClassName</key>
+          <string>GoAppSceneDelegate</string>
+        </dict>
+      </array>
+    </dict>
+  </dict>
   <key>UILaunchStoryboardName</key>
   <string>LaunchScreen</string>
   <key>UIRequiredDeviceCapabilities</key>
@@ -546,7 +563,7 @@ var projPbxprojTmpl = template.Must(template.New("projPbxproj").Parse(`// !$*UTF
         GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
         GCC_WARN_UNUSED_FUNCTION = YES;
         GCC_WARN_UNUSED_VARIABLE = YES;
-        IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+        IPHONEOS_DEPLOYMENT_TARGET = 15.0;
         MTL_ENABLE_DEBUG_INFO = {{if .Debug}}YES{{else}}NO{{end}};
         PRODUCT_BUNDLE_IDENTIFIER = {{.BundleID}};
         PROVISIONING_PROFILE_SPECIFIER = "{{.Profile}}";
