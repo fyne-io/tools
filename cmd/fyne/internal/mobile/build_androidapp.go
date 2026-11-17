@@ -18,9 +18,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -28,12 +28,16 @@ import (
 )
 
 type manifestTmplData struct {
-	JavaPkgPath string
-	Name        string
-	Debug       bool
-	LibName     string
-	Version     string
-	Build       int
+	JavaPkgPath  string
+	Name         string
+	Debug        bool
+	LibName      string
+	Version      string
+	Build        int
+	AdaptiveIcon bool
+	Icon         bool
+	Microphone   bool
+	Splash       bool
 }
 
 const (
@@ -43,6 +47,7 @@ const (
 
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
+	capabilities metadata.Capabilities, splash *metadata.Splash,
 ) (map[string]bool, error) {
 	var env []string
 	if release { // Google Play Store requires 16K alignment
@@ -66,22 +71,10 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 			return nil, err
 		}
 
-		buf := new(bytes.Buffer)
-		buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
-		err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
-			JavaPkgPath: bundleID,
-			Name:        strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
-			Debug:       !buildRelease,
-			LibName:     libName,
-			Version:     version,
-			Build:       build,
-		})
+		manifestData, err = generateAndroidManifest(dir, bundleID, appName, libName, version, build,
+			iconPath, iconFG, iconBG, iconMono, capabilities, splash)
 		if err != nil {
 			return nil, err
-		}
-		manifestData = buf.Bytes()
-		if buildV {
-			fmt.Fprintf(os.Stderr, "generated %s:\n%s\n", fileAndroidManifestXML, manifestData)
 		}
 	} else {
 		libName, err = manifestLibName(manifestData)
@@ -99,6 +92,9 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		libAbsPath := filepath.Join(tmpdir, libPath)
 		if err := mkdir(filepath.Dir(libAbsPath)); err != nil {
 			return nil, err
+		}
+		if buildVerbose {
+			printcmd("Building shared object %s for %s", libPath, arch)
 		}
 		// If building release and no ldflags are set then remove the useless debug and DWARF build options
 		if release && buildLdflags == "" {
@@ -127,6 +123,9 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	if buildO == "" {
 		buildO = androidPkgName(appName) + ext
 	}
+	if buildVerbose {
+		printcmd("Packaging %s", buildO)
+	}
 	if !strings.HasSuffix(buildO, ext) {
 		return nil, fmt.Errorf("output file name %q does not end in '%s", buildO, ext)
 	}
@@ -149,7 +148,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	if err != nil {
 		return nil, err
 	}
-	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, iconFG, iconBG, iconMono)
+	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, iconFG, iconBG, iconMono, splash)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +175,40 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 
 	// TODO: return nmpkgs
 	return nmpkgs[androidArchs[0]], nil
+}
+
+// generateAndroidManifest renders the AndroidManifest.xml template for an app that does not provide its own.
+// The icon and splash screen resources are declared in the manifest when the source images are available.
+func generateAndroidManifest(dir, bundleID, appName, libName, version string, build int,
+	iconPath, iconFG, iconBG, iconMono string, capabilities metadata.Capabilities, splash *metadata.Splash,
+) ([]byte, error) {
+	foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
+	adaptive := foreground != "" && util.Exists(foreground)
+	hasSplash := splash != nil && util.Exists(iconPath)
+
+	buf := new(bytes.Buffer)
+	buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
+	err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
+		JavaPkgPath:  bundleID,
+		Name:         strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+		Debug:        !buildRelease,
+		LibName:      libName,
+		Version:      version,
+		Build:        build,
+		AdaptiveIcon: adaptive,
+		Icon:         adaptive || hasSplash,
+		Microphone:   capabilities.Microphone,
+		Splash:       hasSplash,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	manifestData := buf.Bytes()
+	if buildV {
+		fmt.Fprintf(os.Stderr, "generated %s:\n%s\n", fileAndroidManifestXML, manifestData)
+	}
+	return manifestData, nil
 }
 
 // detectAdaptiveIcons checks for adaptive icon layers based on metadata or convention
@@ -208,7 +241,7 @@ func detectAdaptiveIcons(dir, foreground, background, monochrome string) (string
 }
 
 func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int, versionCode int,
-	versionName, iconFG, iconBG, iconMono string,
+	versionName, iconFG, iconBG, iconMono string, splash *metadata.Splash,
 ) error {
 	// Add any assets.
 	var arsc struct {
@@ -256,29 +289,11 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		}
 	}
 
-	// there are certain things requiring more recent SDK build tools, namely aapt2
-	needAAPT2 := false
-
-	// adaptive icons
 	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
-	if iconForeground == "" {
-		needAAPT2 = true
-	}
 
-	// foreground service
-	foregroundServiceTypeRegex := regexp.MustCompile(`<service[\s\S]+?(android:foregroundServiceType)\s*?=\s*?"[\s\S]+?>`)
-	if foregroundServiceTypeRegex.Find(manifestData) != nil {
-		needAAPT2 = true
-	}
-
-	// No adaptive icons, no foreground service, use legacy build
-	if !needAAPT2 {
+	// No adaptive icons or splash screen, use legacy build
+	if iconForeground == "" && (splash == nil || arsc.iconPath == "") {
 		return legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
-	}
-
-	// Use the icon from FyneApp.toml or the command argument as iconForeground
-	if iconForeground == "" {
-		iconForeground = iconPath
 	}
 
 	// Use iconForeground as background if no separate background provided
@@ -286,19 +301,21 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		iconBackground = iconForeground
 	}
 
-	// Compile adaptive icon resources with aapt2
+	// Compile icon and splash resources with aapt2
 	arscPath, resDir, compiledManifestPath, err := compileAndroidResources(
 		tmpdir,
 		manifestData,
+		arsc.iconPath,
 		iconForeground,
 		iconBackground,
 		iconMonochrome,
+		splash,
 		target,
 		versionCode,
 		versionName,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to compile resources: %w", err)
+		return fmt.Errorf("failed to compile android resources: %w", err)
 	}
 
 	w, err := apkwCreate("resources.arsc", apkw)

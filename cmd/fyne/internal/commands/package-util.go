@@ -15,6 +15,7 @@ type packagerUtil interface {
 	EnsureSubDir(parent, name string) string
 	EnsureAbsPath(path string) string
 	MakePathRelativeTo(root, path string) string
+	WriteScaledPNG(src, dst string, size int) error
 
 	RequireAndroidSDK() error
 	AndroidBuildToolsPath() string
@@ -52,6 +53,10 @@ func (d defaultUtil) EnsureAbsPath(path string) string {
 
 func (d defaultUtil) MakePathRelativeTo(root, path string) string {
 	return util.MakePathRelativeTo(root, path)
+}
+
+func (d defaultUtil) WriteScaledPNG(src, dst string, size int) error {
+	return util.WriteScaledPNG(src, dst, size)
 }
 
 func (d defaultUtil) RequireAndroidSDK() error {

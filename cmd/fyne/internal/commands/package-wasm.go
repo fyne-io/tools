@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,9 @@ import (
 
 func (p *Packager) packageWasm() error {
 	appDir := pkgUtil.EnsureSubDir(p.dir, "wasm")
+	if p.verbose {
+		fmt.Println("Packaging", relPath(appDir))
+	}
 
 	tpl := webData{
 		AppName:    p.Name,

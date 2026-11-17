@@ -34,6 +34,10 @@
 		{{- end}}
 	</array>
 	{{- end}}
+	{{- if .Microphone}}
+	<key>NSMicrophoneUsageDescription</key>
+	<string>{{html .MicrophoneUsage}}</string>
+	{{- end}}
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.{{.Category}}</string>
 	<key>LSMinimumSystemVersion</key>

@@ -30,6 +30,16 @@ var (
 
 type mockUtil struct{}
 
+// useMockPkgUtil replaces the package utilities with the mocks for the duration
+// of the test.
+func useMockPkgUtil(t *testing.T) {
+	t.Helper()
+
+	previous := pkgUtil
+	t.Cleanup(func() { pkgUtil = previous })
+	pkgUtil = mockUtil{}
+}
+
 func expectedTotalCount(t *testing.T, totalExpected int, totalProcessed int) {
 	assert.Equal(t, totalExpected, totalProcessed)
 }
@@ -152,6 +162,10 @@ func (m mockUtil) EnsureAbsPath(path string) string {
 
 func (m mockUtil) MakePathRelativeTo(root, path string) string {
 	return utilMakePathRelativeToMock(root, path)
+}
+
+func (m mockUtil) WriteScaledPNG(src, dst string, size int) error {
+	return nil
 }
 
 func (m mockUtil) RequireAndroidSDK() error {

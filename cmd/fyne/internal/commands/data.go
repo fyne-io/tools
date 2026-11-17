@@ -9,9 +9,11 @@ type appData struct {
 	ResGoString       string
 	Release, rawIcon  bool
 	AdaptiveIcon      *metadata.AdaptiveIcon
+	Splash            *metadata.Splash
 	CustomMetadata    map[string]string
 	Migrations        map[string]bool
 	CanOpen           *metadata.CanOpen
+	Capabilities      metadata.Capabilities
 	VersionAtLeast2_3 bool
 	VersionAtLeast2_6 bool
 }
@@ -47,6 +49,7 @@ func (a *appData) mergeMetadata(data *metadata.FyneApp) {
 		a.AppBuild = data.Details.Build
 	}
 	a.AdaptiveIcon = data.AdaptiveIcon
+	a.Splash = data.Splash
 
 	if a.Release {
 		a.appendCustomMetadata(data.Release)
@@ -55,4 +58,7 @@ func (a *appData) mergeMetadata(data *metadata.FyneApp) {
 	}
 	a.Migrations = data.Migrations
 	a.CanOpen = data.CanOpen
+	if data.Capabilities != nil {
+		a.Capabilities = *data.Capabilities
+	}
 }

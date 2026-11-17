@@ -79,6 +79,16 @@ func (p *Packager) packageUNIX() error {
 
 	appsDir := pkgUtil.EnsureSubDir(shareDir, "applications")
 	desktop := filepath.Join(appsDir, appIDOrName+".desktop")
+	if p.verbose {
+		// when packaging, the desktop file is staged in a directory that the
+		// tarball is created from and which is removed afterwards
+		note := ""
+		if !p.install {
+			note = " (removed after packaging)"
+		}
+		fmt.Println("Creating desktop file", relDir(desktop)+note)
+	}
+
 	deskFile, err := os.Create(desktop)
 	if err != nil {
 		return fmt.Errorf("failed to create desktop file: %w", err)
@@ -129,9 +139,14 @@ func (p *Packager) packageUNIX() error {
 		return fmt.Errorf("failed to write Makefile string: %w", err)
 	}
 
-	tarCmdArgs := []string{"-Jcf", filepath.Join(p.dir, p.Name+".tar.xz")}
+	tarball := filepath.Join(p.dir, p.Name+".tar.xz")
+	tarCmdArgs := []string{"-Jcf", tarball}
 	if p.os == goos.OpenBSD {
-		tarCmdArgs = []string{"-zcf", filepath.Join(p.dir, p.Name+".tar.gz")}
+		tarball = filepath.Join(p.dir, p.Name+".tar.gz")
+		tarCmdArgs = []string{"-zcf", tarball}
+	}
+	if p.verbose {
+		fmt.Println("Packaging", relPath(tarball))
 	}
 
 	// Compatibility mode for old fyne-cross versions using images with new CLI
