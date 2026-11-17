@@ -5,6 +5,7 @@
 package mobile
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -26,6 +27,28 @@ type metaDataXML struct {
 
 // manifestLibName parses the AndroidManifest.xml and finds the library
 // name of the NativeActivity.
+// manifestHasForegroundService reports whether the manifest declares a service with an
+// android:foregroundServiceType, which an app does in its own AndroidManifest.xml to use a
+// foreground service. Mentions of the attribute in comments are ignored.
+func manifestHasForegroundService(data []byte) bool {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return false // the end, or XML that the build rejects later on
+		}
+		el, ok := tok.(xml.StartElement)
+		if !ok || el.Name.Local != "service" {
+			continue
+		}
+		for _, attr := range el.Attr {
+			if attr.Name.Local == "foregroundServiceType" {
+				return true
+			}
+		}
+	}
+}
+
 func manifestLibName(data []byte) (string, error) {
 	manifest := new(manifestXML)
 	if err := xml.Unmarshal(data, manifest); err != nil {
