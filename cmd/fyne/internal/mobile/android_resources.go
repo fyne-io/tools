@@ -200,8 +200,10 @@ func compileAndroidResources(tempDir string, manifestData []byte, iconPath, fore
 		if err := writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath); err != nil {
 			return "", "", "", err
 		}
-	} else if err := writeLauncherIconResources(resDir, iconPath); err != nil {
-		return "", "", "", err
+	} else if iconPath != "" {
+		if err := writeLauncherIconResources(resDir, iconPath); err != nil {
+			return "", "", "", err
+		}
 	}
 
 	if splash != nil {
