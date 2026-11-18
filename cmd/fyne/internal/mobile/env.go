@@ -150,6 +150,12 @@ func envInit() (err error) {
 	//		bitcodeEnabled = true
 	//}
 
+	// Pass the -ldflags of GOFLAGS on the command line, where they would be overridden otherwise.
+	ldflags, goflags := util.ExtractLdFlags(goEnv("GOFLAGS"))
+	if ldflags != "" {
+		buildLdflags = strings.TrimSpace(buildLdflags + " " + ldflags)
+	}
+
 	// Setup the cross-compiler environments.
 	if ndkRoot, err := ndkRoot(); err == nil {
 		androidEnv = make(map[string][]string)
@@ -177,6 +183,7 @@ func envInit() (err error) {
 			androidEnv[arch] = []string{
 				"GOOS=android",
 				"GOARCH=" + arch,
+				"GOFLAGS=" + goflags,
 				"CC=" + clang,
 				"CXX=" + clangpp,
 				"CGO_ENABLED=1",
@@ -231,6 +238,7 @@ func envInit() (err error) {
 			env,
 			"GOOS="+os,
 			"GOARCH="+arch,
+			"GOFLAGS="+goflags,
 			"CC="+clang,
 			"CXX="+clang+"++",
 			"CGO_CFLAGS="+cflags+" -arch "+archClang(arch),
