@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -18,10 +19,14 @@ import (
 	"text/template"
 
 	"golang.org/x/tools/go/packages"
+
+	"fyne.io/tools/cmd/fyne/internal/metadata"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	appName, version string, build int, release bool, cert, profile string,
+	capabilities metadata.Capabilities,
 ) (map[string]bool, error) {
 	src := pkg.PkgPath
 	buildO = rfc1034Label(appName) + ".app"
@@ -49,13 +54,17 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 		return nil, err
 	}
 
+	name := strings.Title(appName) //lint:ignore SA1019 It is fine for our uses.
 	infoplist := new(bytes.Buffer)
 	if err := infoplistTmpl.Execute(infoplist, infoplistTmplData{
 		BundleID: bundleID,
-		Name:     strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+		Name:     name,
 		Version:  version,
 		Build:    build,
 		Legacy:   len(allArchs["ios"]) > 2,
+
+		Microphone:      capabilities.Microphone,
+		MicrophoneUsage: capabilities.MicrophoneUsageText(name),
 	}); err != nil {
 		return nil, err
 	}
@@ -77,7 +86,7 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 			printcmd("echo \"%s\" > %s", file.contents, file.name)
 		}
 		if !buildN {
-			if err := os.WriteFile(file.name, file.contents, 0o600); err != nil {
+			if err := os.WriteFile(file.name, file.contents, util.PermUserRead|util.PermUserWrite); err != nil {
 				return nil, err
 			}
 		}
@@ -92,6 +101,10 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	var nmpkgs map[string]bool
 	for _, arch := range archs {
 		path := filepath.Join(tmpdir, arch)
+		if buildVerbose {
+			printcmd("Building %s binary for %s", arch, buildTarget)
+		}
+
 		// Disable DWARF; see golang.org/issues/25148.
 		if err := goBuild(src, darwinEnv[arch], "-ldflags=-w", "-o="+path); err != nil {
 			return nil, err
@@ -146,6 +159,9 @@ func goIOSBuild(pkg *packages.Package, bundleID string, archs []string,
 	if buildX {
 		printcmd("mv %s %s", tmpdir+"/build/Release-iphoneos/main.app", buildO)
 	}
+	if buildVerbose {
+		printcmd("Packaging %s", buildO)
+	}
 	if !buildN {
 		// if output already exists, remove.
 		if err := os.RemoveAll(buildO); err != nil {
@@ -190,7 +206,7 @@ func DetectIOSTeamID(optCert string) (string, error) {
 	}
 
 	if len(cert.Subject.OrganizationalUnit) == 0 {
-		err = fmt.Errorf("the signing certificate has no organizational unit (team ID)")
+		err = errors.New("the signing certificate has no organizational unit (team ID)")
 		return "", err
 	}
 
@@ -277,6 +293,9 @@ type infoplistTmplData struct {
 	Version  string
 	Build    int
 	Legacy   bool
+
+	Microphone      bool
+	MicrophoneUsage string
 }
 
 var infoplistTmpl = template.Must(template.New("infoplist").Parse(`<?xml version="1.0" encoding="UTF-8"?>
@@ -328,8 +347,29 @@ var infoplistTmpl = template.Must(template.New("infoplist").Parse(`<?xml version
   </dict>
   <key>CFBundleIconName</key>
   <string>AppIcon</string>
+{{- if .Microphone}}
+  <key>NSMicrophoneUsageDescription</key>
+  <string>{{html .MicrophoneUsage}}</string>
+{{- end}}
   <key>LSRequiresIPhoneOS</key>
   <true/>
+  <key>UIApplicationSceneManifest</key>
+  <dict>
+    <key>UIApplicationSupportsMultipleScenes</key>
+    <false/>
+    <key>UISceneConfigurations</key>
+    <dict>
+      <key>UIWindowSceneSessionRoleApplication</key>
+      <array>
+        <dict>
+          <key>UISceneConfigurationName</key>
+          <string>Default Configuration</string>
+          <key>UISceneDelegateClassName</key>
+          <string>GoAppSceneDelegate</string>
+        </dict>
+      </array>
+    </dict>
+  </dict>
   <key>UILaunchStoryboardName</key>
   <string>LaunchScreen</string>
   <key>UIRequiredDeviceCapabilities</key>
@@ -523,7 +563,7 @@ var projPbxprojTmpl = template.Must(template.New("projPbxproj").Parse(`// !$*UTF
         GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
         GCC_WARN_UNUSED_FUNCTION = YES;
         GCC_WARN_UNUSED_VARIABLE = YES;
-        IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+        IPHONEOS_DEPLOYMENT_TARGET = 15.0;
         MTL_ENABLE_DEBUG_INFO = {{if .Debug}}YES{{else}}NO{{end}};
         PRODUCT_BUNDLE_IDENTIFIER = {{.BundleID}};
         PROVISIONING_PROFILE_SPECIFIER = "{{.Profile}}";

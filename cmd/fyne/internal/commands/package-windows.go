@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 	"github.com/fyne-io/image/ico"
 	"github.com/josephspurrier/goversioninfo"
 )
@@ -71,13 +73,16 @@ func (p *Packager) packageWindows(tags []string) error {
 
 	// launch rsrc to generate the object file
 	outPath := filepath.Join(p.srcDir, "fyne.syso")
+	if p.verbose {
+		fmt.Println("Generating resource file", relDir(outPath))
+	}
 
 	vi := &goversioninfo.VersionInfo{}
 	vi.ProductName = p.Name
 	vi.IconPath = icoPath
 	vi.ManifestPath = manifest
 	vi.StringFileInfo.ProductVersion = p.combinedVersion()
-	vi.StringFileInfo.FileDescription = p.Name
+	vi.FileDescription = p.Name
 	vi.FixedFileInfo.FileVersion = fixedVersionInfo(p.combinedVersion())
 
 	vi.Build()
@@ -115,20 +120,32 @@ func (p *Packager) packageWindows(tags []string) error {
 		if filepath.Ext(p.Name) != ".exe" {
 			appName = appName + ".exe"
 		}
-		os.Rename(filepath.Base(p.exe), appName)
+		if err := os.Rename(filepath.Base(p.exe), appName); err != nil {
+			return err
+		}
 	}
 
 	if p.install {
 		wd, err := os.Getwd()
 		if err != nil {
-			return fmt.Errorf("failed to locate current working directory")
+			return errors.New("failed to locate current working directory")
 		}
 		appPath := filepath.Join(wd, appName)
+		if p.verbose {
+			fmt.Println("Installing", relPath(appPath), "to", relPath(filepath.Join(p.dir, appName)))
+		}
 
 		err = runAsAdminWindows("copy", appPath, filepath.Join(p.dir, appName))
 		if err != nil {
 			return fmt.Errorf("failed to run as administrator: %w", err)
 		}
+	} else if p.verbose {
+		wd, err := os.Getwd()
+		if err != nil {
+			return errors.New("failed to locate current working directory")
+		}
+
+		fmt.Println("Packaging", relPath(filepath.Join(wd, appName)))
 	}
 	return nil
 }
@@ -167,7 +184,7 @@ func fixedVersionInfo(ver string) (ret goversioninfo.FileVersion) {
 		return ret
 	}
 	refs := []*int{&ret.Major, &ret.Minor, &ret.Patch, &ret.Build}
-	split := strings.Split(ver, ".")
+	split := util.SplitDot(ver)
 	for n, s := range split {
 		if n >= len(refs) {
 			break

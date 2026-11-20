@@ -8,6 +8,25 @@ import (
 	"fyne.io/fyne/v2"
 )
 
+// Constants for file permissions to be combined using `|`.
+const (
+	PermGroupExec         = 0o10
+	PermGroupRead         = 0o40
+	PermGroupWrite        = 0o20
+	PermOtherExec         = 0o1
+	PermOtherRead         = 0o4
+	PermOtherWrite        = 0o2
+	PermUserExec          = 0o100
+	PermUserRead          = 0o400
+	PermUserReadWriteExec = PermUserExec | PermUserRead | PermUserWrite
+	PermUserWrite         = 0o200
+)
+
+const (
+	DirPermDefault  = PermGroupExec | PermGroupRead | PermOtherExec | PermOtherRead | PermUserReadWriteExec
+	FilePermDefault = PermGroupRead | PermGroupWrite | PermOtherRead | PermOtherWrite | PermUserRead | PermUserWrite
+)
+
 // Exists will return true if the passed path exists on the current system.
 func Exists(path string) bool {
 	_, err := os.Stat(path)
@@ -19,12 +38,12 @@ func Exists(path string) bool {
 
 // CopyFile copies the content of a regular file, source, into target path.
 func CopyFile(source, target string) error {
-	return copyFileMode(source, target, 0o644)
+	return copyFileMode(source, target, FilePermDefault)
 }
 
 // CopyExeFile copies the content of an executable file, source, into target path.
 func CopyExeFile(src, tgt string) error {
-	return copyFileMode(src, tgt, 0o755)
+	return copyFileMode(src, tgt, DirPermDefault)
 }
 
 // EnsureSubDir will make sure a named directory exists within the parent - creating it if not.

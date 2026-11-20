@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 const tmpl = `// Copyright 2016 The Go Authors.  All rights reserved.
@@ -37,7 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile("arsc.go", []byte(fmt.Sprintf(tmpl, strconv.Quote(string(arsc)))), 0o644); err != nil {
+	if err := os.WriteFile("arsc.go", []byte(fmt.Sprintf(tmpl, strconv.Quote(string(arsc)))), util.FilePermDefault); err != nil {
 		log.Fatal(err)
 	}
 }

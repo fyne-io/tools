@@ -1,9 +1,15 @@
 package commands
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 func TestGetPackageAndBranch(t *testing.T) {
@@ -36,4 +42,29 @@ func TestGetInstallBaseDir(t *testing.T) {
 	} {
 		assert.Equal(t, test.want, getInstallBaseDir(test.path, test.pkg, test.root))
 	}
+}
+
+func Test_InstallerEnsurePackage(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "myapp.apk")
+	buildErr := errors.New("build failed")
+
+	// an existing package is reused without a build
+	build := func() error {
+		return buildErr
+	}
+	require.NoError(t, os.WriteFile(target, nil, util.FilePermDefault))
+	assert.NoError(t, (&Installer{}).ensurePackage(target, build))
+
+	// a missing package is built
+	require.NoError(t, os.Remove(target))
+	built := false
+	assert.NoError(t, (&Installer{}).ensurePackage(target, func() error {
+		built = true
+		return os.WriteFile(target, nil, util.FilePermDefault)
+	}))
+	assert.True(t, built)
+
+	// a failed build is reported, so that no outdated package is installed
+	require.NoError(t, os.Remove(target))
+	assert.ErrorIs(t, (&Installer{}).ensurePackage(target, build), buildErr)
 }

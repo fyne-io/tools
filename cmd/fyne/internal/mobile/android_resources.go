@@ -1,14 +1,12 @@
 package mobile
 
 import (
-	"archive/zip"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/util"
 )
@@ -34,7 +32,7 @@ func generateAdaptiveIconXML(hasMonochrome bool) string {
 // writeAdaptiveIconResources creates all necessary resource files for adaptive icons
 func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath string) error {
 	xxxhdpiDir := filepath.Join(resDir, "mipmap-xxxhdpi")
-	if err := os.MkdirAll(xxxhdpiDir, 0o755); err != nil {
+	if err := os.MkdirAll(xxxhdpiDir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-xxxhdpi directory: %w", err)
 	}
 
@@ -57,16 +55,16 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 
 	// Create mipmap-anydpi-v26 metadata for adaptive icon XML
 	anydpiV26Dir := filepath.Join(resDir, "mipmap-anydpi-v26")
-	if err := os.MkdirAll(anydpiV26Dir, 0o755); err != nil {
+	if err := os.MkdirAll(anydpiV26Dir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-anydpi-v26 directory: %w", err)
 	}
 
 	adaptiveXML := generateAdaptiveIconXML(false) // v26 doesn't include monochrome
-	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher.xml"), []byte(adaptiveXML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher.xml"), []byte(adaptiveXML), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write ic_launcher.xml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher_round.xml"), []byte(adaptiveXML), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV26Dir, "ic_launcher_round.xml"), []byte(adaptiveXML), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write ic_launcher_round.xml: %w", err)
 	}
 
@@ -75,46 +73,155 @@ func writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochro
 	}
 	// If monochrome provided, create v33 resources with monochrome support
 	anydpiV33Dir := filepath.Join(resDir, "mipmap-anydpi-v33")
-	if err := os.MkdirAll(anydpiV33Dir, 0o755); err != nil {
+	if err := os.MkdirAll(anydpiV33Dir, util.DirPermDefault); err != nil {
 		return fmt.Errorf("failed to create mipmap-anydpi-v33 directory: %w", err)
 	}
 
 	adaptiveXMLWithMono := generateAdaptiveIconXML(true)
-	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher.xml"), []byte(adaptiveXMLWithMono), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write v33 ic_launcher.xml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(anydpiV33Dir, "ic_launcher_round.xml"), []byte(adaptiveXMLWithMono), util.FilePermDefault); err != nil {
 		return fmt.Errorf("failed to write v33 ic_launcher_round.xml: %w", err)
+	}
+	return nil
+}
+
+// writeLauncherIconResources creates a plain (non-adaptive) launcher icon resource
+func writeLauncherIconResources(resDir, iconPath string) error {
+	xxxhdpiDir := filepath.Join(resDir, "mipmap-xxxhdpi")
+	if err := os.MkdirAll(xxxhdpiDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create mipmap-xxxhdpi directory: %w", err)
+	}
+
+	for _, name := range []string{"ic_launcher.png", "ic_launcher_round.png"} {
+		if err := util.CopyFile(iconPath, filepath.Join(xxxhdpiDir, name)); err != nil {
+			return fmt.Errorf("failed to copy launcher icon: %w", err)
+		}
+	}
+	return nil
+}
+
+// splashIconSize is the pixel size of the xxxhdpi splash icon, 288dp to match the drawable
+// size that the Android 12+ system splash screen lays out its icon at.
+const splashIconSize = 288 * 4
+
+// writeSplashResources creates the SplashTheme that the launcher activity uses.
+// Before Android 12 the window background (colour plus centred icon) is shown while
+// the app starts; from Android 12 the system splash screen uses the same colour and icon.
+func writeSplashResources(resDir string, splash *metadata.Splash, iconPath string) error {
+	background := splash.Background
+	if background == "" {
+		background = "#FFFFFF"
+	}
+
+	drawableDir := filepath.Join(resDir, "drawable")
+	bitmapDir := filepath.Join(resDir, "drawable-xxxhdpi")
+	valuesDir := filepath.Join(resDir, "values")
+	valuesV31Dir := filepath.Join(resDir, "values-v31")
+	for _, dir := range []string{drawableDir, bitmapDir, valuesDir, valuesV31Dir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("failed to create %s directory: %w", filepath.Base(dir), err)
+		}
+	}
+
+	icon := splash.Icon
+	if icon == "" {
+		icon = iconPath
+	}
+	if err := util.WriteScaledPNG(icon, filepath.Join(bitmapDir, "splash_icon.png"), splashIconSize); err != nil {
+		return fmt.Errorf("failed to write splash icon: %w", err)
+	}
+
+	window := `<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background"/>
+    <item android:gravity="center">
+        <bitmap android:src="@drawable/splash_icon" android:gravity="center"/>
+    </item>
+</layer-list>
+`
+	if err := os.WriteFile(filepath.Join(drawableDir, "splash_background.xml"), []byte(window), 0o644); err != nil {
+		return fmt.Errorf("failed to write splash_background.xml: %w", err)
+	}
+
+	colors := fmt.Sprintf(`<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_background">%s</color>
+</resources>
+`, background)
+	if err := os.WriteFile(filepath.Join(valuesDir, "colors.xml"), []byte(colors), 0o644); err != nil {
+		return fmt.Errorf("failed to write colors.xml: %w", err)
+	}
+
+	styles := `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="SplashTheme" parent="@android:style/Theme">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+</resources>
+`
+	if err := os.WriteFile(filepath.Join(valuesDir, "styles.xml"), []byte(styles), 0o644); err != nil {
+		return fmt.Errorf("failed to write styles.xml: %w", err)
+	}
+
+	stylesV31 := `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="SplashTheme" parent="@android:style/Theme">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    </style>
+</resources>
+`
+	if err := os.WriteFile(filepath.Join(valuesV31Dir, "styles.xml"), []byte(stylesV31), 0o644); err != nil {
+		return fmt.Errorf("failed to write v31 styles.xml: %w", err)
 	}
 	return nil
 }
 
 // compileAndroidResources compiles Android resources using aapt2
 // Returns: resources.arsc path, res/ directory path, compiled AndroidManifest.xml path, error
-func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath, backgroundPath, monochromePath string, targetSDK, versionCode int, versionName string) (arscPath string, resDir string, manifestPath string, err error) {
+func compileAndroidResources(tempDir string, manifestData []byte, iconPath, foregroundPath, backgroundPath, monochromePath string,
+	splash *metadata.Splash, targetSDK, versionCode int, versionName string,
+) (arscPath string, resDir string, manifestPath string, err error) {
 	aapt2, err := util.Aapt2Path()
 	if err != nil {
 		return "", "", "", err
 	}
 
 	resDir = filepath.Join(tempDir, "res")
-	if err := os.MkdirAll(resDir, 0o755); err != nil {
+	if err := os.MkdirAll(resDir, util.DirPermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to create res directory: %w", err)
 	}
 
-	if err := writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath); err != nil {
+	if foregroundPath != "" {
+		if err := writeAdaptiveIconResources(resDir, foregroundPath, backgroundPath, monochromePath); err != nil {
+			return "", "", "", err
+		}
+	} else if err := writeLauncherIconResources(resDir, iconPath); err != nil {
 		return "", "", "", err
 	}
 
+	if splash != nil {
+		splashIcon := foregroundPath
+		if splashIcon == "" {
+			splashIcon = iconPath
+		}
+		if err := writeSplashResources(resDir, splash, splashIcon); err != nil {
+			return "", "", "", err
+		}
+	}
+
 	compiledDir := filepath.Join(tempDir, "compiled")
-	if err := os.MkdirAll(compiledDir, 0o755); err != nil {
+	if err := os.MkdirAll(compiledDir, util.DirPermDefault); err != nil {
 		return "", "", "", fmt.Errorf("failed to create compiled directory: %w", err)
 	}
 
-	tempManifestPath := filepath.Join(tempDir, "AndroidManifest.xml")
-	if err := os.WriteFile(tempManifestPath, manifestData, 0o644); err != nil {
-		return "", "", "", fmt.Errorf("failed to write AndroidManifest.xml: %w", err)
+	tempManifestPath := filepath.Join(tempDir, fileAndroidManifestXML)
+	if err := os.WriteFile(tempManifestPath, manifestData, util.FilePermDefault); err != nil {
+		return "", "", "", fmt.Errorf("failed to write %s: %w", fileAndroidManifestXML, err)
 	}
 
 	err = filepath.Walk(resDir, func(path string, info os.FileInfo, err error) error {
@@ -175,108 +282,21 @@ func compileAndroidResources(tempDir string, manifestData []byte, foregroundPath
 
 	// Extract resources.arsc from the output APK
 	arscPath = filepath.Join(tempDir, "resources.arsc")
-	if err := extractFileFromZip(outputAPK, "resources.arsc", arscPath); err != nil {
+	if err := util.ExtractFileFromZip(outputAPK, "resources.arsc", arscPath); err != nil {
 		return "", "", "", fmt.Errorf("failed to extract resources.arsc: %w", err)
 	}
 
 	// Extract compiled AndroidManifest.xml from the output APK
-	manifestPath = filepath.Join(tempDir, "AndroidManifest.xml")
-	if err := extractFileFromZip(outputAPK, "AndroidManifest.xml", manifestPath); err != nil {
-		return "", "", "", fmt.Errorf("failed to extract AndroidManifest.xml: %w", err)
+	manifestPath = filepath.Join(tempDir, fileAndroidManifestXML)
+	if err := util.ExtractFileFromZip(outputAPK, fileAndroidManifestXML, manifestPath); err != nil {
+		return "", "", "", fmt.Errorf("failed to extract %s: %w", fileAndroidManifestXML, err)
 	}
 
 	// Extract res/ directory from the output APK
 	extractedResDir := filepath.Join(tempDir, "extracted_res")
-	if err := extractDirFromZip(outputAPK, "res/", extractedResDir); err != nil {
+	if err := util.ExtractDirFromZip(outputAPK, "res/", extractedResDir); err != nil {
 		return "", "", "", fmt.Errorf("failed to extract res/ directory: %w", err)
 	}
 
 	return arscPath, extractedResDir, manifestPath, nil
-}
-
-// extractFileFromZip extracts a single file from a zip archive
-func extractFileFromZip(zipPath, fileName, destPath string) error {
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		if f.Name != fileName {
-			continue
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-		defer rc.Close()
-
-		dest, err := os.Create(destPath)
-		if err != nil {
-			return err
-		}
-		defer dest.Close()
-
-		_, err = io.Copy(dest, rc)
-		return err
-	}
-	return fmt.Errorf("file %s not found in zip", fileName)
-}
-
-// extractDirFromZip extracts all files with a given prefix from a zip archive
-func extractDirFromZip(zipPath, prefix, destDir string) error {
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return err
-	}
-
-	for _, f := range r.File {
-		if !strings.HasPrefix(f.Name, prefix) {
-			continue
-		}
-
-		relPath := f.Name[len(prefix):]
-		if relPath == "" {
-			continue
-		}
-		destPath := filepath.Join(destDir, relPath)
-
-		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(destPath, 0o755); err != nil {
-				return err
-			}
-			continue
-		}
-		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
-			return err
-		}
-
-		// Extract file
-		rc, err := f.Open()
-		if err != nil {
-			return err
-		}
-
-		dest, err := os.Create(destPath)
-		if err != nil {
-			rc.Close()
-			return err
-		}
-
-		_, err = io.Copy(dest, rc)
-		rc.Close()
-		dest.Close()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

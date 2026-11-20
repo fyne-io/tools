@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fyne.io/tools/cmd/fyne/internal/metadata"
 	"fyne.io/tools/cmd/fyne/internal/mobile/binres"
 	"fyne.io/tools/cmd/fyne/internal/templates"
 	"fyne.io/tools/cmd/fyne/internal/util"
@@ -34,10 +35,19 @@ type manifestTmplData struct {
 	Version      string
 	Build        int
 	AdaptiveIcon bool
+	Icon         bool
+	Microphone   bool
+	Splash       bool
 }
+
+const (
+	fileAndroidManifestXML = "AndroidManifest.xml"
+	fileClassesDex         = "classes.dex"
+)
 
 func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []string,
 	iconPath, appName, version string, build, target int, release bool, iconFG, iconBG, iconMono string,
+	capabilities metadata.Capabilities, splash *metadata.Splash,
 ) (map[string]bool, error) {
 	// 16 KB max page size applied to debug as well as release builds.
 	env := []string{"CGO_LDFLAGS=\"-Wl,-z,max-page-size=16384\""}
@@ -52,33 +62,17 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	// Fix this to work with other Go tools.
 	dir := filepath.Dir(pkg.GoFiles[0])
 
-	manifestPath := filepath.Join(dir, "AndroidManifest.xml")
+	manifestPath := filepath.Join(dir, fileAndroidManifestXML)
 	manifestData, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
 
-		foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
-		adaptive := foreground != "" && util.Exists(foreground)
-
-		buf := new(bytes.Buffer)
-		buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
-		err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
-			JavaPkgPath:  bundleID,
-			Name:         strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
-			Debug:        !buildRelease,
-			LibName:      libName,
-			Version:      version,
-			Build:        build,
-			AdaptiveIcon: adaptive,
-		})
+		manifestData, err = generateAndroidManifest(dir, bundleID, appName, libName, version, build,
+			iconPath, iconFG, iconBG, iconMono, capabilities, splash)
 		if err != nil {
 			return nil, err
-		}
-		manifestData = buf.Bytes()
-		if buildV {
-			fmt.Fprintf(os.Stderr, "generated AndroidManifest.xml:\n%s\n", manifestData)
 		}
 	} else {
 		libName, err = manifestLibName(manifestData)
@@ -96,6 +90,9 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		libAbsPath := filepath.Join(tmpdir, libPath)
 		if err := mkdir(filepath.Dir(libAbsPath)); err != nil {
 			return nil, err
+		}
+		if buildVerbose {
+			printcmd("Building shared object %s for %s", libPath, arch)
 		}
 		// If building release and no ldflags are set then remove the useless debug and DWARF build options
 		if release && buildLdflags == "" {
@@ -124,6 +121,9 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	if buildO == "" {
 		buildO = androidPkgName(appName) + ext
 	}
+	if buildVerbose {
+		printcmd("Packaging %s", buildO)
+	}
 	if !strings.HasSuffix(buildO, ext) {
 		return nil, fmt.Errorf("output file name %q does not end in '%s", buildO, ext)
 	}
@@ -146,7 +146,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 	if err != nil {
 		return nil, err
 	}
-	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, iconFG, iconBG, iconMono)
+	err = addAssets(apkw, manifestData, dir, iconPath, target, build, version, iconFG, iconBG, iconMono, splash)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 		if err != nil {
 			_, _ = fmt.Fprint(os.Stderr, "Required command 'bundletool' not found when building Android for release.\n")
 			_, _ = fmt.Fprint(os.Stderr, "For more information see https://developer.android.com/tools/bundletool.\n")
-			return nil, fmt.Errorf("bundletool: command not found")
+			return nil, errors.New("bundletool: command not found")
 		}
 		err = convertAPKToAAB(buildO)
 		if err != nil {
@@ -184,6 +184,40 @@ func goAndroidBuild(pkg *packages.Package, bundleID string, androidArchs []strin
 
 	// TODO: return nmpkgs
 	return nmpkgs[androidArchs[0]], nil
+}
+
+// generateAndroidManifest renders the AndroidManifest.xml template for an app that does not provide its own.
+// The icon and splash screen resources are declared in the manifest when the source images are available.
+func generateAndroidManifest(dir, bundleID, appName, libName, version string, build int,
+	iconPath, iconFG, iconBG, iconMono string, capabilities metadata.Capabilities, splash *metadata.Splash,
+) ([]byte, error) {
+	foreground, _, _ := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
+	adaptive := foreground != "" && util.Exists(foreground)
+	hasSplash := splash != nil && util.Exists(iconPath)
+
+	buf := new(bytes.Buffer)
+	buf.WriteString(`<?xml version="1.0" encoding="utf-8"?>`)
+	err := templates.ManifestAndroid.Execute(buf, manifestTmplData{
+		JavaPkgPath:  bundleID,
+		Name:         strings.Title(appName), //lint:ignore SA1019 It is fine for our uses.
+		Debug:        !buildRelease,
+		LibName:      libName,
+		Version:      version,
+		Build:        build,
+		AdaptiveIcon: adaptive,
+		Icon:         adaptive || hasSplash,
+		Microphone:   capabilities.Microphone,
+		Splash:       hasSplash,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	manifestData := buf.Bytes()
+	if buildV {
+		fmt.Fprintf(os.Stderr, "generated %s:\n%s\n", fileAndroidManifestXML, manifestData)
+	}
+	return manifestData, nil
 }
 
 // detectAdaptiveIcons checks for adaptive icon layers based on metadata or convention
@@ -216,7 +250,7 @@ func detectAdaptiveIcons(dir, foreground, background, monochrome string) (string
 }
 
 func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target int, versionCode int,
-	versionName, iconFG, iconBG, iconMono string,
+	versionName, iconFG, iconBG, iconMono string, splash *metadata.Splash,
 ) error {
 	// Add any assets.
 	var arsc struct {
@@ -266,8 +300,8 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 
 	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 
-	// No adaptive icons, use legacy build
-	if iconForeground == "" {
+	// No adaptive icons or splash screen, use legacy build
+	if iconForeground == "" && (splash == nil || arsc.iconPath == "") {
 		return legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
 	}
 
@@ -276,19 +310,21 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		iconBackground = iconForeground
 	}
 
-	// Compile adaptive icon resources with aapt2
+	// Compile icon and splash resources with aapt2
 	arscPath, resDir, compiledManifestPath, err := compileAndroidResources(
 		tmpdir,
 		manifestData,
+		arsc.iconPath,
 		iconForeground,
 		iconBackground,
 		iconMonochrome,
+		splash,
 		target,
 		versionCode,
 		versionName,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to compile adaptive icon resources: %w", err)
+		return fmt.Errorf("failed to compile android resources: %w", err)
 	}
 
 	w, err := apkwCreate("resources.arsc", apkw)
@@ -320,7 +356,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		return fmt.Errorf("failed to write res directory: %w", err)
 	}
 
-	return apkwWriteFile("AndroidManifest.xml", compiledManifestPath, apkw)
+	return apkwWriteFile(fileAndroidManifestXML, compiledManifestPath, apkw)
 }
 
 func legacyAddAssets(apkw *Writer, manifestData []byte, iconPath string, target int) error {
@@ -353,7 +389,7 @@ func legacyAddAssets(apkw *Writer, manifestData []byte, iconPath string, target 
 		}
 	}
 
-	w, err := apkwCreate("AndroidManifest.xml", apkw)
+	w, err := apkwCreate(fileAndroidManifestXML, apkw)
 	if err != nil {
 		return err
 	}
@@ -382,7 +418,7 @@ func buildAPK(out io.Writer, nmpkgs map[string]map[string]bool, libFiles []strin
 		apkw = NewWriter(out, privKey)
 	}
 
-	w, err := apkwCreate("classes.dex", apkw)
+	w, err := apkwCreate(fileClassesDex, apkw)
 	if err != nil {
 		return nil, err
 	}
@@ -488,11 +524,13 @@ func convertAPKToAAB(aabPath string) error {
 	apkPath := buildO[:len(aabPath)-3] + "apk"
 	apkProtoPath := buildO[:len(aabPath)-3] + "apk-proto"
 	tmpPath := filepath.Join(filepath.Dir(aabPath), "tmpbundle")
-	err := os.MkdirAll(tmpPath, 0o755)
+	err := os.MkdirAll(tmpPath, util.DirPermDefault)
 	if err != nil {
 		return err
 	}
-	defer removeAll(tmpPath)
+	defer func() {
+		_ = removeAll(tmpPath)
+	}()
 
 	aapt2, err := util.Aapt2Path()
 	if err != nil {
@@ -516,10 +554,21 @@ func convertAPKToAAB(aabPath string) error {
 	}
 	_ = os.Remove(apkProtoPath)
 
-	_ = os.MkdirAll(filepath.Join(tmpPath, "dex"), 0o755)
-	_ = os.MkdirAll(filepath.Join(tmpPath, "manifest"), 0o755)
-	_ = os.Rename(filepath.Join(tmpPath, "AndroidManifest.xml"), filepath.Join(tmpPath, "manifest", "AndroidManifest.xml"))
-	_ = os.Rename(filepath.Join(tmpPath, "classes.dex"), filepath.Join(tmpPath, "dex", "classes.dex"))
+	tmpPathDex := filepath.Join(tmpPath, "dex")
+	tmpPathManifest := filepath.Join(tmpPath, "manifest")
+
+	if err := os.MkdirAll(tmpPathDex, util.DirPermDefault); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := os.MkdirAll(tmpPathManifest, util.DirPermDefault); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := os.Rename(filepath.Join(tmpPath, fileAndroidManifestXML), filepath.Join(tmpPathManifest, fileAndroidManifestXML)); err != nil {
+		return err
+	}
+	if err := os.Rename(filepath.Join(tmpPath, fileClassesDex), filepath.Join(tmpPathDex, fileClassesDex)); err != nil {
+		return err
+	}
 
 	cmd = exec.Command("zip", "../base.zip", "-r", ".")
 	cmd.Dir = tmpPath

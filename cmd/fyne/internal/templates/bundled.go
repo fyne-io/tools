@@ -38,6 +38,9 @@ var fynePprof string
 //go:embed data/xcassets.JSON
 var xcassetsJSON string
 
+//go:embed data/LaunchScreen.storyboard
+var launchScreenStoryboard string
+
 //go:embed data/index.html
 var indexHTML string
 

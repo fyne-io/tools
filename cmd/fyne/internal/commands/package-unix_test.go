@@ -11,6 +11,7 @@ import (
 
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/tools/cmd/fyne/internal/templates"
+	"fyne.io/tools/cmd/fyne/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
 )
@@ -93,9 +94,9 @@ func TestPackageLinux(t *testing.T) {
 	basedir := t.TempDir()
 	dir := filepath.Join(basedir, "testapp")
 
-	assert.NoError(t, os.Mkdir(dir, 0o755), "create dir for test app")
+	assert.NoError(t, os.Mkdir(dir, util.DirPermDefault), "create dir for test app")
 	assert.NoError(t, os.Chdir(dir), "change into new app dir")
-	assert.NoError(t, os.WriteFile("Icon.png", theme.FyneLogo().Content(), 0o644)) //lint:ignore SA1019 It is fine for our own use.
+	assert.NoError(t, os.WriteFile("Icon.png", theme.FyneLogo().Content(), util.FilePermDefault)) //lint:ignore SA1019 It is fine for our own use.
 
 	app := &cli.App{
 		Name: "fyne",

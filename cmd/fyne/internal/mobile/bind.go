@@ -9,9 +9,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/tools/go/packages"
+
+	"fyne.io/tools/cmd/fyne/internal/goos"
+	"fyne.io/tools/cmd/fyne/internal/util"
 )
 
 // pkg, tmpdir in build.go
@@ -68,17 +70,17 @@ func packagesConfig(targetOS, targetArch string) *packages.Config {
 	config := &packages.Config{}
 	// Add CGO_ENABLED=1 explicitly since Cgo is disabled when GOOS is different from host OS.
 	config.Env = append(os.Environ(), "GOARCH="+targetArch, "GOOS="+targetOS, "CGO_ENABLED=1")
-	if targetOS == "android" {
+	if targetOS == goos.Android {
 		// with Cgo enabled we need to ensure the C compiler is set via CC to
 		// avoid the error: "gcc: error: unrecognized command line option '-marm'"
 		config.Env = append(os.Environ(), androidEnv[targetArch]...)
 	}
 	tags := buildTags
-	if targetOS == "darwin" {
+	if targetOS == goos.Darwin {
 		tags = append(tags, "ios")
 	}
 	if len(tags) > 0 {
-		config.BuildFlags = []string{"-tags=" + strings.Join(tags, ",")}
+		config.BuildFlags = []string{"-tags=" + util.JoinComma(tags)}
 	}
 	return config
 }

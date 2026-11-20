@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -43,5 +44,9 @@ func postInstall(i *Installer) error {
 	} else {
 		appExe = appExe + ".exe"
 	}
-	return linkToStartMenu(filepath.Join(i.installDir, appExe), appName)
+	path := filepath.Join(i.installDir, appExe)
+	if i.verbose {
+		fmt.Println("Creating start menu link to", path)
+	}
+	return linkToStartMenu(path, appName)
 }
