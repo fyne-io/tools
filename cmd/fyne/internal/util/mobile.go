@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"golang.org/x/mod/semver"
 )
 
 // AndroidBuildToolsPath tries to find the location of the "build-tools" directory.
@@ -28,7 +30,7 @@ func AndroidBuildToolsPath() string {
 		if f.Name() == "zipalign" { // no version subdir
 			return dir
 		}
-		if f.IsDir() && (childDir == "" || CompareVersions(f.Name(), childDir) > 0) {
+		if f.IsDir() && (childDir == "" || semver.Compare("v"+f.Name(), "v"+childDir) > 0) {
 			childDir = f.Name()
 		}
 	}
