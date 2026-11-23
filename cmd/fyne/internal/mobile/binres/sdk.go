@@ -8,7 +8,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
+	"strings"
+
+	"golang.org/x/mod/semver"
 )
 
 // MinSDK is the targeted sdk version for support by package binres.
@@ -58,19 +61,27 @@ func LatestAPIResourcesPath() (string, error) {
 	if sdkdir == "" {
 		return "", errors.New("ANDROID_HOME env var not set")
 	}
-	parent := path.Join(sdkdir, "platforms")
+	parent := filepath.Join(sdkdir, "platforms")
 	dir, err := os.ReadDir(parent)
 	if err != nil {
 		return "", err
 	}
 
+	// compared by number, as a string comparison puts android-9 after android-36
 	maxSDK := ""
 	for _, d := range dir {
-		if d.Name() > maxSDK {
+		if maxSDK == "" || semver.Compare(platformVersion(d.Name()), platformVersion(maxSDK)) > 0 {
 			maxSDK = d.Name()
 		}
 	}
-	return path.Join(sdkdir, "platforms", maxSDK, "android.jar"), nil
+	return filepath.Join(sdkdir, "platforms", maxSDK, "android.jar"), nil
+}
+
+// platformVersion turns a platform directory name such as "android-36.1" into a semver string.
+// An SDK extension suffix is dropped, so "android-33-ext4" counts as 33.
+func platformVersion(name string) string {
+	name, _, _ = strings.Cut(strings.TrimPrefix(name, "android-"), "-ext")
+	return "v" + name
 }
 
 // PackResources produces a stripped down gzip version of the resources.arsc from api jar.

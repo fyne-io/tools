@@ -225,6 +225,7 @@ func (b *Builder) build() error {
 	return err
 }
 
+// buildTags returns the build tags requested by the user plus those implied by the build options.
 func (b *Builder) buildTags() []string {
 	tags := b.tags
 	if b.release {
