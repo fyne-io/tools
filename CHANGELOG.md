@@ -3,6 +3,28 @@
 This file lists the main changes with each version of the Fyne tools project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/tools/releases).
 
+## 1.7.5 - 25 Nov 2026
+
+### Added
+
+* Support for building universal binaries on darwin (#155)
+
+### Changed
+
+* Align with the new scene based iOS launch (#186)
+
+### Fixed
+
+* Fix issue where android version was looked up alphabetically instead of by number (#185)
+* Fix ldflags in GOFLAGS being dropped by the second build and by mobile release builds (#189)
+
+### New Contributors
+
+Code in v1.7.5 contains work from the following first time contributors:
+
+* @dlsniper
+
+
 ## 1.7.4 - 19 Oct 2026
 
 ### Added
