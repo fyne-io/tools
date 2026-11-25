@@ -11,7 +11,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 
 ### Changed
 
-* Align with the new scene based iOS launch (#186)
+* Align with the new scene based iOS launch for XCode 27 compatibility (needs Fyne 2.8.3+) (#186)
 
 ### Fixed
 
