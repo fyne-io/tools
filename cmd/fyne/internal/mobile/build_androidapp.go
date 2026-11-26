@@ -291,8 +291,15 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 
 	iconForeground, iconBackground, iconMonochrome := detectAdaptiveIcons(dir, iconFG, iconBG, iconMono)
 
-	// No adaptive icons or splash screen, use legacy build
-	if iconForeground == "" && (splash == nil || arsc.iconPath == "") {
+	// Without an icon to show a splash screen cannot be built
+	if arsc.iconPath == "" {
+		splash = nil
+	}
+
+	// No adaptive icons, splash screen or foreground service, use legacy build.
+	// The others need aapt2: the legacy encoder only knows the manifest attributes of an old
+	// SDK, which do not include android:foregroundServiceType.
+	if iconForeground == "" && splash == nil && !manifestHasForegroundService(manifestData) {
 		return legacyAddAssets(apkw, manifestData, arsc.iconPath, target)
 	}
 
@@ -341,7 +348,7 @@ func addAssets(apkw *Writer, manifestData []byte, dir, iconPath string, target i
 		if err != nil {
 			return err
 		}
-		return apkwWriteFile("res/"+relPath, path, apkw)
+		return apkwWriteFile("res/"+filepath.ToSlash(relPath), path, apkw)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to write res directory: %w", err)
