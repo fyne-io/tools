@@ -57,8 +57,11 @@ func AppOutputName(os, name string, release bool) string {
 
 const (
 	androidTargetRelease = 36
-	androidTargetDebug   = 29
-	pkgMain              = "main"
+
+	// ka-iy: Debug APKs get a v2/v3/v4 signature after packaging, which targetSdkVersion >= 30 requires.
+	androidTargetDebug = 30
+
+	pkgMain = "main"
 )
 
 // runBuildImpl builds a package for mobiles based on the given commands.
@@ -119,6 +122,7 @@ func runBuildImpl(cmd *command) (*packages.Package, error) {
 			}
 			return pkg, nil
 		}
+
 		target := androidTargetRelease
 		if !buildRelease {
 			target = androidTargetDebug // TODO once we have gomobile debug signing working for v2 android signs
